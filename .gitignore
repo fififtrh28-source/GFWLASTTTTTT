@@ -57,6 +57,10 @@ new/XML/
 *.tif
 *.tiff
 *.png
+!public/ITS.png
+!public/OceanNexus.png
+!public/trajectory_examples/
+!public/trajectory_examples/*.png
 *.jpg
 *.jpeg
 *.webp
