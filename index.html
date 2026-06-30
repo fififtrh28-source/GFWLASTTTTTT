@@ -48,9 +48,9 @@
       color:var(--text); white-space:nowrap; border-right:1px solid var(--border);
       height:100%; display:flex; align-items:center; gap:12px;
     }
-    .brand-img { display:block; object-fit:contain; flex-shrink:0; }
-    .brand-img.its { width:40px; height:40px; }
-    .brand-img.nexus { width:174px; height:44px; }
+    .brand-img { display:block; object-fit:contain; flex-shrink:0; image-rendering:auto; }
+    .brand-img.its { width:50px; height:34px; }
+    .brand-img.nexus { width:231px; height:33px; object-fit:cover; object-position:center; }
     .tb-modes {
       display:flex; height:100%; border-right:1px solid var(--border);
     }
@@ -310,21 +310,34 @@
       border-top:1px solid var(--border); flex-shrink:0; min-height:28px;
       display:flex; align-items:center;
     }
+    #sb-telegram-info {
+      display:none; padding:0 16px 8px; font-size:11px; line-height:1.35;
+      color:var(--text-3); flex-shrink:0;
+    }
+    #sb-telegram-info.show { display:block; }
+    #sb-telegram-info.ok { color:var(--green); }
+    #sb-telegram-info.err { color:var(--red); }
 
     /* Footer buttons */
     #sidebar-footer {
       padding:10px 12px; border-top:1px solid var(--border);
-      display:flex; gap:8px; flex-shrink:0;
+      display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap;
     }
     .sb-btn {
       flex:1; padding:9px 10px; border-radius:var(--radius);
       border:1px solid var(--border-2); background:var(--surface-2);
       color:var(--text-2); cursor:pointer; font-size:12px; font-weight:600;
       letter-spacing:.02em; transition:.15s; line-height:1;
+      min-width:86px;
     }
     .sb-btn:hover    { border-color:var(--blue); color:var(--blue); }
     .sb-btn.traj-on  { border-color:var(--red);  color:var(--red);  background:var(--red-dim); }
     .sb-btn.loading  { opacity:.5; cursor:not-allowed; }
+    .sb-btn.telegram.ready { border-color:#2dd4bf66; color:#67e8f9; background:rgba(20,184,166,.12); }
+    .sb-btn.telegram.sent  { border-color:var(--green); color:var(--green); background:var(--green-dim); }
+    .sb-btn.telegram.err   { border-color:var(--red); color:var(--red); background:var(--red-dim); }
+    .sb-btn:disabled { opacity:.48; cursor:not-allowed; }
+    .sb-btn:disabled:hover { border-color:var(--border-2); color:var(--text-2); }
 
     /* Track history list */
     .track-list { max-height:260px; overflow-y:auto; }
@@ -497,8 +510,8 @@
 <!-- TOPBAR -->
 <header id="topbar">
   <div class="tb-brand">
-    <img class="brand-img its" src="ITS.png" alt="ITS">
-    <img class="brand-img nexus" src="OceanNexus.png" alt="Ocean Nexus">
+    <img class="brand-img its" src="/ITS.png" alt="ITS">
+    <img class="brand-img nexus" src="/OceanNexus.png" alt="Ocean Nexus">
   </div>
   <div class="tb-modes">
     <button class="mode-btn" id="btn-gfw" onclick="setMode('gfw')">GFW Events</button>
@@ -521,7 +534,6 @@
     <span id="last-update">—</span>
   </div>
   <div class="tb-actions">
-    <button class="tb-btn active" id="btn-local-kalman" onclick="toggleLocalKalman()">Kalman Lokal</button>
     <button class="tb-btn" id="btn-tools" onclick="togglePanel()">Query & Track</button>
   </div>
 </header>
@@ -646,8 +658,10 @@
   </div>
   <div id="sidebar-body"></div>
   <div id="sb-traj-info"></div>
+  <div id="sb-telegram-info"></div>
   <div id="sidebar-footer">
     <button class="sb-btn" id="sb-traj-btn" onclick="toggleTraj()">Tampilkan Trajectory</button>
+    <button class="sb-btn telegram" id="sb-telegram-btn" onclick="sendSidebarTelegramAlert()" disabled>Kirim Alert</button>
     <button class="sb-btn" onclick="zoomTo()">Zoom ke Posisi</button>
   </div>
 </aside>
@@ -680,7 +694,7 @@ let trajActive         = false;
 let queryCatalogLoaded = false;
 let selectedVessel     = null;
 let localKalmanData    = null;
-let localKalmanVisible = true;
+let localKalmanVisible = false;
 const SHOW_SAR_TARGET_POINTS = false;
 const SHOW_DETECTION_POINTS = true;
 let integrationRowsLoaded = false;
@@ -689,13 +703,19 @@ let integrationCandidates = [];
 let integrationRuleCandidates = [];
 let integrationGodarkH5Rows = [];
 let integrationKalmanRows = [];
+let integrationExistingVesselRows = [];
 let integrationSummaryRows = [];
 let integrationTrajectoryRows = [];
 let integrationExampleRows = [];
+let integrationExample25Rows = [];
+let integrationExtraTrajectoryRows = [];
+let integrationTrajectoryGeojsons = [];
 let integrationSarManifestRows = [];
 let integrationTrajectoryImages = [];
 let integrationExampleColumnsLogged = false;
 let sidebarFocusLatLng = null;
+let sidebarTelegramPayload = null;
+let sidebarTelegramSending = false;
 
 const GFW_CACHE_KEY = 'gfw-events-cache-v7';
 const GFW_CACHE_TTL = 10 * 60 * 1000;
@@ -714,7 +734,7 @@ function apiUrl(path) {
   return `${API_BASE}${path}`;
 }
 
-const PANEL_TRAJECTORY_SEQUENCE_LIMIT = 121;
+const PANEL_TRAJECTORY_SEQUENCE_LIMIT = 25;
 const DASHBOARD_TRAJECTORY_SEQUENCE_LIMIT = 121;
 
 const INTEGRATION_DATA_FILES = {
@@ -723,10 +743,28 @@ const INTEGRATION_DATA_FILES = {
   candidates: 'KAPAL YG TERDETEKSI/scene_candidates_godark_spoofing_transshipment.csv',
   summary: 'KAPAL YG TERDETEKSI/scene_candidates_summary.csv',
   sarManifest: 'KAPAL YG TERDETEKSI/SAR_SCENE_GALLERY_ALL/manifest.csv',
+  localKalman: 'data/local_kalman_trajectories.json',
   trajectory: 'new/metadata/ais_trajectory_points_raw_vs_kalman.csv',
   enrichedTrajectory: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/trajectory_points_raw_vs_kalman.csv',
   example25: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/ais_kalman_25seq_per_mmsi.csv',
-  trajectoryGallery: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/trajectory_gallery.html',
+  extraTrajectoryCsvs: [
+    'new/metadata/ais_trajectory_points_kalman.csv',
+    'KAPAL YG TERDETEKSI/SENTINEL1_SCENE_MAPS/S1A_IW_GRDH_1SDV_20260215T104128_20260215T104157_063228_07F03A_350C_vv_scene_trajectories.csv',
+    'KAPAL YG TERDETEKSI/SENTINEL1_SCENE_MAPS/S1A_IW_GRDH_1SDV_20260307T111544_20260307T111609_063520_07FB52_A93E_vv_scene_trajectories.csv',
+    'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/drifting_longlines.csv',
+    'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/fixed_gear.csv',
+    'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/purse_seines.csv',
+    'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trawlers.csv',
+  ],
+  trajectoryGeojsons: [
+    'new/metadata/ais_trajectories_raw.geojson',
+    'new/metadata/ais_trajectories_kalman.geojson',
+    'new/metadata/ais_trajectories_raw_vs_kalman.geojson',
+  ],
+  trajectoryGalleries: [
+    'DATASET_TEST_ENRICHED/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/trajectory_gallery.html',
+    'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/trajectory_gallery.html',
+  ],
   example25Png: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/images/residual_drifting_longlines_mmsi-416006701_start-1771344621_end-1771438528_idx-35.png',
   example25Mmsi: '416006701',
   example25Start: 1771344621,
@@ -1011,6 +1049,17 @@ async function loadCsvRows(path) {
   }
 }
 
+async function loadJsonData(path) {
+  try {
+    const r = await fetch(encodeURI(path), { cache: 'no-store' });
+    if (!r.ok) throw new Error(`${r.status} ${path}`);
+    return await r.json();
+  } catch (err) {
+    console.warn('[dashboard integration] JSON tidak tersedia:', path, err);
+    return null;
+  }
+}
+
 function dataDir(path) {
   const clean = String(path || '').replace(/\\/g, '/');
   const index = clean.lastIndexOf('/');
@@ -1060,12 +1109,58 @@ async function loadTrajectoryImageRows(path) {
   }
 }
 
+function dedupeTrajectoryImages(images) {
+  const seen = new Set();
+  return images.filter(image => {
+    const key = `${image.mmsi}|${image.fileName}|${image.start_timestamp}|${image.end_timestamp}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function normalizedCandidateType(value) {
   const type = String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
   if (type.includes('transship')) return 'transshipment';
   if (type.includes('spoof')) return 'spoofing';
   if (type.includes('godark') || type.includes('dark')) return 'godark';
   return '';
+}
+
+function valueHasSpoofing(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.some(valueHasSpoofing);
+  if (typeof value === 'object') return Object.values(value).some(valueHasSpoofing);
+  const text = String(value).toLowerCase();
+  return text.includes('spoofing') || text.includes('spoof');
+}
+
+function vesselIsSpoofing(...items) {
+  const fields = [
+    'candidate_type',
+    'detected_types',
+    'pred_label',
+    'detection_type',
+    'detection',
+    'alert_type',
+    'alert',
+    'alerts',
+    'status',
+    'category',
+    'label',
+    'type',
+    'tasks',
+    'rawRow',
+  ];
+  return items.some(item => {
+    if (!item) return false;
+    if (Array.isArray(item) || typeof item !== 'object') return valueHasSpoofing(item);
+    return fields.some(field => valueHasSpoofing(item[field]));
+  });
+}
+
+function vesselHasTrajectoryAlert(...items) {
+  return items.some(item => detectionTypesFor(item).some(type => type === 'spoofing' || type === 'godark'));
 }
 
 function displayCandidateType(value) {
@@ -1118,6 +1213,40 @@ function normalizeDetectionRow(row, fallbackType, sourceLabel) {
   };
 }
 
+function flattenExistingVesselRows(localData) {
+  const rows = [];
+  for (const scene of localData?.scenes || []) {
+    for (const vessel of scene.vessels || []) {
+      const sarLat = Number(vessel?.sar?.lat);
+      const sarLon = Number(vessel?.sar?.lon);
+      const aisLat = Number(vessel?.ais?.lat);
+      const aisLon = Number(vessel?.ais?.lon);
+      const kalLat = Number(vessel?.kalman?.lat);
+      const kalLon = Number(vessel?.kalman?.lon);
+      const lat = Number.isFinite(sarLat) ? sarLat : aisLat;
+      const lon = Number.isFinite(sarLon) ? sarLon : aisLon;
+      if (!normId(vessel?.mmsi) || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      rows.push({
+        scene: scene.scene || '',
+        MMSI: normId(vessel.mmsi),
+        Name: vessel.name || '',
+        Ship_Type: vessel.category || '',
+        gear: vessel.gear || '',
+        local_event: vessel.event || '',
+        local_probability: vessel.probability ?? '',
+        Center_latitude: String(lat),
+        Center_longitude: String(lon),
+        AIS_Latitude: Number.isFinite(aisLat) ? String(aisLat) : '',
+        AIS_Longitude: Number.isFinite(aisLon) ? String(aisLon) : '',
+        kalman_est_lat: Number.isFinite(kalLat) ? String(kalLat) : '',
+        kalman_est_lon: Number.isFinite(kalLon) ? String(kalLon) : '',
+        local_vessel: vessel,
+      });
+    }
+  }
+  return rows;
+}
+
 function buildFinalDetectionRows(ruleRows, godarkRows) {
   const rows = [];
   for (const row of godarkRows || []) {
@@ -1142,28 +1271,141 @@ function buildFinalDetectionRows(ruleRows, godarkRows) {
     .sort((a, b) => detectionScore(b) - detectionScore(a));
 }
 
+function detectionTypesFor(value) {
+  const found = new Set();
+  const addFromText = text => {
+    const s = String(text || '').toLowerCase();
+    if (!s) return;
+    if (s.includes('spoof')) found.add('spoofing');
+    if (s.includes('go_dark') || s.includes('godark') || s.includes('go dark')) found.add('godark');
+    if (s.includes('transship')) found.add('transshipment');
+    const normalized = normalizedCandidateType(s);
+    if (normalized) found.add(normalized);
+  };
+
+  if (Array.isArray(value)) value.forEach(addFromText);
+  else if (value && typeof value === 'object') {
+    if (Array.isArray(value.detected_types)) value.detected_types.forEach(addFromText);
+    addFromText(value.detected_types);
+    addFromText(value.candidate_type);
+    addFromText(value.primary_candidate_type);
+    addFromText(value.detection_type);
+    addFromText(value.alert_type);
+    addFromText(value.alert);
+    addFromText(value.status);
+    addFromText(value.category);
+    addFromText(value.label);
+    addFromText(value.type);
+    if (value.rawRow) detectionTypesFor(value.rawRow).forEach(t => found.add(t));
+    if (value.tasks) Object.keys(value.tasks).forEach(addFromText);
+  } else {
+    addFromText(value);
+  }
+
+  return ['spoofing', 'godark', 'transshipment'].filter(type => found.has(type));
+}
+
+function primaryDetectionType(value) {
+  return detectionTypesFor(value)[0] || normalizedCandidateType(value?.candidate_type || value?.detection_type || value);
+}
+
+function detectionTypesLabel(value) {
+  const types = detectionTypesFor(value);
+  return types.length ? types.map(displayCandidateType).join(' + ') : '';
+}
+
+function candidateTypeScore(row, type) {
+  const keys = type === 'godark'
+    ? ['godark_score', 'go_dark_probability_calibrated', 'go_dark_probability_raw_mean', 'score']
+    : [`${type}_score`, 'score'];
+  for (const key of keys) {
+    const value = Number(row?.[key]);
+    if (Number.isFinite(value)) return value;
+  }
+  return detectionScore(row);
+}
+
+function mergeMatchedCandidate(localRow, matches) {
+  const bestByType = new Map();
+  for (const row of matches || []) {
+    const type = normalizedCandidateType(row.candidate_type || row.pred_label);
+    if (!type) continue;
+    const existing = bestByType.get(type);
+    if (!existing || detectionScore(row) > detectionScore(existing)) bestByType.set(type, row);
+  }
+  const detectedTypes = ['spoofing', 'godark', 'transshipment'].filter(type => bestByType.has(type));
+  if (!detectedTypes.length) return null;
+
+  const best = [...bestByType.values()].sort((a, b) => detectionScore(b) - detectionScore(a))[0];
+  const score = Math.max(...[...bestByType.values()].map(detectionScore));
+  const scoreFields = Object.fromEntries(detectedTypes.map(type => [`${type}_score`, String(detectionScore(bestByType.get(type)))]));
+  const evidence = detectedTypes
+    .map(type => `${displayCandidateType(type)} ${Math.round(detectionScore(bestByType.get(type)) * 100)}%`)
+    .join(' | ');
+
+  return {
+    ...best,
+    ...localRow,
+    ...scoreFields,
+    candidate_type: detectedTypes.join(', '),
+    primary_candidate_type: detectedTypes[0],
+    detected_types: detectedTypes,
+    score: String(score),
+    model_source: `${INTEGRATION_DATA_FILES.finalModel} + matching MMSI/scene dashboard`,
+    rule: `matched_existing_vessel_${detectedTypes.join('_')}`,
+    evidence: `Matched MMSI+scene dengan kapal yang sudah ada di dashboard. ${evidence}.`,
+  };
+}
+
+function buildMatchedFinalDetectionRows(ruleRows, godarkRows, existingRows) {
+  const predictions = buildFinalDetectionRows(ruleRows, godarkRows);
+  const rows = [];
+  for (const localRow of existingRows || []) {
+    const localMmsi = normId(localRow.MMSI || localRow.mmsi);
+    const matches = predictions.filter(row => {
+      const rowMmsi = normId(row.MMSI || row.mmsi);
+      return localMmsi && rowMmsi === localMmsi && sameScene(row.scene, localRow.scene);
+    });
+    const merged = mergeMatchedCandidate(localRow, matches);
+    if (merged) rows.push(merged);
+  }
+
+  const bestByKey = new Map();
+  for (const row of rows) {
+    const key = `${row.scene}|${normId(row.MMSI || row.mmsi)}`;
+    const existing = bestByKey.get(key);
+    if (!existing || detectionScore(row) > detectionScore(existing)) bestByKey.set(key, row);
+  }
+  return [...bestByKey.values()].sort((a, b) => detectionScore(b) - detectionScore(a));
+}
+
 function candidateToAiResult(row) {
-  const type = normalizedCandidateType(row.candidate_type);
+  const types = detectionTypesFor(row);
+  const type = primaryDetectionType(row);
   const score = detectionScore(row);
   const lat = detectionLat(row);
   const lon = detectionLon(row);
+  const tasks = {};
+  for (const detectedType of types) {
+    const typeScore = candidateTypeScore(row, detectedType);
+    tasks[detectedType] = {
+      pred_label: detectedType,
+      confidence: typeScore,
+      probs: { [detectedType]: typeScore },
+    };
+  }
   return {
     mmsi: normId(row.MMSI || row.mmsi),
     name: row.Name || row.gfw_name || '',
     scene: row.scene || '',
     detection_type: type,
-    detection_label: displayCandidateType(type),
+    detected_types: types,
+    detection_label: detectionTypesLabel(row) || displayCandidateType(type),
     confidence: score,
     last_lat: lat,
     last_lon: lon,
     rawRow: row,
-    tasks: {
-      [type]: {
-        pred_label: type,
-        confidence: score,
-        probs: { [type]: score },
-      },
-    },
+    tasks,
   };
 }
 
@@ -1175,23 +1417,37 @@ async function ensureIntegrationRows() {
       const godarkH5Promise = loadCsvRows(INTEGRATION_DATA_FILES.godarkH5);
       const summaryPromise = loadCsvRows(INTEGRATION_DATA_FILES.summary);
       const sarManifestPromise = loadCsvRows(INTEGRATION_DATA_FILES.sarManifest);
+      const localKalmanPromise = loadJsonData(INTEGRATION_DATA_FILES.localKalman);
       const trajectoryPromise = loadCsvRows(INTEGRATION_DATA_FILES.trajectory);
       const enrichedTrajectoryPromise = loadCsvRows(INTEGRATION_DATA_FILES.enrichedTrajectory);
       const examplePromise = loadCsvRows(INTEGRATION_DATA_FILES.example25);
-      const trajectoryImagesPromise = loadTrajectoryImageRows(INTEGRATION_DATA_FILES.trajectoryGallery);
+      const extraTrajectoryPromise = Promise.all(
+        INTEGRATION_DATA_FILES.extraTrajectoryCsvs.map(path => loadCsvRows(path))
+      );
+      const trajectoryGeojsonPromise = Promise.all(
+        INTEGRATION_DATA_FILES.trajectoryGeojsons.map(path => loadJsonData(path))
+      );
+      const trajectoryImagesPromise = Promise.all(
+        INTEGRATION_DATA_FILES.trajectoryGalleries.map(path => loadTrajectoryImageRows(path))
+      );
       const kalmanPromises = INTEGRATION_DATA_FILES.kalman.map(path => loadCsvRows(path));
-      const [candidates, godarkH5Rows, summaryRows, sarManifestRows, trajectoryRows, enrichedRows, exampleRows, trajectoryImages, ...kalmanSets] =
-        await Promise.all([candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, trajectoryImagesPromise, ...kalmanPromises]);
+      const [candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
+        await Promise.all([candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
       integrationRuleCandidates = candidates || [];
       integrationGodarkH5Rows = godarkH5Rows || [];
-      integrationCandidates = buildFinalDetectionRows(integrationRuleCandidates, integrationGodarkH5Rows);
+      if (localKalmanJson) localKalmanData = localKalmanJson;
+      integrationExistingVesselRows = flattenExistingVesselRows(localKalmanData);
+      integrationCandidates = buildMatchedFinalDetectionRows(integrationRuleCandidates, integrationGodarkH5Rows, integrationExistingVesselRows);
       aiResults = integrationCandidates.map(candidateToAiResult);
-      aiInferenceMessage = `${aiResults.length} kapal terdeteksi dari pipeline final lokal.`;
+      aiInferenceMessage = `${aiResults.length} kapal hasil matching MMSI+scene dari output final lokal.`;
       integrationSummaryRows = summaryRows || [];
       integrationSarManifestRows = sarManifestRows || [];
       integrationTrajectoryRows = trajectoryRows || [];
+      integrationExample25Rows = exampleRows || [];
+      integrationExtraTrajectoryRows = (extraTrajectoryRows || []).flat();
+      integrationTrajectoryGeojsons = (trajectoryGeojsons || []).filter(Boolean);
       integrationExampleRows = (enrichedRows && enrichedRows.length) ? enrichedRows : (exampleRows || []);
-      integrationTrajectoryImages = trajectoryImages || [];
+      integrationTrajectoryImages = dedupeTrajectoryImages((trajectoryImages || []).flat());
       integrationKalmanRows = kalmanSets.flat();
       logExampleDatasetColumns();
       integrationRowsLoaded = true;
@@ -1274,6 +1530,31 @@ function findLocalTrack(sceneName, mmsi) {
   return null;
 }
 
+function findExactLocalTrack(sceneName, mmsi) {
+  const id = normId(mmsi);
+  if (!id || !sceneName) return null;
+  for (const scene of localKalmanData?.scenes || []) {
+    if (!sameScene(scene.scene, sceneName)) continue;
+    for (const track of scene.tracks || []) {
+      if (normId(track.mmsi) === id) return track;
+    }
+  }
+  return null;
+}
+
+function localTrackRows(track) {
+  const raw = Array.isArray(track?.raw) ? track.raw : [];
+  const kalman = Array.isArray(track?.kalman) ? track.kalman : [];
+  const n = Math.max(raw.length, kalman.length);
+  return Array.from({ length: n }, (_, i) => ({
+    raw_lat: raw[i]?.lat ?? '',
+    raw_lon: raw[i]?.lon ?? '',
+    kalman_lat: kalman[i]?.lat ?? '',
+    kalman_lon: kalman[i]?.lon ?? '',
+    time_iso: raw[i]?.time || kalman[i]?.time || '',
+  }));
+}
+
 function candidateSummaryRow(candidateType) {
   const t = String(candidateType || '').toLowerCase();
   return integrationSummaryRows.find(row => String(row.candidate_type || '').toLowerCase() === t) || null;
@@ -1311,6 +1592,130 @@ function selectedTrajectoryRows(mmsi) {
     .sort((a, b) => timeValue(a) - timeValue(b));
 }
 
+function rowMmsi(row) {
+  return normId(pick(row, ['MMSI', 'mmsi', 'mmsi_raw', 'vessel_mmsi'], ''));
+}
+
+function rowTrajectoryTime(row) {
+  return rowEpochSeconds(row, [
+    'trajectory_time',
+    'timestamp_utc',
+    'timestamp',
+    'time_iso',
+    'scene_time_utc',
+    'kalman_scene_timestamp_utc',
+    'AIS_update_datetime',
+    'last_timestamp_utc',
+  ]);
+}
+
+function trajectorySortValue(row, index = 0) {
+  const seconds = rowTrajectoryTime(row);
+  if (Number.isFinite(seconds)) return seconds * 100000 + index;
+  const sequence = Number(pick(row, ['sequence_index', 'kalman_sequence_index'], ''));
+  return Number.isFinite(sequence) ? sequence : index;
+}
+
+function localTrajectoryRowsForMmsi(mmsi, sceneName = '') {
+  const id = normId(mmsi);
+  const rows = [];
+  for (const scene of localKalmanData?.scenes || []) {
+    if (sceneName && !sameScene(scene.scene, sceneName)) continue;
+    for (const track of scene.tracks || []) {
+      if (normId(track.mmsi) !== id) continue;
+      localTrackRows(track).forEach((row, index) => rows.push({
+        ...row,
+        MMSI: id,
+        scene: scene.scene || '',
+        trajectory_source_file: 'data/local_kalman_trajectories.json',
+        sequence_index: String(index + 1),
+      }));
+    }
+    for (const vessel of scene.vessels || []) {
+      if (normId(vessel.mmsi) !== id) continue;
+      rows.push({
+        MMSI: id,
+        scene: scene.scene || '',
+        raw_lat: vessel.ais?.lat ?? '',
+        raw_lon: vessel.ais?.lon ?? '',
+        kalman_lat: vessel.kalman?.lat ?? '',
+        kalman_lon: vessel.kalman?.lon ?? '',
+        trajectory_source_file: 'data/local_kalman_trajectories.json',
+      });
+    }
+  }
+  return rows;
+}
+
+function trajectoryRowsFromGeojson(mmsi) {
+  const id = normId(mmsi);
+  const rows = [];
+  for (const geojson of integrationTrajectoryGeojsons || []) {
+    for (const feature of geojson?.features || []) {
+      const props = feature.properties || {};
+      if (normId(props.MMSI || props.mmsi) !== id) continue;
+      const coordinates = feature.geometry?.coordinates || [];
+      const type = String(props.trajectory_type || props.source || '').toLowerCase();
+      coordinates.forEach((coord, index) => {
+        const lon = Number(coord?.[0]);
+        const lat = Number(coord?.[1]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+        rows.push({
+          MMSI: id,
+          timestamp_utc: index === 0 ? props.start_time_utc : (index === coordinates.length - 1 ? props.end_time_utc : ''),
+          sequence_index: String(index + 1),
+          raw_lat: type.includes('raw') ? lat : '',
+          raw_lon: type.includes('raw') ? lon : '',
+          kalman_lat: type.includes('kalman') ? lat : '',
+          kalman_lon: type.includes('kalman') ? lon : '',
+          trajectory_source_file: 'new/metadata trajectory geojson',
+        });
+      });
+    }
+  }
+  return rows;
+}
+
+function allTrajectoryRowsForMmsi(mmsi, sceneName = '', contextRow = null) {
+  const id = normId(mmsi);
+  if (!id) return [];
+  const rowSources = [
+    integrationTrajectoryRows,
+    integrationExampleRows,
+    integrationExample25Rows,
+    integrationExtraTrajectoryRows,
+    integrationKalmanRows,
+    integrationRuleCandidates,
+    integrationGodarkH5Rows,
+    [contextRow].filter(Boolean),
+    localTrajectoryRowsForMmsi(id, sceneName),
+    localTrajectoryRowsForMmsi(id, ''),
+    trajectoryRowsFromGeojson(id),
+  ];
+  const rows = rowSources.flat()
+    .filter(row => row && rowMmsi(row) === id)
+    .filter(row =>
+      trajectoryPoint(row, ['ais_lat', 'AIS_Latitude', 'raw_lat', 'lat'], ['ais_lon', 'AIS_Longitude', 'raw_lon', 'lon']) ||
+      trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon'])
+    )
+    .map((row, index) => ({ ...row, _trajectorySort: trajectorySortValue(row, index) }))
+    .sort((a, b) => a._trajectorySort - b._trajectorySort);
+
+  const seen = new Set();
+  return rows.filter(row => {
+    const raw = trajectoryPoint(row, ['ais_lat', 'AIS_Latitude', 'raw_lat', 'lat'], ['ais_lon', 'AIS_Longitude', 'raw_lon', 'lon']);
+    const kalman = trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']);
+    const key = [
+      rowTrajectoryTime(row) || '',
+      raw ? raw.map(n => n.toFixed(7)).join(',') : '',
+      kalman ? kalman.map(n => n.toFixed(7)).join(',') : '',
+    ].join('|');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function selectedTrajectoryStats(mmsi) {
   const rows = selectedTrajectoryRows(mmsi);
   return { rows, ...trajectoryRowsStats(rows) };
@@ -1324,6 +1729,10 @@ function trajectoryRowsStats(rows) {
     .map(row => trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']))
     .filter(Boolean));
   return { raw, kalman };
+}
+
+function trajectoryStatsHasLine(stats) {
+  return stats && (stats.raw.length >= 2 || stats.kalman.length >= 2);
 }
 
 function trajectoryPoint(row, latNames, lonNames) {
@@ -1392,6 +1801,29 @@ function selectedEnrichedTrajectoryRows(mmsi, contextRow = null, limit = PANEL_T
   };
 }
 
+function selectedMapTrajectoryStats(sceneName, mmsi, contextRow = null) {
+  const rows = allTrajectoryRowsForMmsi(mmsi, sceneName || contextRow?.scene || '', contextRow)
+    .slice(0, DASHBOARD_TRAJECTORY_SEQUENCE_LIMIT);
+  const stats = trajectoryRowsStats(rows);
+  return {
+    source: 'all trajectory sources',
+    rows,
+    raw: stats.raw,
+    kalman: stats.kalman,
+    totalRows: rows.length,
+  };
+}
+
+function hasMatchedMapTrajectory(sceneName, mmsi, contextRow = null) {
+  const stats = selectedMapTrajectoryStats(sceneName, mmsi, contextRow);
+  return trajectoryStatsHasLine(stats);
+}
+
+function hasAnyTrajectoryPoint(sceneName, mmsi, contextRow = null) {
+  const stats = selectedMapTrajectoryStats(sceneName, mmsi, contextRow);
+  return stats.raw.length > 0 || stats.kalman.length > 0;
+}
+
 function selectedTrajectoryImage(mmsi, contextRow = null) {
   const id = normId(mmsi);
   const images = integrationTrajectoryImages
@@ -1426,15 +1858,21 @@ function selectedTrajectoryImage(mmsi, contextRow = null) {
 
 function trajectoryDatasetImageHtml(image, mmsi) {
   if (!image) {
-    return `<div class="sb-note">Gambar trajectory Dataset_Test_Enriched tidak tersedia untuk MMSI ${esc(mmsi || '-')}.</div>`;
+    return '<div class="sb-note">Trajectory belum tersedia untuk kapal ini.</div>';
   }
   return `
     <div class="traj-example-img-wrap">
+      <div class="sar-img-title">AIS Mentah + AIS Kalman (25 Sequence)</div>
       <img class="traj-example-img"
         src="${esc(encodeURI(image.src))}"
         alt="Trajectory AIS Kalman MMSI ${esc(image.mmsi)}"
-        onerror="this.closest('.traj-example-img-wrap').style.display='none'; const fb=this.closest('.sb-section')?.querySelector('[data-traj-fallback]'); if(fb) fb.style.display='block'; console.warn('[dashboard integration] PNG trajectory Dataset_Test_Enriched tidak tersedia:', this.src);">
-    </div>`;
+        onerror="this.closest('.traj-example-img-wrap').style.display='none'; const msg=this.closest('.sb-section')?.querySelector('[data-traj-missing]'); if(msg) msg.style.display='block'; console.warn('[dashboard integration] PNG trajectory Dataset_Test_Enriched tidak tersedia:', this.src);">
+      <div class="traj-mini-legend">
+        <span class="traj-mini-key" style="color:#ff2d2d"><span class="traj-mini-line" style="border-top-style:dashed"></span>AIS Mentah</span>
+        <span class="traj-mini-key" style="color:#0b63d8"><span class="traj-mini-line"></span>AIS Kalman</span>
+      </div>
+    </div>
+    <div class="sb-note" data-traj-missing style="display:none">Trajectory belum tersedia untuk kapal ini.</div>`;
 }
 
 function logExampleDatasetColumns() {
@@ -1571,50 +2009,38 @@ function actualTrajectoryHtml(mmsi) {
 }
 
 function enrichedTrajectoryHtml(mmsi, candidate) {
-  if (!integrationExampleRows.length) {
-    return '<div class="sb-note">Trajectory Dataset_Test_Enriched belum terbaca dari folder lokal.</div>';
-  }
-
-  const { allRows, rows, windowStartIndex, anchorSeconds } = selectedEnrichedTrajectoryRows(mmsi, candidate, PANEL_TRAJECTORY_SEQUENCE_LIMIT);
-  if (!allRows.length) {
-    return `
-      <div class="sb-note">MMSI ${esc(mmsi || '-')} tidak ditemukan di trajectory Dataset_Test_Enriched.</div>
-      ${rowHtml('Sumber dicek', displayValue(INTEGRATION_DATA_FILES.enrichedTrajectory))}
-      <div class="sb-note">Kalau MMSI ini tetap harus punya trajectory Kalman, file sumber Dataset_Test_Enriched perlu berisi baris MMSI tersebut. Dashboard tidak menempel trajectory MMSI lain.</div>`;
-  }
-
-  const { raw, kalman } = trajectoryRowsStats(rows);
-  const corrections = rows.map(row => Number(row.kalman_correction_m || row.kalman_prediction_residual_m)).filter(Number.isFinite);
-  const avgCorrection = corrections.length
-    ? (corrections.reduce((a, b) => a + b, 0) / corrections.length).toFixed(2)
-    : '';
-  const maxCorrection = corrections.length ? Math.max(...corrections).toFixed(2) : '';
-  const startTime = pick(rows[0], ['time_iso', 'timestamp'], '');
-  const endTime = pick(rows[rows.length - 1], ['time_iso', 'timestamp'], '');
-  const windowText = `${windowStartIndex + 1}-${windowStartIndex + rows.length} dari ${allRows.length}`;
   const image = selectedTrajectoryImage(mmsi, candidate);
-  const anchorIso = Number.isFinite(anchorSeconds)
-    ? new Date(anchorSeconds * 1000).toISOString().replace('.000Z', 'Z')
+  const enriched = selectedEnrichedTrajectoryRows(mmsi, candidate, PANEL_TRAJECTORY_SEQUENCE_LIMIT);
+  const allRows = allTrajectoryRowsForMmsi(mmsi, candidate?.scene || '', candidate);
+  const rows = allRows.slice(0, PANEL_TRAJECTORY_SEQUENCE_LIMIT);
+  const { raw, kalman } = rows.length ? trajectoryRowsStats(rows) : { raw: [], kalman: [] };
+  if (!image && !raw.length && !kalman.length) return trajectoryDatasetImageHtml(null, mmsi);
+
+  const startTime = rows.length ? pick(rows[0], ['time_iso', 'timestamp'], '') : '';
+  const endTime = rows.length ? pick(rows[rows.length - 1], ['time_iso', 'timestamp'], '') : '';
+  const windowText = rows.length ? `${rows.length} dari ${allRows.length} titik gabungan` : '';
+  const anchorIso = Number.isFinite(enriched.anchorSeconds)
+    ? new Date(enriched.anchorSeconds * 1000).toISOString().replace('.000Z', 'Z')
     : '';
-  const note = Number.isFinite(anchorSeconds)
-    ? `Window sampai ${PANEL_TRAJECTORY_SEQUENCE_LIMIT} titik dipilih dari Dataset_Test_Enriched yang waktunya paling dekat dengan scene kapal ini.`
-    : `Window sampai ${PANEL_TRAJECTORY_SEQUENCE_LIMIT} titik diambil dari awal Dataset_Test_Enriched untuk MMSI ini karena waktu scene tidak tersedia.`;
+  const visual = image
+    ? trajectoryDatasetImageHtml(image, mmsi)
+    : trajectoryStatsHasLine({ raw, kalman })
+      ? `${miniTrajectoryChart(rows)}<div class="sb-note">Visual dibuat dari semua data trajectory yang cocok dengan MMSI kapal ini.</div>`
+      : `<div class="sb-note">trajectory tidak tersedia karena data hanya satu titik.</div>`;
+  const source = 'gabungan CSV/JSON/GeoJSON trajectory';
 
   return `
-    ${trajectoryDatasetImageHtml(image, mmsi)}
-    <div data-traj-fallback style="display:none">${miniTrajectoryChart(rows)}</div>
+    ${visual}
     ${rowHtml('MMSI trajectory', displayValue(mmsi), true)}
-    ${rowHtml('Sumber data', displayValue('Dataset_Test_Enriched'))}
-    ${image ? rowHtml('File gambar', displayValue(image.fileName)) : rowHtml('File trajectory', displayValue(INTEGRATION_DATA_FILES.enrichedTrajectory))}
-    ${rowHtml('Window titik', displayValue(windowText))}
-    ${rowHtml('Titik AIS raw', displayValue(raw.length))}
-    ${rowHtml('Titik Kalman', displayValue(kalman.length))}
-    ${rowHtml('Waktu awal', displayValue(startTime))}
-    ${rowHtml('Waktu akhir', displayValue(endTime))}
+    ${rowHtml('Sumber data', displayValue(source))}
+    ${image ? rowHtml('File gambar', displayValue(image.fileName)) : ''}
+    ${windowText ? rowHtml('Window titik', displayValue(windowText)) : ''}
+    ${rows.length ? rowHtml('Titik AIS raw', displayValue(raw.length)) : ''}
+    ${rows.length ? rowHtml('Titik Kalman', displayValue(kalman.length)) : ''}
+    ${startTime ? rowHtml('Waktu awal', displayValue(startTime)) : ''}
+    ${endTime ? rowHtml('Waktu akhir', displayValue(endTime)) : ''}
     ${anchorIso ? rowHtml('Waktu scene', displayValue(anchorIso)) : ''}
-    ${rowHtml('Rata-rata koreksi', displayValue(avgCorrection, 'm'))}
-    ${rowHtml('Maks koreksi', displayValue(maxCorrection, 'm'))}
-    <div class="sb-note">${esc(note)}</div>`;
+    <div class="sb-note">Trajectory dipilih berdasarkan MMSI kapal yang diklik. Tidak ada fallback ke kapal lain.</div>`;
 }
 
 function exampleComparisonHtml() {
@@ -1646,6 +2072,15 @@ function summaryHtml(candidateType) {
     ${rowHtml('Persentase', displayValue(row.percentage, '%'))}
     ${rowHtml('Total kandidat', displayValue(row.total_candidates))}
     ${rowHtml('Sumber summary', displayValue(row.source_file))}`;
+}
+
+function summaryForCandidate(candidate) {
+  const types = detectionTypesFor(candidate);
+  if (!types.length) return summaryHtml(pick(candidate, ['candidate_type'], ''));
+  return types.map(type => `
+    <div class="sb-note" style="margin-bottom:6px">${esc(displayCandidateType(type))}</div>
+    ${summaryHtml(type)}
+  `).join('');
 }
 
 function findSarManifestRow(candidate, sceneName) {
@@ -1688,7 +2123,7 @@ function integrationImageItems(candidate, sceneName) {
 
   const manifest = findSarManifestRow(candidate, sceneName);
   if (manifest) {
-    add('SAR gallery patch', manifest.figure_path);
+    add('SAR patch', manifest.figure_path);
     add('SAR patch VV', manifest.vv_patch_path);
     add('SAR patch VH', manifest.vh_patch_path);
   }
@@ -1714,6 +2149,41 @@ function integrationImageItems(candidate, sceneName) {
   return items.slice(0, 6);
 }
 
+function vvVhPatchItems(candidate, sceneName) {
+  const items = [];
+  const seen = new Set();
+  const add = (label, src) => {
+    if (!src) return;
+    const clean = String(src).trim().replace(/\\/g, '/');
+    if (!clean || seen.has(clean)) return;
+    seen.add(clean);
+    items.push({ label, src: clean });
+  };
+  const localPatchPath = (field, value) => {
+    if (!value) return '';
+    const clean = String(value).trim();
+    if (clean.includes('/') || clean.includes('\\')) return clean;
+    return field.includes('uint8') ? `new/Patch_Uint8/${clean}` : `new/Patch_RGB/${clean}`;
+  };
+
+  const manifest = findSarManifestRow(candidate, sceneName);
+  if (manifest) {
+    add('Patch VV', manifest.vv_patch_path);
+    add('Patch VH', manifest.vh_patch_path);
+  }
+  add('Patch VV', localPatchPath('patch_rgb_vv_actual_file', candidate?.patch_rgb_vv_actual_file));
+  add('Patch VH', localPatchPath('patch_rgb_vh_actual_file', candidate?.patch_rgb_vh_actual_file));
+  add('Patch VV', localPatchPath('patch_uint8_vv_actual_file', candidate?.patch_uint8_vv_actual_file));
+  add('Patch VH', localPatchPath('patch_uint8_vh_actual_file', candidate?.patch_uint8_vh_actual_file));
+  return items.slice(0, 2);
+}
+
+function renderVvVhPatchItems(candidate, sceneName) {
+  const items = vvVhPatchItems(candidate, sceneName);
+  if (!items.length) return '<div class="sb-note">Patch VV/VH belum tersedia untuk kapal ini.</div>';
+  return renderImageItems(items);
+}
+
 function renderImageItems(items) {
   if (!items.length) return '<div class="sb-note">Patch SAR atau gambar scene tidak tersedia.</div>';
   return items.map(item => `
@@ -1728,13 +2198,101 @@ function rowHtml(label, value, mono = false) {
   return `<div class="sb-row"><span class="sb-key">${esc(label)}</span><span class="sb-val${mono ? ' mono' : ''}">${value}</span></div>`;
 }
 
+function setTelegramInfo(message = '', tone = '') {
+  const el = document.getElementById('sb-telegram-info');
+  if (!el) return;
+  el.textContent = message;
+  el.className = message ? `show ${tone}`.trim() : '';
+}
+
+function setTelegramButton(enabled, text = 'Kirim Alert', state = '') {
+  const btn = document.getElementById('sb-telegram-btn');
+  if (!btn) return;
+  btn.disabled = !enabled || sidebarTelegramSending;
+  btn.textContent = text;
+  btn.className = `sb-btn telegram ${state}`.trim();
+}
+
+function clearSidebarTelegramAlert(message = '') {
+  sidebarTelegramPayload = null;
+  sidebarTelegramSending = false;
+  setTelegramButton(false, 'Kirim Alert');
+  setTelegramInfo(message);
+}
+
+function cleanAlertText(value, fallback = '') {
+  const text = String(value ?? '').trim();
+  return text || fallback;
+}
+
+function normalizedAlertScore(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : '';
+}
+
+function configureSidebarTelegramAlert(payload, unavailableMessage = 'Alert Telegram hanya aktif untuk kapal deteksi AI/SAR.') {
+  const alertType = cleanAlertText(payload?.alertType || payload?.type);
+  const mmsi = cleanAlertText(payload?.mmsi || payload?.MMSI);
+  if (!alertType || !mmsi) {
+    clearSidebarTelegramAlert(unavailableMessage);
+    return;
+  }
+
+  sidebarTelegramPayload = {
+    alertType,
+    mmsi,
+    vesselName: cleanAlertText(payload.vesselName || payload.name, 'Unknown vessel'),
+    score: normalizedAlertScore(payload.score),
+    scoreText: cleanAlertText(payload.scoreText),
+    scene: cleanAlertText(payload.scene),
+    lat: cleanAlertText(payload.lat),
+    lon: cleanAlertText(payload.lon),
+    time: cleanAlertText(payload.time, new Date().toISOString()),
+  };
+  setTelegramButton(true, 'Kirim Alert', 'ready');
+  setTelegramInfo(`Siap kirim alert Telegram: ${alertType}.`);
+}
+
+async function sendSidebarTelegramAlert() {
+  if (!sidebarTelegramPayload || sidebarTelegramSending) return;
+  sidebarTelegramSending = true;
+  setTelegramButton(false, 'Mengirim...', 'loading');
+  setTelegramInfo('Mengirim alert ke Telegram...');
+
+  try {
+    const response = await fetch(apiUrl('/api/telegram/alert'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sidebarTelegramPayload),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || payload.detail || `HTTP ${response.status}`);
+    }
+    sidebarTelegramSending = false;
+    setTelegramInfo(`Alert Telegram terkirim${payload.telegram_message_id ? ` (ID ${payload.telegram_message_id})` : ''}.`, 'ok');
+    setTelegramButton(true, 'Kirim Lagi', 'sent');
+  } catch (err) {
+    sidebarTelegramSending = false;
+    setTelegramInfo(`Gagal kirim Telegram: ${err.message || err}`, 'err');
+    setTelegramButton(true, 'Coba Lagi', 'err');
+  }
+}
+
 function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
   const mmsi = pick(candidate, ['MMSI'], pick(kalman, ['MMSI'], vessel?.mmsi || ''));
   const title = pick(candidate, ['Name', 'gfw_name'], pick(kalman, ['Name', 'gfw_name'], vessel?.name || `MMSI: ${mmsi || '-'}`));
   const shipType = pick(candidate, ['Ship_Type', 'gfw_shiptype'], pick(kalman, ['Ship_Type', 'gfw_shiptype'], vessel?.category || vessel?.gear || ''));
   const sceneTime = pick(candidate, ['scene_time_utc'], pick(kalman, ['kalman_scene_timestamp_utc', 'sog_cog_scene_timestamp_utc', 'AIS_update_datetime'], ''));
   const candidateType = pick(candidate, ['candidate_type'], '');
-  const badge = candidateType || 'integrasi';
+  const candidateLabel = detectionTypesLabel(candidate) || candidateType;
+  const detectedTypes = detectionTypesFor(candidate);
+  const scoreText = detectionTypesFor(candidate)
+    .map(type => `${displayCandidateType(type)} ${Math.round(candidateTypeScore(candidate, type) * 100)}%`)
+    .join(' | ') || pick(candidate, ['score'], '');
+  const scoreNumbers = detectedTypes.map(type => candidateTypeScore(candidate, type)).filter(Number.isFinite);
+  const alertScore = scoreNumbers.length ? Math.max(...scoreNumbers) : detectionScore(candidate);
+  const badge = candidateLabel || 'integrasi';
   const modelSource = pick(candidate, ['model_source'], INTEGRATION_DATA_FILES.finalModel);
 
   const aisLat = pickCoord(candidate, ['AIS_Latitude'], pickCoord(kalman, ['AIS_Latitude'], vessel?.ais?.lat));
@@ -1750,8 +2308,7 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
   document.getElementById('sidebar-title').textContent = title || 'Detail Kapal';
   document.getElementById('sidebar-sub').textContent = sceneName ? `Scene: ${sceneName}` : 'Integrasi AIS-SAR';
 
-  // Panel ini menampilkan hasil integrasi AIS-SAR: identitas kapal, posisi AIS,
-  // target kapal SAR, estimasi Kalman, kandidat aktivitas, patch SAR, dan trajectory.
+  // Panel ini menampilkan hasil integrasi AIS-SAR, status kandidat, dan trajectory yang cocok.
   document.getElementById('sidebar-body').innerHTML = `
     <div class="sb-section">
       <div class="sb-section-title">
@@ -1783,46 +2340,58 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
     </div>
     <div class="sb-section">
       <div class="sb-section-title">KANDIDAT AKTIVITAS</div>
-      ${rowHtml('candidate_type', displayValue(candidateType))}
-      ${rowHtml('score', displayValue(pick(candidate, ['score'], '')))}
+      ${rowHtml('Deteksi', displayValue(candidateLabel))}
+      ${rowHtml('Score', displayValue(scoreText))}
       ${rowHtml('rule', displayValue(pick(candidate, ['rule'], '')))}
       ${rowHtml('evidence', displayValue(pick(candidate, ['evidence'], '')))}
     </div>
     <div class="sb-section">
       <div class="sb-section-title">REKAP KANDIDAT</div>
-      ${summaryHtml(candidateType)}
+      ${summaryForCandidate(candidate)}
     </div>
     <div class="sb-section">
-      <div class="sb-section-title">TRAJECTORY DATASET_TEST_ENRICHED</div>
+      <div class="sb-section-title">Patch VV / VH</div>
+      ${renderVvVhPatchItems(candidate, sceneName)}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">Trajectory AIS (25 Sequence)</div>
       ${enrichedTrajectoryHtml(mmsi, candidate)}
-    </div>
-    <div class="sb-section">
-      <div class="sb-section-title">TRAJECTORY FINAL SESUAI MMSI</div>
-      ${actualTrajectoryHtml(mmsi)}
-    </div>
-    <div class="sb-section">
-      <div class="sb-section-title">PATCH / SCENE SAR</div>
-      ${renderImageItems(integrationImageItems(candidate, sceneName))}
     </div>`;
+
+  configureSidebarTelegramAlert({
+    alertType: candidateLabel,
+    mmsi,
+    vesselName: title,
+    score: alertScore,
+    scoreText,
+    scene: sceneName,
+    lat: focusLat,
+    lon: focusLon,
+    time: sceneTime,
+  });
 }
 
 function plotIntegratedTrajectory(sceneName, mmsi, fit = true, contextRow = null) {
   sidebarTrajLayer.clearLayers();
   const info = document.getElementById('sb-traj-info');
   const context = contextRow || bestCandidateForMmsi(mmsi);
-  const enriched = selectedEnrichedTrajectoryRows(mmsi, context, DASHBOARD_TRAJECTORY_SEQUENCE_LIMIT);
-  const enrichedStats = trajectoryRowsStats(enriched.rows);
-  const finalStats = selectedTrajectoryStats(mmsi);
-  const hasEnriched = enriched.rows.length && (enrichedStats.raw.length >= 2 || enrichedStats.kalman.length >= 2);
-  const sourceLabel = hasEnriched ? `Dataset_Test_Enriched ${DASHBOARD_TRAJECTORY_SEQUENCE_LIMIT}-seq` : 'output AIS/Kalman final';
-  const rows = hasEnriched ? enriched.rows : finalStats.rows;
-  const raw = hasEnriched ? enrichedStats.raw : finalStats.raw;
-  const kalman = hasEnriched ? enrichedStats.kalman : finalStats.kalman;
-  if (!rows.length) {
-    info.textContent = 'Trajectory kapal terpilih belum tersedia pada Dataset_Test_Enriched maupun output AIS/Kalman final.';
-    return;
-  }
+
+  const trajectory = selectedMapTrajectoryStats(sceneName, mmsi, context);
+  const rows = trajectory.rows;
+  const raw = trajectory.raw;
+  const kalman = trajectory.kalman;
   const all = [...raw, ...kalman];
+  console.info('[trajectory lookup]', {
+    mmsi: normId(mmsi),
+    source: trajectory.source,
+    rows: rows.length,
+    raw_points: raw.length,
+    kalman_points: kalman.length,
+  });
+  if (!rows.length || !all.length) {
+    if (info) info.textContent = 'Trajectory belum tersedia untuk kapal ini.';
+    return false;
+  }
 
   if (raw.length >= 2) L.polyline(raw, { color:'#ff2d2d', weight:2.6, opacity:.9, dashArray:'7 6' }).addTo(sidebarTrajLayer);
   if (kalman.length >= 2) L.polyline(kalman, { color:'#0b63d8', weight:3.4, opacity:.95 }).addTo(sidebarTrajLayer);
@@ -1836,15 +2405,21 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true, contextRow = null
   addEnds(kalman, '#0b63d8', 'Kalman');
 
   if (raw.length < 2 && kalman.length < 2) {
-    info.textContent = 'Trajectory aktual kapal terpilih belum dapat digambar karena hanya memiliki satu titik AIS raw dan satu titik Kalman.';
-    return;
+    const rawPoint = raw[0];
+    const kalmanPoint = kalman[0];
+    if (rawPoint) L.circleMarker(rawPoint, { radius:6, color:'#ff2d2d', fillColor:'#ff2d2d', fillOpacity:.9 }).bindPopup('AIS raw: satu titik').addTo(sidebarTrajLayer);
+    if (kalmanPoint) L.circleMarker(kalmanPoint, { radius:6, color:'#0b63d8', fillColor:'#0b63d8', fillOpacity:.9 }).bindPopup('Kalman: satu titik').addTo(sidebarTrajLayer);
+    if (info) info.textContent = `trajectory tidak tersedia karena data hanya satu titik. Ditemukan AIS raw ${raw.length} titik | Kalman ${kalman.length} titik.`;
+    if (fit && all.length) map.setView(all[0], Math.max(map.getZoom(), 11), { animate: true });
+    return true;
   }
-  info.textContent = `Trajectory ${sourceLabel}: AIS raw ${raw.length} titik | Kalman ${kalman.length} titik`;
+  if (info) info.textContent = `Trajectory (${trajectory.source}): AIS raw ${raw.length} titik | Kalman ${kalman.length} titik`;
   if (fit && all.length) map.fitBounds(L.latLngBounds(all), { padding:[60, 60], maxZoom:12 });
+  return true;
 }
 
 function candidateColor(type) {
-  switch (normalizedCandidateType(type)) {
+  switch (primaryDetectionType(type)) {
     case 'godark': return '#e3901a';
     case 'spoofing': return '#f85149';
     case 'transshipment': return '#a371f7';
@@ -1861,55 +2436,7 @@ function bestCandidateForMmsi(mmsi) {
 }
 
 function renderEnriched121SeqTrajectories() {
-  if (!integrationRowsLoaded || !integrationExampleRows.length) return [];
-  const bounds = [];
-  const seen = new Set();
-  const candidates = integrationCandidates.slice().sort((a, b) => rowScore(b) - rowScore(a));
-
-  for (const candidate of candidates) {
-    const mmsi = normId(candidate.MMSI || candidate.mmsi);
-    if (!mmsi || seen.has(mmsi)) continue;
-    const { rows } = selectedEnrichedTrajectoryRows(mmsi, candidate, DASHBOARD_TRAJECTORY_SEQUENCE_LIMIT);
-    if (!rows.length) continue;
-    const { raw, kalman } = trajectoryRowsStats(rows);
-    if (raw.length < 2 && kalman.length < 2) continue;
-    seen.add(mmsi);
-    raw.forEach(point => bounds.push(point));
-    kalman.forEach(point => bounds.push(point));
-
-    const vessel = {
-      mmsi,
-      name: candidate.Name || candidate.gfw_name || '',
-      rawRow: candidate,
-      sar: {
-        lat: candidate.Center_latitude || candidate.sar_lat,
-        lon: candidate.Center_longitude || candidate.sar_lon,
-      },
-      ais: {
-        lat: candidate.AIS_Latitude,
-        lon: candidate.AIS_Longitude,
-      },
-    };
-    const openDetail = () => openIntegratedSarDetail(candidate.scene, vessel);
-
-    if (raw.length >= 2) {
-      L.polyline(raw, {
-        color: '#ff2d2d',
-        weight: 2.7,
-        opacity: 0.92,
-        dashArray: '7 6',
-      }).on('click', openDetail).addTo(localKalmanLayer);
-    }
-    if (kalman.length >= 2) {
-      L.polyline(kalman, {
-        color: '#0b63d8',
-        weight: 3.6,
-        opacity: 0.96,
-      }).on('click', openDetail).addTo(localKalmanLayer);
-    }
-  }
-
-  return bounds;
+  return [];
 }
 
 function renderIntegrationCandidateMarkers() {
@@ -1955,6 +2482,7 @@ async function openIntegratedSarDetail(sceneName, vessel = {}) {
   trajActive = false;
   sidebarTrajLayer.clearLayers();
   historyLayer.clearLayers();
+  clearSidebarTelegramAlert('Memuat data kapal...');
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebar-title').textContent = vessel.name || `MMSI: ${vessel.mmsi || '-'}`;
   document.getElementById('sidebar-sub').textContent = 'Memuat integrasi AIS-SAR...';
@@ -1968,10 +2496,13 @@ async function openIntegratedSarDetail(sceneName, vessel = {}) {
   if (sidebarFocusLatLng) map.setView(sidebarFocusLatLng, 11, { animate: true });
 
   const btn = document.getElementById('sb-traj-btn');
-  btn.className = 'sb-btn';
-  btn.textContent = 'Fokus Trajectory';
-  btn.onclick = () => plotIntegratedTrajectory(sceneName, vessel.mmsi, true, candidate);
-  plotIntegratedTrajectory(sceneName, vessel.mmsi, false, candidate);
+  const canPlotTrajectory = hasAnyTrajectoryPoint(sceneName, vessel.mmsi, candidate);
+  btn.disabled = !canPlotTrajectory;
+  btn.className = canPlotTrajectory ? 'sb-btn' : 'sb-btn loading';
+  btn.textContent = canPlotTrajectory ? 'Fokus Trajectory' : 'Trajectory Peta N/A';
+  btn.onclick = canPlotTrajectory ? () => plotIntegratedTrajectory(sceneName, vessel.mmsi, true, candidate) : null;
+  if (canPlotTrajectory) plotIntegratedTrajectory(sceneName, vessel.mmsi, true, candidate);
+  else sidebarTrajLayer.clearLayers();
 }
 
 async function loadLocalKalman(opts = {}) {
@@ -1995,97 +2526,15 @@ function toggleLocalKalman() {
   document.getElementById('btn-local-kalman')?.classList.toggle('active', localKalmanVisible);
   localKalmanLayer.clearLayers();
   updateLegend(mode);
-  if (localKalmanVisible) loadLocalKalman({ fit: true });
+  if (localKalmanVisible) renderLocalKalman({ fit: true });
 }
 
 function renderLocalKalman(opts = {}) {
   localKalmanLayer.clearLayers();
-  const trajectoryBounds = renderEnriched121SeqTrajectories();
   const candidateBounds = renderIntegrationCandidateMarkers();
-  const allBounds = [...trajectoryBounds, ...candidateBounds];
+  const allBounds = [...candidateBounds];
   if (opts.fit && allBounds.length) {
     try { map.fitBounds(L.latLngBounds(allBounds), { padding: [60, 60], maxZoom: 8 }); } catch {}
-  }
-  return;
-
-  if (!localKalmanData?.scenes) return;
-  localKalmanLayer.clearLayers();
-  const bounds = [];
-
-  for (const scene of localKalmanData.scenes) {
-    for (const track of scene.tracks || []) {
-      const raw = (track.raw || []).filter(validLatLon).map(p => [Number(p.lat), Number(p.lon)]);
-      const kalman = (track.kalman || []).filter(validLatLon).map(p => [Number(p.lat), Number(p.lon)]);
-
-      raw.forEach(ll => bounds.push(ll));
-      kalman.forEach(ll => bounds.push(ll));
-
-      if (raw.length >= 2) {
-        L.polyline(raw, {
-          color: '#00b7ff',
-          weight: 2,
-          opacity: 0.82,
-          dashArray: '5 7',
-        }).bindPopup(`AIS raw · MMSI ${esc(track.mmsi || '—')}<br>${esc(scene.scene)}`).addTo(localKalmanLayer);
-      }
-      if (kalman.length >= 2) {
-        L.polyline(kalman, {
-          color: '#ffd21a',
-          weight: 3,
-          opacity: 0.95,
-        }).bindPopup(`Kalman · MMSI ${esc(track.mmsi || '—')}<br>${esc(scene.scene)}`).addTo(localKalmanLayer);
-      }
-      const last = kalman[kalman.length - 1] || raw[raw.length - 1];
-      if (last) {
-        L.circleMarker(last, {
-          radius: 4,
-          color: '#111827',
-          weight: 1,
-          fillColor: '#ffd21a',
-          fillOpacity: 1,
-        }).bindPopup(`Akhir trajectory · MMSI ${esc(track.mmsi || '—')}`).addTo(localKalmanLayer);
-      }
-      if (last) {
-        L.circleMarker(last, {
-          radius: 10,
-          color: 'transparent',
-          weight: 0,
-          fillColor: '#ffffff',
-          fillOpacity: 0,
-        })
-          .on('click', () => openIntegratedSarDetail(scene.scene, { mmsi: track.mmsi }))
-          .addTo(localKalmanLayer);
-      }
-    }
-
-    if (SHOW_SAR_TARGET_POINTS) {
-      for (const vessel of scene.vessels || []) {
-        if (!validLatLon(vessel.sar)) continue;
-        const ll = [Number(vessel.sar.lat), Number(vessel.sar.lon)];
-        bounds.push(ll);
-        L.circleMarker(ll, {
-          radius: 6,
-          color: '#ff2d2d',
-          weight: 2,
-          fillColor: '#ff2d2d',
-          fillOpacity: 0.18,
-        }).bindPopup(localPopup(scene.scene, vessel)).addTo(localKalmanLayer);
-        L.circleMarker(ll, {
-          radius: 12,
-          color: 'transparent',
-          weight: 0,
-          fillColor: '#ffffff',
-          fillOpacity: 0,
-        })
-          .on('click', () => openIntegratedSarDetail(scene.scene, vessel))
-          .addTo(localKalmanLayer);
-      }
-    }
-  }
-  renderIntegrationCandidateMarkers();
-
-  if (opts.fit && bounds.length) {
-    try { map.fitBounds(L.latLngBounds(bounds), { padding: [60, 60], maxZoom: 8 }); } catch {}
   }
 }
 
@@ -2292,6 +2741,7 @@ function openGfwDetail(key) {
   const s = ships[key]; if (!s) return;
   closeToolPanel();
   sidebarFocusLatLng = null;
+  clearSidebarTelegramAlert('Alert Telegram dipakai untuk kapal deteksi AI/SAR.');
   document.getElementById('sb-traj-btn').onclick = toggleTraj;
   const d = s.data;
   if (sidebarKey && ships[sidebarKey]?.data?.source === 'gfw')
@@ -2360,6 +2810,7 @@ function openSidebar(key) {
   const s = ships[key]; if (!s) return;
   closeToolPanel();
   sidebarFocusLatLng = null;
+  clearSidebarTelegramAlert('Alert Telegram dipakai untuk kapal deteksi AI/SAR.');
   document.getElementById('sb-traj-btn').onclick = toggleTraj;
   sidebarKey = key; trajActive = false;
   sidebarTrajLayer.clearLayers(); historyLayer.clearLayers();
@@ -2375,6 +2826,7 @@ function closeSidebar() {
     ships[sidebarKey].marker.setIcon(makeGfwIcon(ships[sidebarKey].data.type, false));
   if (trajActive) showAllMarkers();
   sidebarKey = null; trajActive = false; sidebarFocusLatLng = null;
+  clearSidebarTelegramAlert();
   sidebarTrajLayer.clearLayers(); historyLayer.clearLayers();
   document.getElementById('sidebar').classList.remove('open');
 }
@@ -2396,6 +2848,7 @@ const fmtDateShort = s => { const d=new Date(s); return d.toLocaleDateString('id
 
 function renderSidebarGfw(d) {
   const c = gfwColor(d.type);
+  clearSidebarTelegramAlert('Alert Telegram dipakai untuk kapal deteksi AI/SAR.');
   document.getElementById('sidebar-title').textContent = d.name || 'Unknown';
   document.getElementById('sidebar-sub').textContent   = d.flag ? `Bendera: ${d.flag}` : '';
 
@@ -2444,6 +2897,7 @@ function renderSidebarGfw(d) {
 function renderSidebarBody(d) {
   if (d.source === 'gfw') { renderSidebarGfw(d); return; }
   const c = aisColor(d.speed);
+  clearSidebarTelegramAlert('Alert Telegram dipakai untuk kapal deteksi AI/SAR.');
   document.getElementById('sidebar-title').textContent = d.name || 'Unknown';
   document.getElementById('sidebar-sub').textContent   = d.mmsi ? `MMSI: ${d.mmsi}` : '';
   document.getElementById('sidebar-body').innerHTML = `
@@ -2733,7 +3187,7 @@ function spoofColor(label) { return (label||'').toLowerCase().includes('spoof') 
 function darkColor(label)  { return (label||'').toLowerCase().includes('dark')  ? '#e3901a' : '#3fb950'; }
 
 function makeAiIcon(vessel, selected) {
-  const c  = candidateColor(vessel.detection_type || vessel.rawRow?.candidate_type);
+  const c  = candidateColor(vessel);
   const sz = selected ? 18 : 13;
   const ring = `border:2px solid #f85149;box-shadow:0 0 0 2px rgba(248,81,73,.18),0 4px 10px rgba(0,0,0,.35);`;
   return L.divIcon({
@@ -2760,7 +3214,7 @@ function updateAiCounters() {
 
 
 const INFERENCE_LOOP_DELAY_MS = 30_000;
-const AI_CACHE_KEY = 'ai-inference-cache-v4';
+const AI_CACHE_KEY = 'ai-inference-cache-v5-matched';
 let inferenceLoopStarted = false;
 let inferenceLoopTimer = null;
 let inferenceInFlight = false;
@@ -2918,7 +3372,7 @@ async function syncInferenceResults() {
     if (!aiResults.length) setInferenceMessage('Memuat output lokal FINAL_4_PIPELINE_MODELS.h5...');
     await ensureIntegrationRows();
     renderInferenceState();
-    setInferenceMessage(`${aiResults.length} kapal Go Dark/Spoofing dari output final lokal.`);
+    setInferenceMessage(`${aiResults.length} kapal Go Dark/Spoofing hasil matching MMSI+scene dari output final lokal.`);
     saveInferenceCache();
   } catch (err) {
     setInferenceMessage('Error memuat output final lokal: ' + err.message);
@@ -3063,6 +3517,10 @@ function openAiDetail(i) {
   closeToolPanel();
   sidebarKey = null;
   trajActive = false;
+  clearSidebarTelegramAlert('Menyiapkan alert Telegram...');
+  sidebarFocusLatLng = (Number.isFinite(Number(v.last_lat)) && Number.isFinite(Number(v.last_lon)))
+    ? [Number(v.last_lat), Number(v.last_lon)]
+    : null;
 
   const gear  = v.tasks?.gear;
   const spoof = v.tasks?.spoofing;
@@ -3097,10 +3555,26 @@ function openAiDetail(i) {
     </div>`;
 
   const btn = document.getElementById('sb-traj-btn');
-  btn.className = 'sb-btn';
-  btn.textContent = 'Fokus Trajectory';
-  btn.onclick = () => plotIntegratedTrajectory(null, v.mmsi, true);
-  document.getElementById('sb-traj-info').textContent = 'Trajectory utama memakai output AIS/Kalman final.';
+  const sceneName = v.scene || v.rawRow?.scene || '';
+  const canPlotTrajectory = hasAnyTrajectoryPoint(sceneName, v.mmsi, v.rawRow);
+  btn.disabled = !canPlotTrajectory;
+  btn.className = canPlotTrajectory ? 'sb-btn' : 'sb-btn loading';
+  btn.textContent = canPlotTrajectory ? 'Fokus Trajectory' : 'Trajectory Peta N/A';
+  btn.onclick = canPlotTrajectory ? () => plotIntegratedTrajectory(sceneName, v.mmsi, true, v.rawRow) : null;
+  document.getElementById('sb-traj-info').textContent = canPlotTrajectory
+    ? 'Trajectory utama memakai output AIS/Kalman yang cocok.'
+    : 'Trajectory peta belum tersedia untuk MMSI ini.';
+  configureSidebarTelegramAlert({
+    alertType: detectionTypesLabel(v) || v.detection_label || displayCandidateType(v.detection_type),
+    mmsi: v.mmsi,
+    vesselName: v.name || `MMSI: ${v.mmsi}`,
+    score: detectionConfidence(v),
+    scoreText: `${Math.round(detectionConfidence(v) * 100)}%`,
+    scene: sceneName,
+    lat: v.last_lat,
+    lon: v.last_lon,
+    time: v.rawRow?.scene_time_utc || v.rawRow?.timestamp_utc || '',
+  });
   document.getElementById('sidebar').classList.add('open');
 }
 
@@ -3172,9 +3646,13 @@ renderAiResults = function(vessels) {
     return;
   }
   const html = vessels.map((v, i) => {
-    const type = v.detection_type || normalizedCandidateType(v.rawRow?.candidate_type);
-    const color = candidateColor(type);
+    const label = detectionTypesLabel(v) || v.detection_label || displayCandidateType(v.detection_type || normalizedCandidateType(v.rawRow?.candidate_type));
+    const color = candidateColor(v);
     const confidence = detectionConfidence(v);
+    const hasLineTraj = hasMatchedMapTrajectory(v.scene || v.rawRow?.scene || '', v.mmsi, v.rawRow);
+    const hasPointTraj = hasAnyTrajectoryPoint(v.scene || v.rawRow?.scene || '', v.mmsi, v.rawRow);
+    const trajLabel = hasLineTraj ? 'polyline tersedia' : (hasPointTraj ? 'satu titik' : 'belum tersedia');
+    const trajColor = hasLineTraj ? '#3fb950' : (hasPointTraj ? '#d29922' : '#8b949e');
     const posText = v.last_lat != null ? `${Number(v.last_lat).toFixed(4)}°, ${Number(v.last_lon).toFixed(4)}°` : 'Posisi tidak tersedia';
     return `<div class="ai-vessel-card" onclick="focusAiVessel(${i})">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
@@ -3190,12 +3668,16 @@ renderAiResults = function(vessels) {
       <div class="ai-vessel-mmsi">${posText}</div>
       <div class="ai-task-row">
         <span class="ai-task-label">Deteksi</span>
-        <span class="ai-task-pred" style="color:${color}">${esc(displayCandidateType(type))}</span>
+        <span class="ai-task-pred" style="color:${color}">${esc(label)}</span>
       </div>
       <div class="ai-conf-bar"><div class="ai-conf-fill" style="width:${Math.max(2, Math.round(confidence * 100))}%;background:${color}"></div></div>
       <div class="ai-task-row">
         <span class="ai-task-label">Confidence / score</span>
         <span class="ai-badge" style="background:${color}22;color:${color};border:1px solid ${color}55">${Math.round(confidence * 100)}%</span>
+      </div>
+      <div class="ai-task-row">
+        <span class="ai-task-label">Trajectory</span>
+        <span class="ai-badge" style="background:${trajColor}22;color:${trajColor};border:1px solid ${trajColor}55">${trajLabel}</span>
       </div>
     </div>`;
   }).join('');
@@ -3243,7 +3725,6 @@ loadInferenceCache();
 setDefaultDates();
 setStatsMode('ai');
 updateLegend('ai');
-loadLocalKalman({ fit: true });
 loadGfw();
 startAis();
 startInferenceLoop();

@@ -69,3 +69,8 @@ new/XML/
 # Python caches
 __pycache__/
 *.pyc
+
+# Local generated appendix temp/trial files
+.tmp_lampiran_docx*/
+Lampiran_Listing_Program_Siap_Tempel.docx
+Lampiran_Listing_Program_Siap_Tempel_Word.docx

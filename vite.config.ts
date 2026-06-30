@@ -86,7 +86,9 @@ function vercelApiPlugin() {
         };
 
         try {
-          const mod = await import(pathToFileURL(handlerPath).href);
+          const handlerUrl = pathToFileURL(handlerPath);
+          handlerUrl.search = `?v=${fs.statSync(handlerPath).mtimeMs}`;
+          const mod = await import(handlerUrl.href);
           await (mod.default ?? mod)(mockReq, mockRes);
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
