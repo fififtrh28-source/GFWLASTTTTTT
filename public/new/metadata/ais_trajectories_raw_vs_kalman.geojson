@@ -1,0 +1,4669 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "312533000",
+        "Name": "TB.RIGEL",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-05T22:48:00.000Z",
+        "end_time_utc": "2026-02-05T22:48:00.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.01999664,
+            1.25
+          ],
+          [
+            104.01999664,
+            1.25
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "416006701",
+        "Name": "HO HSIN HSING 603",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-19T11:51:18.000Z",
+        "end_time_utc": "2026-02-21T11:33:59.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            96.98999786,
+            6.31
+          ],
+          [
+            101.23111725,
+            1.56295462
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "431137000",
+        "Name": "FUJI HORIZON",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-03T10:41:57.000Z",
+        "end_time_utc": "2026-02-03T10:41:57.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.31999969,
+            -7.42
+          ],
+          [
+            116.31999969,
+            -7.42
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "431447000",
+        "Name": "DAWN HORIZON",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T21:42:57.000Z",
+        "end_time_utc": "2026-03-02T21:52:47.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.01999664,
+            -0.45
+          ],
+          [
+            116.87000275,
+            -6.45
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "431448000",
+        "Name": "MYOJIN MARU NO.8",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-05T10:26:40.000Z",
+        "end_time_utc": "2026-02-05T10:26:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            118.5,
+            -3.57
+          ],
+          [
+            118.5,
+            -3.57
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "440099000",
+        "Name": "GLOBAL TALENT",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:51:57.000Z",
+        "end_time_utc": "2026-03-13T10:26:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.86000061,
+            -4.39
+          ],
+          [
+            118.51638794,
+            -4.10536935
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "477147400",
+        "Name": "IPANEMA BEACH",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-02T10:00:46.000Z",
+        "end_time_utc": "2026-02-04T20:31:18.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            126.55999756,
+            -7.01
+          ],
+          [
+            137.41999817,
+            -9.47
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "518100932",
+        "Name": "CHARLEY 2",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-02T22:24:24.000Z",
+        "end_time_utc": "2026-02-05T10:25:46.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            109.09664154,
+            -1.61443324
+          ],
+          [
+            119.72316742,
+            -6.84530542
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525000777",
+        "Name": "KM.INTAN 61",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:30:52.000Z",
+        "end_time_utc": "2026-03-02T11:07:48.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.5,
+            -2.8
+          ],
+          [
+            107.51999664,
+            -2.82
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525001290",
+        "Name": "KM PESONA GAYATRI",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T11:07:24.000Z",
+        "end_time_utc": "2026-02-06T11:07:24.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            108.23000336,
+            -5.27
+          ],
+          [
+            108.23000336,
+            -5.27
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005001",
+        "Name": "KM.CIREMAI",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T10:01:36.000Z",
+        "end_time_utc": "2026-03-03T22:32:14.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            123.96560669,
+            -4.7731787
+          ],
+          [
+            134.60277557,
+            -2.20187329
+          ],
+          [
+            112.41760254,
+            -4.54357028
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005002",
+        "Name": "BARAKUDA 02",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-18T21:52:22.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            115.99708557,
+            -6.6598335
+          ],
+          [
+            123.62640381,
+            -6.09959086
+          ],
+          [
+            135.07965088,
+            -8.96918431
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005012",
+        "Name": "KM.TATAMAILAU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-03-02T11:06:58.000Z",
+        "end_time_utc": "2026-03-04T10:50:31.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            108.61118317,
+            -5.9404848
+          ],
+          [
+            113.88118744,
+            -6.65437737
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005030",
+        "Name": "KM.LAMBELU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:51:32.000Z",
+        "end_time_utc": "2026-03-14T21:51:32.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.45483398,
+            -2.45949517
+          ],
+          [
+            116.95999908,
+            -1.6
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005046",
+        "Name": "KM DOROLONDA",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T20:53:28.000Z",
+        "end_time_utc": "2026-02-16T22:09:04.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            132.84118652,
+            -1.04330019
+          ],
+          [
+            112.67818451,
+            -5.61803586
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005047",
+        "Name": "KM.NGGAPULU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-12T10:17:35.000Z",
+        "end_time_utc": "2026-02-15T21:25:39.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.81812286,
+            -4.23582891
+          ],
+          [
+            125.34679413,
+            0.09063717
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005052",
+        "Name": "KM LABOBAR",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T09:28:56.000Z",
+        "end_time_utc": "2026-02-07T20:54:47.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            133.73588562,
+            -3.14462978
+          ],
+          [
+            130.32943726,
+            -5.22293031
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005256",
+        "Name": "DHARMA RUCITRA 1",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T22:09:05.000Z",
+        "end_time_utc": "2026-02-08T10:50:32.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            112.80000305,
+            -6.77
+          ],
+          [
+            113.00228119,
+            -6.20267738
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005293",
+        "Name": "TB PERSADA 3 JG",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-11T21:59:48.000Z",
+        "end_time_utc": "2026-03-14T21:51:57.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.30000305,
+            -3.19
+          ],
+          [
+            116.33000183,
+            -3.19
+          ],
+          [
+            116.33000183,
+            -3.23
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005360",
+        "Name": "DWI SUKSES SEJAHTERA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-04T09:11:15.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.17240143,
+            -7.20445055
+          ],
+          [
+            139.16999817,
+            -8.21
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005371",
+        "Name": "PAHALA MELIMPAH 1",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-04T09:11:15.000Z",
+        "end_time_utc": "2026-03-14T20:15:14.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.19849396,
+            -7.13598234
+          ],
+          [
+            139.63000488,
+            -10.47
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005447",
+        "Name": "TERUS JAYA 18",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-15T09:02:35.000Z",
+        "end_time_utc": "2026-03-14T20:15:14.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.96000671,
+            -10.06
+          ],
+          [
+            139.12605286,
+            -7.18776025
+          ],
+          [
+            139.58000183,
+            -10.43
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525007349",
+        "Name": "BARUTAMA 01",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-24T21:01:49.000Z",
+        "end_time_utc": "2026-03-14T09:29:20.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            130.69000244,
+            -0.51
+          ],
+          [
+            132.98641205,
+            -1.84229568
+          ],
+          [
+            133.15807343,
+            -1.83783479
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525010133",
+        "Name": "KMP NAPAN WAINAMI",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T09:20:57.000Z",
+        "end_time_utc": "2026-03-10T20:45:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.43969727,
+            -1.74449664
+          ],
+          [
+            134.44656372,
+            -1.58114388
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525012345",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-18T21:51:57.000Z",
+        "end_time_utc": "2026-03-07T22:00:12.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.19000244,
+            -3.19
+          ],
+          [
+            116.19999695,
+            -3.2
+          ],
+          [
+            116.09999847,
+            -3.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015053",
+        "Name": "KMP.TELUK SINGKIL",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-17T22:48:00.000Z",
+        "end_time_utc": "2026-03-12T11:25:24.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            103.35285187,
+            0.40237096
+          ],
+          [
+            103.34941864,
+            0.45901761
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015383",
+        "Name": "KM DHARMA FERRY 3",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-01T21:43:48.000Z",
+        "end_time_utc": "2026-03-13T10:26:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            118.45905304,
+            -3.22758546
+          ],
+          [
+            118.34506989,
+            -3.25363626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015603",
+        "Name": "KMP KUALA BATE II",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-06T11:07:49.000Z",
+        "end_time_utc": "2026-03-07T11:16:09.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.43427277,
+            -3.92967764
+          ],
+          [
+            107.43495941,
+            -3.93173273
+          ],
+          [
+            106.70162201,
+            -4.12146395
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015668",
+        "Name": "KM DHARMA RUCITRA VI",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T22:08:39.000Z",
+        "end_time_utc": "2026-03-04T10:50:31.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            112.98999786,
+            -4.96
+          ],
+          [
+            112.83000183,
+            -6.41
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015837",
+        "Name": "KM.TBI JAYA",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:32:40.000Z",
+        "end_time_utc": "2026-02-11T11:16:09.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.33999634,
+            -2.08
+          ],
+          [
+            106.25,
+            -2.07
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015879",
+        "Name": "DHARMA FERRY VI",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T22:08:40.000Z",
+        "end_time_utc": "2026-02-21T22:16:31.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            111.99806213,
+            -5.2051514
+          ],
+          [
+            111.62999725,
+            -3.55
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525016285",
+        "Name": "LOBSTER",
+        "category": "Passenger",
+        "point_count": 4,
+        "start_time_utc": "2026-02-06T09:28:31.000Z",
+        "end_time_utc": "2026-03-14T09:28:01.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.31232452,
+            -4.30669933
+          ],
+          [
+            133.64009857,
+            -4.35051929
+          ],
+          [
+            134.04006958,
+            -6.40060131
+          ],
+          [
+            134.03011322,
+            -6.39582473
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525016503",
+        "Name": "KM.SEKAR PERMATA",
+        "category": "Cargo",
+        "point_count": 3,
+        "start_time_utc": "2026-02-04T11:25:00.000Z",
+        "end_time_utc": "2026-02-16T11:24:59.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.08999634,
+            -0.31
+          ],
+          [
+            106.76000214,
+            -5.74
+          ],
+          [
+            104.18000031,
+            0.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525016724",
+        "Name": "KMP KUNDUR",
+        "category": "Passenger",
+        "point_count": 4,
+        "start_time_utc": "2026-02-05T22:48:25.000Z",
+        "end_time_utc": "2026-03-12T11:24:59.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.36153412,
+            1.37933757
+          ],
+          [
+            104.20154572,
+            0.36426299
+          ],
+          [
+            104.23828125,
+            1.04089733
+          ],
+          [
+            104.36153412,
+            -1.29970847
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525018171",
+        "Name": "TMS GLORY",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:23:45.000Z",
+        "end_time_utc": "2026-03-03T22:33:29.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.29000092,
+            -5.48
+          ],
+          [
+            106.26999664,
+            -5.83
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525100000",
+        "Name": "KLM GHINAYAH",
+        "category": "Fishing",
+        "point_count": 5,
+        "start_time_utc": "2026-02-08T21:35:41.000Z",
+        "end_time_utc": "2026-03-08T10:18:00.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525100038",
+        "Name": "KM. BIMA PUTRA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:50:42.000Z",
+        "end_time_utc": "2026-02-25T21:43:21.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.83999634,
+            0.79
+          ],
+          [
+            118.46969604,
+            -1.7331722
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101083",
+        "Name": "SABUK NUSANTARA 98",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-14T20:45:49.000Z",
+        "end_time_utc": "2026-03-10T20:45:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.32000732,
+            -2.21
+          ],
+          [
+            134.30000305,
+            -2.19
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101087",
+        "Name": "SABUK NUSANTARA 81",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-09T20:37:15.000Z",
+        "end_time_utc": "2026-02-15T09:04:44.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            136.37638092,
+            -2.21731133
+          ],
+          [
+            139.9747467,
+            -2.04782741
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101091",
+        "Name": "SABUK NUSANTARA 79",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-01T21:45:03.000Z",
+        "end_time_utc": "2026-02-17T10:25:11.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.00439453,
+            -7.04467548
+          ],
+          [
+            119,
+            -8.29
+          ],
+          [
+            119.14295197,
+            -7.1029368
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101092",
+        "Name": "SABUK NUSANTARA 96",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-07T20:53:57.000Z",
+        "end_time_utc": "2026-02-13T09:21:22.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            131.95472717,
+            -4.12146395
+          ],
+          [
+            131.20731354,
+            -0.45043481
+          ],
+          [
+            133.99646759,
+            -0.71100317
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101197",
+        "Name": "KM TIMUR JAYA 168",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-05T20:38:08.000Z",
+        "end_time_utc": "2026-03-14T09:28:01.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.82696533,
+            -4.95722076
+          ],
+          [
+            133.22999573,
+            -7.25
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525102590",
+        "Name": "KM.SINARMANDIRISAKTI",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-08T21:37:21.000Z",
+        "end_time_utc": "2026-02-16T22:09:04.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.09999847,
+            -10.03
+          ],
+          [
+            114.27999878,
+            -7.32
+          ],
+          [
+            112.55000305,
+            -6.52
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525110024",
+        "Name": "BOJOMA 2916",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:24:35.000Z",
+        "end_time_utc": "2026-02-16T11:24:34.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.95479584,
+            -2.09071477
+          ],
+          [
+            104.72854614,
+            -1.84950172
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525113006",
+        "Name": "MV TANTO SELALU",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T20:54:47.000Z",
+        "end_time_utc": "2026-02-09T20:38:09.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            131.83999634,
+            -5.25
+          ],
+          [
+            136.30999756,
+            -4.97
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525119065",
+        "Name": "KL SLTN HASANUDDIN",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-01T21:44:13.000Z",
+        "end_time_utc": "2026-02-18T21:52:22.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            118.87999725,
+            -5.34
+          ],
+          [
+            117.76999664,
+            -5.32
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525120643",
+        "Name": "KM SINO SINAR BARU",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T11:42:50.000Z",
+        "end_time_utc": "2026-03-10T11:42:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            99.18000031,
+            4.25
+          ],
+          [
+            99.18000031,
+            4.25
+          ],
+          [
+            99.18000031,
+            4.21
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525125012",
+        "Name": "MERATUS LEMBATA",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-01T21:44:13.000Z",
+        "end_time_utc": "2026-02-05T21:10:55.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.38999939,
+            -5.69
+          ],
+          [
+            127.11000061,
+            -4.07
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525129128",
+        "Name": "KM USAHA BARU SUKSES",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-09T11:34:24.000Z",
+        "end_time_utc": "2026-02-14T11:42:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            99.47000122,
+            4
+          ],
+          [
+            99.04000092,
+            4.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525130181",
+        "Name": "SINAR BARAT UNTUNG",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T11:42:50.000Z",
+        "end_time_utc": "2026-03-10T11:42:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            99.09999847,
+            4.07
+          ],
+          [
+            99.09999847,
+            4.07
+          ],
+          [
+            99.16000366,
+            4.27
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525200335",
+        "Name": "CAITLYN7",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-23T11:15:19.000Z",
+        "end_time_utc": "2026-03-07T11:15:19.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.98999786,
+            -5.93
+          ],
+          [
+            126.80000305,
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525200476",
+        "Name": "BANDAR BAHARI 278",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-02T22:24:49.000Z",
+        "end_time_utc": "2026-02-02T22:24:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.80000305,
+            -9.3
+          ],
+          [
+            114.80000305,
+            -9.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525201257",
+        "Name": "KM ASIA POPEYE08",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:24:35.000Z",
+        "end_time_utc": "2026-02-04T11:24:35.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.94999695,
+            -2.06
+          ],
+          [
+            104.94999695,
+            -2.06
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525201999",
+        "Name": "KM.BINAMA 02",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T09:20:03.000Z",
+        "end_time_utc": "2026-03-09T09:20:02.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.16999817,
+            -6.13
+          ],
+          [
+            135.11999512,
+            -6.11
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525211111",
+        "Name": "KMN LMS 05",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:30:02.000Z",
+        "end_time_utc": "2026-02-25T09:20:02.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            136.72999573,
+            -4.99
+          ],
+          [
+            137.14508057,
+            -5.67611748
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525256427",
+        "Name": "KM PUTRA HARAPAN 04",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:33:30.000Z",
+        "end_time_utc": "2026-02-07T22:33:30.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.69999695,
+            -5.11
+          ],
+          [
+            106.69999695,
+            -5.11
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525301327",
+        "Name": "DHARMA RUCITRA 8",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-03T21:28:35.000Z",
+        "end_time_utc": "2026-02-05T10:24:43.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.77999878,
+            -8.93
+          ],
+          [
+            120.66000366,
+            -9.42
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525373737",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-11T11:15:19.000Z",
+        "end_time_utc": "2026-03-03T22:33:29.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.91999817,
+            -5.08
+          ],
+          [
+            106.73999786,
+            -5.17
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525401410",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T09:28:02.000Z",
+        "end_time_utc": "2026-02-06T09:28:02.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            133.94999695,
+            -7
+          ],
+          [
+            133.94999695,
+            -7
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525600329",
+        "Name": "PUTRA LEO SANTOSO",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-02T21:51:32.000Z",
+        "end_time_utc": "2026-03-07T22:00:12.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.87999725,
+            -2.02
+          ],
+          [
+            115.20999908,
+            -4.53
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525600798",
+        "Name": "AQUA BLU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-11T09:38:03.000Z",
+        "end_time_utc": "2026-02-24T21:01:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            130.70400238,
+            -0.96606445
+          ],
+          [
+            130.3181076,
+            -0.8215432
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525600918",
+        "Name": "KM SUMBER REJEKI",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:32:40.000Z",
+        "end_time_utc": "2026-02-07T22:32:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.38999939,
+            -2.67
+          ],
+          [
+            107.38999939,
+            -2.67
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525601550",
+        "Name": "HASIL ABADI 58",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T11:07:49.000Z",
+        "end_time_utc": "2026-02-23T11:15:44.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.36000061,
+            -3.63
+          ],
+          [
+            107.36000061,
+            -3.63
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525601800",
+        "Name": "BAKU SAYANG 01",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-03T21:25:40.000Z",
+        "end_time_utc": "2026-02-03T21:25:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            125.43000031,
+            1.14
+          ],
+          [
+            125.43000031,
+            1.14
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525666000",
+        "Name": "KM SAMUDRA INDAH",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T11:07:49.000Z",
+        "end_time_utc": "2026-02-06T11:07:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            109.73419189,
+            -4.63939214
+          ],
+          [
+            109.73419189,
+            -4.63939214
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525700009",
+        "Name": "SURYA JAYA SAMPURNA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:32:40.000Z",
+        "end_time_utc": "2026-02-07T22:32:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.97000122,
+            -2.98
+          ],
+          [
+            106.97000122,
+            -2.98
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525700387",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-15T09:03:04.000Z",
+        "end_time_utc": "2026-02-18T20:14:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            140.1499939,
+            -8.43
+          ],
+          [
+            140.11000061,
+            -8.79
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525700876",
+        "Name": "HASIL LAUT 216",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-03T09:02:35.000Z",
+        "end_time_utc": "2026-02-18T20:14:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.97999573,
+            -10.02
+          ],
+          [
+            139.97999573,
+            -10.02
+          ],
+          [
+            139.92999268,
+            -10.15
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525701211",
+        "Name": "MAKMUR JAYA 8",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-08T09:11:15.000Z",
+        "end_time_utc": "2026-02-08T09:11:15.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.13999939,
+            -8.24
+          ],
+          [
+            139.13999939,
+            -8.24
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800144",
+        "Name": "KM  MARCEL JAYA 23",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-04T09:11:15.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107,
+            -5.9
+          ],
+          [
+            107,
+            -5.9
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800252",
+        "Name": "SUMBERBERKAH",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T20:15:14.000Z",
+        "end_time_utc": "2026-03-14T20:15:14.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.62833405,
+            -10.54823406
+          ],
+          [
+            139.55000305,
+            -10.49
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800386",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:33:30.000Z",
+        "end_time_utc": "2026-02-07T22:33:30.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.80000305,
+            -5.94
+          ],
+          [
+            106.80000305,
+            -5.94
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800673",
+        "Name": "BANDAR NELAYAN 299",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T09:28:02.000Z",
+        "end_time_utc": "2026-02-06T09:28:02.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.05000305,
+            -7.01
+          ],
+          [
+            134.05000305,
+            -7.01
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800724",
+        "Name": "INDO LAUTAN SAKTI 8",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-23T20:22:45.000Z",
+        "end_time_utc": "2026-03-14T20:14:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.42999268,
+            -8.96
+          ],
+          [
+            139.16999817,
+            -8.26
+          ],
+          [
+            139.69000244,
+            -9.63
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800725",
+        "Name": "INDO LAUTAN SAKTI 1",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:31:17.000Z",
+        "end_time_utc": "2026-03-14T20:14:49.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            137.41999817,
+            -9.31
+          ],
+          [
+            139.6499939,
+            -9.6
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525801281",
+        "Name": "AGUNG JAYA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-14T22:24:24.000Z",
+        "end_time_utc": "2026-02-23T11:15:44.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            109.44999695,
+            -2.31
+          ],
+          [
+            107.05999756,
+            -3.84
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525801318",
+        "Name": "",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-12T10:18:00.000Z",
+        "end_time_utc": "2026-02-20T21:35:40.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.36000061,
+            -4.06
+          ],
+          [
+            122.08999634,
+            -5.08
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525801580",
+        "Name": "JAYA AVONA 17",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T09:20:03.000Z",
+        "end_time_utc": "2026-02-25T09:20:02.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.11999512,
+            -6.34
+          ],
+          [
+            135.11999512,
+            -6.29
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900453",
+        "Name": "KM SUN RISE I",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T20:47:05.000Z",
+        "end_time_utc": "2026-02-23T09:35:54.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            131.77000427,
+            -7.42
+          ],
+          [
+            131.77000427,
+            -7.42
+          ],
+          [
+            132.28637695,
+            -9.36099782
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900595",
+        "Name": "KARYA SEMPURNA 6",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T20:14:49.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.65717316,
+            -9.04005444
+          ],
+          [
+            139.16999817,
+            -8.21
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900604",
+        "Name": "HANDY JAYA 3",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:25:25.000Z",
+        "end_time_utc": "2026-03-12T11:25:24.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            103.51999664,
+            0.98
+          ],
+          [
+            103.75,
+            1.1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900700",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:51:07.000Z",
+        "end_time_utc": "2026-03-13T21:10:04.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            127.30000305,
+            -0.8
+          ],
+          [
+            127.59999847,
+            -0.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525901343",
+        "Name": "SAMUDERA 802",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-09T20:38:34.000Z",
+        "end_time_utc": "2026-03-05T20:38:33.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.55999756,
+            -6.74
+          ],
+          [
+            135.02999878,
+            -6.82
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525901532",
+        "Name": "HEMINGWAY 3400",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-05T22:48:00.000Z",
+        "end_time_utc": "2026-02-11T11:16:59.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.77999878,
+            1.07
+          ],
+          [
+            104.77999878,
+            1.07
+          ],
+          [
+            104.76000214,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525901606",
+        "Name": "NUSA LESTARI JAYA 88",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:30:27.000Z",
+        "end_time_utc": "2026-03-05T20:38:33.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            136.02000427,
+            -6.84
+          ],
+          [
+            134.77999878,
+            -5.4
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "535501062",
+        "Name": "MV MARINA EXP 12",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:25:25.000Z",
+        "end_time_utc": "2026-03-07T11:17:24.000Z",
+        "trajectory_type": "raw_ais_before_kalman",
+        "source": "AIS_Latitude_AIS_Longitude_before_Kalman"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.10301208,
+            0.16960119
+          ],
+          [
+            104.07039642,
+            0.19775351
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "312533000",
+        "Name": "TB.RIGEL",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-05T22:48:00.000Z",
+        "end_time_utc": "2026-02-05T22:48:00.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.01999664,
+            1.25
+          ],
+          [
+            104.01999664,
+            1.25
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "416006701",
+        "Name": "HO HSIN HSING 603",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-19T11:51:18.000Z",
+        "end_time_utc": "2026-02-21T11:33:59.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            96.98999786,
+            6.31
+          ],
+          [
+            101.23112905,
+            1.56301214
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "431137000",
+        "Name": "FUJI HORIZON",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-03T10:41:57.000Z",
+        "end_time_utc": "2026-02-03T10:41:57.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.31999969,
+            -7.42
+          ],
+          [
+            116.31999969,
+            -7.42
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "431447000",
+        "Name": "DAWN HORIZON",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T21:42:57.000Z",
+        "end_time_utc": "2026-03-02T21:52:47.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.01999664,
+            -0.45
+          ],
+          [
+            116.87000287,
+            -6.44999978
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "431448000",
+        "Name": "MYOJIN MARU NO.8",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-05T10:26:40.000Z",
+        "end_time_utc": "2026-02-05T10:26:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            118.5,
+            -3.57
+          ],
+          [
+            118.5,
+            -3.57
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "440099000",
+        "Name": "GLOBAL TALENT",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:51:57.000Z",
+        "end_time_utc": "2026-03-13T10:26:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.86000061,
+            -4.39
+          ],
+          [
+            118.51638794,
+            -4.10536935
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "477147400",
+        "Name": "IPANEMA BEACH",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-02T10:00:46.000Z",
+        "end_time_utc": "2026-02-04T20:31:18.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            126.55999756,
+            -7.01
+          ],
+          [
+            137.41999175,
+            -9.46999336
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "518100932",
+        "Name": "CHARLEY 2",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-02T22:24:24.000Z",
+        "end_time_utc": "2026-02-05T10:25:46.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            109.09664154,
+            -1.61443324
+          ],
+          [
+            119.72313832,
+            -6.84524587
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525000777",
+        "Name": "KM.INTAN 61",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:30:52.000Z",
+        "end_time_utc": "2026-03-02T11:07:48.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.5,
+            -2.8
+          ],
+          [
+            107.51999693,
+            -2.81999497
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525001290",
+        "Name": "KM PESONA GAYATRI",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T11:07:24.000Z",
+        "end_time_utc": "2026-02-06T11:07:24.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            108.23000336,
+            -5.27
+          ],
+          [
+            108.23000336,
+            -5.27
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005001",
+        "Name": "KM.CIREMAI",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T10:01:36.000Z",
+        "end_time_utc": "2026-03-03T22:32:14.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            123.96560669,
+            -4.7731787
+          ],
+          [
+            134.60276393,
+            -2.20188126
+          ],
+          [
+            112.41760244,
+            -4.54357376
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005002",
+        "Name": "BARAKUDA 02",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-18T21:52:22.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            115.99708557,
+            -6.6598335
+          ],
+          [
+            123.62639376,
+            -6.09958873
+          ],
+          [
+            135.07964156,
+            -8.96920764
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005012",
+        "Name": "KM.TATAMAILAU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-03-02T11:06:58.000Z",
+        "end_time_utc": "2026-03-04T10:50:31.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            108.61118317,
+            -5.9404848
+          ],
+          [
+            113.88120007,
+            -6.65437872
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005030",
+        "Name": "KM.LAMBELU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:51:32.000Z",
+        "end_time_utc": "2026-03-14T21:51:32.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.45483398,
+            -2.45949517
+          ],
+          [
+            116.95999908,
+            -1.6
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005046",
+        "Name": "KM DOROLONDA",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T20:53:28.000Z",
+        "end_time_utc": "2026-02-16T22:09:04.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            132.84118652,
+            -1.04330019
+          ],
+          [
+            112.67819561,
+            -5.61801686
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005047",
+        "Name": "KM.NGGAPULU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-12T10:17:35.000Z",
+        "end_time_utc": "2026-02-15T21:25:39.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.81812286,
+            -4.23582891
+          ],
+          [
+            125.34682971,
+            0.09062307
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005052",
+        "Name": "KM LABOBAR",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T09:28:56.000Z",
+        "end_time_utc": "2026-02-07T20:54:47.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            133.73588562,
+            -3.14462978
+          ],
+          [
+            130.32938078,
+            -5.22301071
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005256",
+        "Name": "DHARMA RUCITRA 1",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T22:09:05.000Z",
+        "end_time_utc": "2026-02-08T10:50:32.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            112.80000305,
+            -6.77
+          ],
+          [
+            113.00227364,
+            -6.20262725
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005293",
+        "Name": "TB PERSADA 3 JG",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-11T21:59:48.000Z",
+        "end_time_utc": "2026-03-14T21:51:57.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.30000305,
+            -3.19
+          ],
+          [
+            116.33000273,
+            -3.19
+          ],
+          [
+            116.33000183,
+            -3.23
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005360",
+        "Name": "DWI SUKSES SEJAHTERA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-04T09:11:15.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.17240143,
+            -7.20445055
+          ],
+          [
+            139.16999818,
+            -8.20999741
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005371",
+        "Name": "PAHALA MELIMPAH 1",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-04T09:11:15.000Z",
+        "end_time_utc": "2026-03-14T20:15:14.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.19849396,
+            -7.13598234
+          ],
+          [
+            139.63000516,
+            -10.46999875
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525005447",
+        "Name": "TERUS JAYA 18",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-15T09:02:35.000Z",
+        "end_time_utc": "2026-03-14T20:15:14.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.96000671,
+            -10.06
+          ],
+          [
+            139.12605282,
+            -7.1877603
+          ],
+          [
+            139.58000147,
+            -10.429999
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525007349",
+        "Name": "BARUTAMA 01",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-24T21:01:49.000Z",
+        "end_time_utc": "2026-03-14T09:29:20.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            130.69000244,
+            -0.51
+          ],
+          [
+            132.98641291,
+            -1.84229581
+          ],
+          [
+            133.15807769,
+            -1.83783307
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525010133",
+        "Name": "KMP NAPAN WAINAMI",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T09:20:57.000Z",
+        "end_time_utc": "2026-03-10T20:45:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.43969727,
+            -1.74449664
+          ],
+          [
+            134.44656372,
+            -1.58114388
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525012345",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-18T21:51:57.000Z",
+        "end_time_utc": "2026-03-07T22:00:12.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.19000244,
+            -3.19
+          ],
+          [
+            116.19999625,
+            -3.1999993
+          ],
+          [
+            116.09999873,
+            -3.30000022
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015053",
+        "Name": "KMP.TELUK SINGKIL",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-17T22:48:00.000Z",
+        "end_time_utc": "2026-03-12T11:25:24.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            103.35285187,
+            0.40237096
+          ],
+          [
+            103.34942105,
+            0.459017
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015383",
+        "Name": "KM DHARMA FERRY 3",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-01T21:43:48.000Z",
+        "end_time_utc": "2026-03-13T10:26:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            118.45905304,
+            -3.22758546
+          ],
+          [
+            118.34506989,
+            -3.25363626
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015603",
+        "Name": "KMP KUALA BATE II",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-06T11:07:49.000Z",
+        "end_time_utc": "2026-03-07T11:16:09.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.43427277,
+            -3.92967764
+          ],
+          [
+            107.43495597,
+            -3.93173083
+          ],
+          [
+            106.70162449,
+            -4.12146755
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015668",
+        "Name": "KM DHARMA RUCITRA VI",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T22:08:39.000Z",
+        "end_time_utc": "2026-03-04T10:50:31.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            112.98999786,
+            -4.96
+          ],
+          [
+            112.83000261,
+            -6.40999412
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015837",
+        "Name": "KM.TBI JAYA",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:32:40.000Z",
+        "end_time_utc": "2026-02-11T11:16:09.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.33999634,
+            -2.08
+          ],
+          [
+            106.25000019,
+            -2.06999958
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525015879",
+        "Name": "DHARMA FERRY VI",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T22:08:40.000Z",
+        "end_time_utc": "2026-02-21T22:16:31.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            111.99806213,
+            -5.2051514
+          ],
+          [
+            111.62999745,
+            -3.55000498
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525016285",
+        "Name": "LOBSTER",
+        "category": "Passenger",
+        "point_count": 4,
+        "start_time_utc": "2026-02-06T09:28:31.000Z",
+        "end_time_utc": "2026-03-14T09:28:01.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.31232452,
+            -4.30669933
+          ],
+          [
+            133.64009112,
+            -4.35051974
+          ],
+          [
+            134.04006846,
+            -6.40061611
+          ],
+          [
+            134.03011322,
+            -6.39582473
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525016503",
+        "Name": "KM.SEKAR PERMATA",
+        "category": "Cargo",
+        "point_count": 3,
+        "start_time_utc": "2026-02-04T11:25:00.000Z",
+        "end_time_utc": "2026-02-16T11:24:59.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.08999634,
+            -0.31
+          ],
+          [
+            106.76000001,
+            -5.73999363
+          ],
+          [
+            104.18000936,
+            0.30000713
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525016724",
+        "Name": "KMP KUNDUR",
+        "category": "Passenger",
+        "point_count": 4,
+        "start_time_utc": "2026-02-05T22:48:25.000Z",
+        "end_time_utc": "2026-03-12T11:24:59.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.36153412,
+            1.37933757
+          ],
+          [
+            104.20155679,
+            0.36427153
+          ],
+          [
+            104.23829343,
+            1.04092155
+          ],
+          [
+            104.3615368,
+            -1.29971363
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525018171",
+        "Name": "TMS GLORY",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:23:45.000Z",
+        "end_time_utc": "2026-03-03T22:33:29.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.29000092,
+            -5.48
+          ],
+          [
+            106.26998955,
+            -5.82999996
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525100000",
+        "Name": "KLM GHINAYAH",
+        "category": "Fishing",
+        "point_count": 5,
+        "start_time_utc": "2026-02-08T21:35:41.000Z",
+        "end_time_utc": "2026-03-08T10:18:00.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ],
+          [
+            119.40000153,
+            -5.1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525100038",
+        "Name": "KM. BIMA PUTRA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:50:42.000Z",
+        "end_time_utc": "2026-02-25T21:43:21.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.83999634,
+            0.79
+          ],
+          [
+            118.46969604,
+            -1.73317207
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101083",
+        "Name": "SABUK NUSANTARA 98",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-14T20:45:49.000Z",
+        "end_time_utc": "2026-03-10T20:45:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.32000732,
+            -2.21
+          ],
+          [
+            134.30000305,
+            -2.19
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101087",
+        "Name": "SABUK NUSANTARA 81",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-09T20:37:15.000Z",
+        "end_time_utc": "2026-02-15T09:04:44.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            136.37638092,
+            -2.21731133
+          ],
+          [
+            139.97474083,
+            -2.04782707
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101091",
+        "Name": "SABUK NUSANTARA 79",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-01T21:45:03.000Z",
+        "end_time_utc": "2026-02-17T10:25:11.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            117.00439453,
+            -7.04467548
+          ],
+          [
+            118.99999018,
+            -8.2899909
+          ],
+          [
+            119.1429639,
+            -7.1029393
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101092",
+        "Name": "SABUK NUSANTARA 96",
+        "category": "Passenger",
+        "point_count": 3,
+        "start_time_utc": "2026-02-07T20:53:57.000Z",
+        "end_time_utc": "2026-02-13T09:21:22.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            131.95472717,
+            -4.12146395
+          ],
+          [
+            131.20732398,
+            -0.4504466
+          ],
+          [
+            133.99645437,
+            -0.71097324
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525101197",
+        "Name": "KM TIMUR JAYA 168",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-05T20:38:08.000Z",
+        "end_time_utc": "2026-03-14T09:28:01.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.82696533,
+            -4.95722076
+          ],
+          [
+            133.2299958,
+            -7.24999941
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525102590",
+        "Name": "KM.SINARMANDIRISAKTI",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-08T21:37:21.000Z",
+        "end_time_utc": "2026-02-16T22:09:04.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.09999847,
+            -10.03
+          ],
+          [
+            114.28000022,
+            -7.3199985
+          ],
+          [
+            112.54999137,
+            -6.51999956
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525110024",
+        "Name": "BOJOMA 2916",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:24:35.000Z",
+        "end_time_utc": "2026-02-16T11:24:34.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.95479584,
+            -2.09071477
+          ],
+          [
+            104.72854642,
+            -1.84950209
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525113006",
+        "Name": "MV TANTO SELALU",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T20:54:47.000Z",
+        "end_time_utc": "2026-02-09T20:38:09.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            131.83999634,
+            -5.25
+          ],
+          [
+            136.31002935,
+            -4.97000042
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525119065",
+        "Name": "KL SLTN HASANUDDIN",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-01T21:44:13.000Z",
+        "end_time_utc": "2026-02-18T21:52:22.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            118.87999725,
+            -5.34
+          ],
+          [
+            117.7699945,
+            -5.31999989
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525120643",
+        "Name": "KM SINO SINAR BARU",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T11:42:50.000Z",
+        "end_time_utc": "2026-03-10T11:42:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            99.18000031,
+            4.25
+          ],
+          [
+            99.18000031,
+            4.25
+          ],
+          [
+            99.18001184,
+            4.20998986
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525125012",
+        "Name": "MERATUS LEMBATA",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-01T21:44:13.000Z",
+        "end_time_utc": "2026-02-05T21:10:55.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            119.38999939,
+            -5.69
+          ],
+          [
+            127.10999082,
+            -4.07001721
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525129128",
+        "Name": "KM USAHA BARU SUKSES",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-09T11:34:24.000Z",
+        "end_time_utc": "2026-02-14T11:42:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            99.47000122,
+            4
+          ],
+          [
+            99.04000352,
+            4.29999665
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525130181",
+        "Name": "SINAR BARAT UNTUNG",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T11:42:50.000Z",
+        "end_time_utc": "2026-03-10T11:42:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            99.09999847,
+            4.07
+          ],
+          [
+            99.09999847,
+            4.07
+          ],
+          [
+            99.16000372,
+            4.27001751
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525200335",
+        "Name": "CAITLYN7",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-23T11:15:19.000Z",
+        "end_time_utc": "2026-03-07T11:15:19.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.98999786,
+            -5.93
+          ],
+          [
+            126.79999897,
+            1.99999845
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525200476",
+        "Name": "BANDAR BAHARI 278",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-02T22:24:49.000Z",
+        "end_time_utc": "2026-02-02T22:24:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.80000305,
+            -9.3
+          ],
+          [
+            114.80000305,
+            -9.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525201257",
+        "Name": "KM ASIA POPEYE08",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:24:35.000Z",
+        "end_time_utc": "2026-02-04T11:24:35.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.94999695,
+            -2.06
+          ],
+          [
+            104.94999695,
+            -2.06
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525201999",
+        "Name": "KM.BINAMA 02",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T09:20:03.000Z",
+        "end_time_utc": "2026-03-09T09:20:02.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.16999817,
+            -6.13
+          ],
+          [
+            135.11999511,
+            -6.11000009
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525211111",
+        "Name": "KMN LMS 05",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:30:02.000Z",
+        "end_time_utc": "2026-02-25T09:20:02.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            136.72999573,
+            -4.99
+          ],
+          [
+            137.145081,
+            -5.67611698
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525256427",
+        "Name": "KM PUTRA HARAPAN 04",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:33:30.000Z",
+        "end_time_utc": "2026-02-07T22:33:30.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.69999695,
+            -5.11
+          ],
+          [
+            106.69999695,
+            -5.11
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525301327",
+        "Name": "DHARMA RUCITRA 8",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-03T21:28:35.000Z",
+        "end_time_utc": "2026-02-05T10:24:43.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.77999878,
+            -8.93
+          ],
+          [
+            120.66002252,
+            -9.42007539
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525373737",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-11T11:15:19.000Z",
+        "end_time_utc": "2026-03-03T22:33:29.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.91999817,
+            -5.08
+          ],
+          [
+            106.73999785,
+            -5.17000014
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525401410",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T09:28:02.000Z",
+        "end_time_utc": "2026-02-06T09:28:02.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            133.94999695,
+            -7
+          ],
+          [
+            133.94999695,
+            -7
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525600329",
+        "Name": "PUTRA LEO SANTOSO",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-02T21:51:32.000Z",
+        "end_time_utc": "2026-03-07T22:00:12.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            116.87999725,
+            -2.02
+          ],
+          [
+            115.20999841,
+            -4.52999744
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525600798",
+        "Name": "AQUA BLU",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-11T09:38:03.000Z",
+        "end_time_utc": "2026-02-24T21:01:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            130.70400238,
+            -0.96606445
+          ],
+          [
+            130.31810751,
+            -0.8215447
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525600918",
+        "Name": "KM SUMBER REJEKI",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:32:40.000Z",
+        "end_time_utc": "2026-02-07T22:32:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.38999939,
+            -2.67
+          ],
+          [
+            107.38999939,
+            -2.67
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525601550",
+        "Name": "HASIL ABADI 58",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T11:07:49.000Z",
+        "end_time_utc": "2026-02-23T11:15:44.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107.36000061,
+            -3.63
+          ],
+          [
+            107.36000219,
+            -3.62999527
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525601800",
+        "Name": "BAKU SAYANG 01",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-03T21:25:40.000Z",
+        "end_time_utc": "2026-02-03T21:25:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            125.43000031,
+            1.14
+          ],
+          [
+            125.43000031,
+            1.14
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525666000",
+        "Name": "KM SAMUDRA INDAH",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T11:07:49.000Z",
+        "end_time_utc": "2026-02-06T11:07:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            109.73419189,
+            -4.63939214
+          ],
+          [
+            109.73419189,
+            -4.63939214
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525700009",
+        "Name": "SURYA JAYA SAMPURNA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:32:40.000Z",
+        "end_time_utc": "2026-02-07T22:32:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.97000122,
+            -2.98
+          ],
+          [
+            106.97000122,
+            -2.98
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525700387",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-15T09:03:04.000Z",
+        "end_time_utc": "2026-02-18T20:14:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            140.1499939,
+            -8.43
+          ],
+          [
+            140.11000035,
+            -8.78999942
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525700876",
+        "Name": "HASIL LAUT 216",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-03T09:02:35.000Z",
+        "end_time_utc": "2026-02-18T20:14:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.97999573,
+            -10.02
+          ],
+          [
+            139.97999573,
+            -10.02
+          ],
+          [
+            139.92998894,
+            -10.15000029
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525701211",
+        "Name": "MAKMUR JAYA 8",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-08T09:11:15.000Z",
+        "end_time_utc": "2026-02-08T09:11:15.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.13999939,
+            -8.24
+          ],
+          [
+            139.13999939,
+            -8.24
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800144",
+        "Name": "KM  MARCEL JAYA 23",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-03-04T09:11:15.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            107,
+            -5.9
+          ],
+          [
+            107,
+            -5.9
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800252",
+        "Name": "SUMBERBERKAH",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T20:15:14.000Z",
+        "end_time_utc": "2026-03-14T20:15:14.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.62833405,
+            -10.54823406
+          ],
+          [
+            139.55000305,
+            -10.49
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800386",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-07T22:33:30.000Z",
+        "end_time_utc": "2026-02-07T22:33:30.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            106.80000305,
+            -5.94
+          ],
+          [
+            106.80000305,
+            -5.94
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800673",
+        "Name": "BANDAR NELAYAN 299",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-06T09:28:02.000Z",
+        "end_time_utc": "2026-02-06T09:28:02.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            134.05000305,
+            -7.01
+          ],
+          [
+            134.05000305,
+            -7.01
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800724",
+        "Name": "INDO LAUTAN SAKTI 8",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-23T20:22:45.000Z",
+        "end_time_utc": "2026-03-14T20:14:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.42999268,
+            -8.96
+          ],
+          [
+            139.1699974,
+            -8.26000006
+          ],
+          [
+            139.69000424,
+            -9.6299961
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525800725",
+        "Name": "INDO LAUTAN SAKTI 1",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:31:17.000Z",
+        "end_time_utc": "2026-03-14T20:14:49.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            137.41999817,
+            -9.31
+          ],
+          [
+            139.6499939,
+            -9.6
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525801281",
+        "Name": "AGUNG JAYA",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-14T22:24:24.000Z",
+        "end_time_utc": "2026-02-23T11:15:44.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            109.44999695,
+            -2.31
+          ],
+          [
+            107.05999942,
+            -3.83999909
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525801318",
+        "Name": "",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-12T10:18:00.000Z",
+        "end_time_utc": "2026-02-20T21:35:40.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.36000061,
+            -4.06
+          ],
+          [
+            122.08999483,
+            -5.08000028
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525801580",
+        "Name": "JAYA AVONA 17",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-13T09:20:03.000Z",
+        "end_time_utc": "2026-02-25T09:20:02.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.11999512,
+            -6.34
+          ],
+          [
+            135.11999512,
+            -6.28999912
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900453",
+        "Name": "KM SUN RISE I",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-02T20:47:05.000Z",
+        "end_time_utc": "2026-02-23T09:35:54.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            131.77000427,
+            -7.42
+          ],
+          [
+            131.77000427,
+            -7.42
+          ],
+          [
+            132.28637691,
+            -9.36099767
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900595",
+        "Name": "KARYA SEMPURNA 6",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T20:14:49.000Z",
+        "end_time_utc": "2026-03-07T20:22:45.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            139.65717316,
+            -9.04005444
+          ],
+          [
+            139.16999817,
+            -8.21000001
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900604",
+        "Name": "HANDY JAYA 3",
+        "category": "Cargo",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:25:25.000Z",
+        "end_time_utc": "2026-03-12T11:25:24.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            103.51999664,
+            0.98
+          ],
+          [
+            103.75,
+            1.1
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525900700",
+        "Name": "",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-18T21:51:07.000Z",
+        "end_time_utc": "2026-03-13T21:10:04.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            127.30000305,
+            -0.8
+          ],
+          [
+            127.59999847,
+            -0.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525901343",
+        "Name": "SAMUDERA 802",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-09T20:38:34.000Z",
+        "end_time_utc": "2026-03-05T20:38:33.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            135.55999756,
+            -6.74
+          ],
+          [
+            135.03000555,
+            -6.82000072
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525901532",
+        "Name": "HEMINGWAY 3400",
+        "category": "Fishing",
+        "point_count": 3,
+        "start_time_utc": "2026-02-05T22:48:00.000Z",
+        "end_time_utc": "2026-02-11T11:16:59.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.77999878,
+            1.07
+          ],
+          [
+            104.77999878,
+            1.07
+          ],
+          [
+            104.75999892,
+            0.99999604
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "525901606",
+        "Name": "NUSA LESTARI JAYA 88",
+        "category": "Fishing",
+        "point_count": 2,
+        "start_time_utc": "2026-02-16T20:30:27.000Z",
+        "end_time_utc": "2026-03-05T20:38:33.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            136.02000427,
+            -6.84
+          ],
+          [
+            134.78000009,
+            -5.40000273
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MMSI": "535501062",
+        "Name": "MV MARINA EXP 12",
+        "category": "Passenger",
+        "point_count": 2,
+        "start_time_utc": "2026-02-04T11:25:25.000Z",
+        "end_time_utc": "2026-03-07T11:17:24.000Z",
+        "trajectory_type": "kalman_after_filter",
+        "source": "kalman_estimated_AIS_trajectory"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            104.10301208,
+            0.16960119
+          ],
+          [
+            104.07039642,
+            0.19775351
+          ]
+        ]
+      }
+    }
+  ]
+}

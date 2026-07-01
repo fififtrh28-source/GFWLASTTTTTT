@@ -74,3 +74,11 @@ __pycache__/
 .tmp_lampiran_docx*/
 Lampiran_Listing_Program_Siap_Tempel.docx
 Lampiran_Listing_Program_Siap_Tempel_Word.docx
+
+# Small deployment-ready public data bundle
+!public/Dataset_Test_Enriched/
+!public/Dataset_Test_Enriched/**
+!public/KAPAL YG TERDETEKSI/
+!public/KAPAL YG TERDETEKSI/**
+!public/new/
+!public/new/**

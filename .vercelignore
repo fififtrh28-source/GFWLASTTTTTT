@@ -1,0 +1,29 @@
+.env
+.env.*
+!.env.example
+
+.git/
+.agents/
+.local-dev/
+.tmp_lampiran_docx*/
+node_modules/
+dist/
+
+Dataset_Test_Enriched/
+KAPAL YG TERDETEKSI/
+RUNYOLO_FINALBISMILLAH/
+new/
+Inference/
+
+*.h5
+*.pt
+*.SAFE
+*.tif
+*.tiff
+*.zip
+*.xlsx
+
+vite-*.log
+
+# Keep the curated deployment bundle in public.
+!public/**
