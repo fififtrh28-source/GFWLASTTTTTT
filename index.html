@@ -286,13 +286,13 @@
     .sar-img-wrap { padding:0 16px 12px; }
     .sar-img-title { font-size:10px; color:var(--text-3); margin:6px 0 4px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
     .sar-img { width:100%; max-height:220px; object-fit:contain; border:1px solid var(--border); border-radius:4px; background:#05070a; }
-    .traj-mini-wrap { padding:8px 16px 12px; }
-    .traj-mini-chart { width:100%; height:auto; border:1px solid #0d47a1; border-radius:4px; background:#f3f8ff; display:block; }
+    .traj-mini-wrap { padding:8px 16px 12px; overflow:auto; }
+    .traj-mini-chart { width:100%; min-width:520px; height:auto; border:1px solid #0d47a1; border-radius:4px; background:#f3f8ff; display:block; }
     .traj-mini-legend { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding-top:7px; font-size:10px; color:var(--text-2); }
     .traj-mini-key { display:inline-flex; align-items:center; gap:5px; }
     .traj-mini-line { width:18px; border-top:2px solid currentColor; display:inline-block; }
     .traj-example-img-wrap { padding:8px 16px 12px; overflow:auto; max-height:430px; }
-    .traj-example-img { width:100%; height:auto; display:block; border:1px solid var(--border); border-radius:4px; background:#070b10; }
+    .traj-example-img { width:100%; min-width:560px; height:auto; display:block; border:1px solid var(--border); border-radius:4px; background:#070b10; }
 
     /* History list */
     .hist-item {
@@ -2107,8 +2107,10 @@ function trajectoryDatasetImageHtml(image, mmsi) {
         alt="Trajectory AIS Kalman MMSI ${esc(image.mmsi)}"
         onerror="this.closest('.traj-example-img-wrap').style.display='none'; const msg=this.closest('.sb-section')?.querySelector('[data-traj-missing]'); if(msg) msg.style.display='block'; console.warn('[dashboard integration] PNG trajectory Dataset_Test_Enriched tidak tersedia:', this.src);">
       <div class="traj-mini-legend">
-        <span class="traj-mini-key" style="color:#ff2d2d"><span class="traj-mini-line" style="border-top-style:dashed"></span>AIS Mentah</span>
-        <span class="traj-mini-key" style="color:#0b63d8"><span class="traj-mini-line"></span>AIS Kalman</span>
+        <span class="traj-mini-key" style="color:#ff2d2d"><span class="traj-mini-line" style="border-top-style:dashed"></span>Trajectory AIS mentah</span>
+        <span class="traj-mini-key" style="color:#0b63d8"><span class="traj-mini-line"></span>Trajectory hasil Kalman</span>
+        <span class="traj-mini-key" style="color:#111"><span style="width:10px;height:10px;border:1px solid currentColor;border-radius:50%;background:#fff;display:inline-block"></span>Titik observasi AIS</span>
+        <span class="traj-mini-key" style="color:#6b7280"><span class="traj-mini-line" style="border-top-style:dashed"></span>Koreksi Kalman</span>
       </div>
     </div>
     <div class="sb-note" data-traj-missing style="display:none">Trajectory belum tersedia untuk kapal ini.</div>`;
@@ -2167,17 +2169,24 @@ function exampleRowsForPanel() {
 
 function miniTrajectoryChart(rows) {
   const hasPredicted = rows.some(row => String(row?._predictedTrajectory || '').toLowerCase() === 'true');
-  const raw = rows
-    .map(row => trajectoryPoint(row, ['raw_lat', 'ais_lat', 'AIS_Latitude', 'lat'], ['raw_lon', 'ais_lon', 'AIS_Longitude', 'lon']))
-    .filter(Boolean)
-    .map(([lat, lon]) => ({ lat, lon }));
-  const kalman = rows
-    .map(row => trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']))
-    .filter(Boolean)
-    .map(([lat, lon]) => ({ lat, lon }));
+  const paired = rows
+    .map((row, index) => {
+      const rawPoint = trajectoryPoint(row, ['raw_lat', 'ais_lat', 'AIS_Latitude', 'lat'], ['raw_lon', 'ais_lon', 'AIS_Longitude', 'lon']);
+      const kalmanPoint = trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']);
+      const sequence = Number(pick(row, ['sequence_index', 'kalman_sequence_index'], index + 1));
+      return {
+        raw: rawPoint ? { lat: rawPoint[0], lon: rawPoint[1] } : null,
+        kalman: kalmanPoint ? { lat: kalmanPoint[0], lon: kalmanPoint[1] } : null,
+        label: `T${Number.isFinite(sequence) ? sequence : index + 1}`,
+      };
+    })
+    .filter(item => item.raw || item.kalman)
+    .slice(0, PANEL_TRAJECTORY_SEQUENCE_LIMIT);
+  const raw = paired.filter(item => item.raw).map(item => item.raw);
+  const kalman = paired.filter(item => item.kalman).map(item => item.kalman);
   const points = [...raw, ...kalman];
-  if (raw.length < 2 && kalman.length < 2) {
-    return '<div class="sb-note">Mini chart tidak dapat dibuat karena titik AIS raw dan Kalman kurang dari dua.</div>';
+  if (raw.length < 2 || kalman.length < 2) {
+    return `<div class="sb-note">Visual koreksi AIS-Kalman belum dapat digambar karena membutuhkan minimal dua titik AIS mentah dan dua titik Kalman. Ditemukan AIS mentah ${raw.length} titik dan Kalman ${kalman.length} titik.</div>`;
   }
   const kalmanColor = hasPredicted ? '#38bdf8' : '#0b63d8';
   const kalmanLegend = hasPredicted ? 'Trajectory Kalman estimasi' : 'Trajectory hasil Kalman';
@@ -2187,35 +2196,62 @@ function miniTrajectoryChart(rows) {
   let maxLon = Math.max(...points.map(p => p.lon));
   if (minLat === maxLat) { minLat -= 0.001; maxLat += 0.001; }
   if (minLon === maxLon) { minLon -= 0.001; maxLon += 0.001; }
-  const w = 320;
-  const h = 170;
-  const pad = 18;
+  const w = 760;
+  const h = 300;
+  const padX = 38;
+  const padTop = 28;
+  const padBottom = 42;
   const project = p => {
-    const x = pad + ((p.lon - minLon) / (maxLon - minLon)) * (w - pad * 2);
-    const y = h - pad - ((p.lat - minLat) / (maxLat - minLat)) * (h - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
+    const x = padX + ((p.lon - minLon) / (maxLon - minLon)) * (w - padX * 2);
+    const y = h - padBottom - ((p.lat - minLat) / (maxLat - minLat)) * (h - padTop - padBottom);
+    return { x, y, text: `${x.toFixed(1)},${y.toFixed(1)}` };
   };
-  const rawPoints = raw.map(project).join(' ');
-  const kalmanPoints = kalman.map(project).join(' ');
+  const rawPoints = raw.map(p => project(p).text).join(' ');
+  const kalmanPoints = kalman.map(p => project(p).text).join(' ');
+  const gridX = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9];
+  const gridY = [0.2,0.4,0.6,0.8];
+  const correctionLines = paired.map(item => {
+    if (!item.raw || !item.kalman) return '';
+    const a = project(item.raw);
+    const b = project(item.kalman);
+    return `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="#555" stroke-width="1.4" stroke-dasharray="4 5" opacity=".72"></line>`;
+  }).join('');
+  const rawCircles = paired.map((item, index) => {
+    if (!item.raw) return '';
+    const p = project(item.raw);
+    const isEdge = index === 0 || index === paired.length - 1;
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${isEdge ? 4.3 : 3.4}" fill="#fff" stroke="#111" stroke-width="1"></circle>`;
+  }).join('');
+  const kalmanCircles = paired.map((item, index) => {
+    if (!item.kalman) return '';
+    const p = project(item.kalman);
+    const isEdge = index === 0 || index === paired.length - 1;
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${isEdge ? 4 : 3}" fill="${kalmanColor}" stroke="#063a89" stroke-width="1"></circle>`;
+  }).join('');
+  const labels = paired.map((item, index) => {
+    const point = item.raw || item.kalman;
+    if (!point) return '';
+    const p = project(point);
+    const above = index % 2 === 0;
+    return `<text x="${p.x.toFixed(1)}" y="${(p.y + (above ? -13 : 18)).toFixed(1)}" fill="#00337f" font-size="11" font-family="Consolas, monospace">${esc(item.label)}</text>`;
+  }).join('');
   return `
     <div class="traj-mini-wrap">
       <svg class="traj-mini-chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Trajectory AIS mentah dan Kalman kapal terpilih">
-        ${[0.2,0.4,0.6,0.8].map(t => `<line x1="${pad}" x2="${w-pad}" y1="${(pad + t*(h-pad*2)).toFixed(1)}" y2="${(pad + t*(h-pad*2)).toFixed(1)}" stroke="#93c5fd" stroke-width="0.8" stroke-dasharray="3 4"></line>`).join('')}
-        ${[0.2,0.4,0.6,0.8].map(t => `<line y1="${pad}" y2="${h-pad}" x1="${(pad + t*(w-pad*2)).toFixed(1)}" x2="${(pad + t*(w-pad*2)).toFixed(1)}" stroke="#93c5fd" stroke-width="0.8" stroke-dasharray="3 4"></line>`).join('')}
-        ${raw.length >= 2 ? `<polyline points="${rawPoints}" fill="none" stroke="#ff2d2d" stroke-width="2.2" stroke-dasharray="7 5" stroke-linejoin="round" stroke-linecap="round"></polyline>` : ''}
-        ${kalman.length >= 2 ? `<polyline points="${kalmanPoints}" fill="none" stroke="${kalmanColor}" stroke-width="3.2" ${hasPredicted ? 'stroke-dasharray="9 6"' : ''} stroke-linejoin="round" stroke-linecap="round"></polyline>` : ''}
-        ${raw.map((p, i) => `<circle cx="${project(p).split(',')[0]}" cy="${project(p).split(',')[1]}" r="${i === 0 || i === raw.length - 1 ? 2.8 : 1.8}" fill="#fff" stroke="#071323" stroke-width=".7"></circle>`).join('')}
-        ${raw.map((p, i) => {
-          if (!kalman[i]) return '';
-          const a = project(p).split(',');
-          const b = project(kalman[i]).split(',');
-          return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#6b7280" stroke-width=".9" stroke-dasharray="2 3" opacity=".65"></line>`;
-        }).join('')}
-        ${kalman.map((p, i) => `<circle cx="${project(p).split(',')[0]}" cy="${project(p).split(',')[1]}" r="${i === 0 || i === kalman.length - 1 ? 2.8 : 1.8}" fill="${kalmanColor}" stroke="#063a89" stroke-width=".7"></circle>`).join('')}
+        <rect x="${padX}" y="${padTop}" width="${(w - padX * 2).toFixed(1)}" height="${(h - padTop - padBottom).toFixed(1)}" fill="#f6fbff" stroke="#0d47a1" stroke-width="2"></rect>
+        ${gridY.map(t => `<line x1="${padX}" x2="${w-padX}" y1="${(padTop + t*(h-padTop-padBottom)).toFixed(1)}" y2="${(padTop + t*(h-padTop-padBottom)).toFixed(1)}" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4 5"></line>`).join('')}
+        ${gridX.map(t => `<line y1="${padTop}" y2="${h-padBottom}" x1="${(padX + t*(w-padX*2)).toFixed(1)}" x2="${(padX + t*(w-padX*2)).toFixed(1)}" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4 5"></line>`).join('')}
+        ${correctionLines}
+        <polyline points="${rawPoints}" fill="none" stroke="#ff2d2d" stroke-width="3.4" stroke-dasharray="7 6" stroke-linejoin="round" stroke-linecap="round"></polyline>
+        <polyline points="${kalmanPoints}" fill="none" stroke="${kalmanColor}" stroke-width="5.4" ${hasPredicted ? 'stroke-dasharray="9 6"' : ''} stroke-linejoin="round" stroke-linecap="round"></polyline>
+        ${rawCircles}
+        ${kalmanCircles}
+        ${labels}
       </svg>
       <div class="traj-mini-legend">
         <span class="traj-mini-key" style="color:#ff2d2d"><span class="traj-mini-line" style="border-top-style:dashed"></span>Trajectory AIS mentah</span>
         <span class="traj-mini-key" style="color:${kalmanColor}"><span class="traj-mini-line" style="${hasPredicted ? 'border-top-style:dashed' : ''}"></span>${kalmanLegend}</span>
+        <span class="traj-mini-key" style="color:#111"><span style="width:10px;height:10px;border:1px solid currentColor;border-radius:50%;background:#fff;display:inline-block"></span>Titik observasi AIS</span>
         <span class="traj-mini-key" style="color:#6b7280"><span class="traj-mini-line" style="border-top-style:dashed"></span>Koreksi Kalman</span>
       </div>
     </div>`;
@@ -2712,6 +2748,18 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true, contextRow = null
   const raw = trajectory.raw;
   const kalman = trajectory.kalman;
   const all = [...raw, ...kalman];
+  const correctionPairs = rows
+    .slice(0, DASHBOARD_TRAJECTORY_SEQUENCE_LIMIT)
+    .map(row => {
+      const rawPoint = trajectoryPoint(row, ['raw_lat', 'ais_lat', 'AIS_Latitude', 'lat'], ['raw_lon', 'ais_lon', 'AIS_Longitude', 'lon']);
+      const kalmanPoint = trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']);
+      return rawPoint && kalmanPoint ? [rawPoint, kalmanPoint] : null;
+    })
+    .filter(Boolean)
+    .filter(([rawPoint, kalmanPoint]) =>
+      rawPoint[0].toFixed(7) !== kalmanPoint[0].toFixed(7) ||
+      rawPoint[1].toFixed(7) !== kalmanPoint[1].toFixed(7)
+    );
   console.info('[trajectory lookup]', {
     mmsi: normId(mmsi),
     source: trajectory.source,
@@ -2722,6 +2770,7 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true, contextRow = null
     interpolated: trajectory.interpolated,
     raw_points: raw.length,
     kalman_points: kalman.length,
+    correction_pairs: correctionPairs.length,
   });
   if (!rows.length || !all.length) {
     if (info) info.textContent = 'Trajectory belum tersedia untuk kapal ini.';
@@ -2737,6 +2786,15 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true, contextRow = null
       dashArray: trajectory.predicted ? '10 8' : null,
     }).addTo(sidebarTrajLayer);
   }
+  correctionPairs.forEach(([rawPoint, kalmanPoint]) => {
+    L.polyline([rawPoint, kalmanPoint], {
+      color: '#6b7280',
+      weight: 1.4,
+      opacity: .72,
+      dashArray: '4 5',
+      interactive: false,
+    }).addTo(sidebarTrajLayer);
+  });
 
   const addEnds = (points, color, label) => {
     if (points.length < 2) return;
@@ -2757,9 +2815,10 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true, contextRow = null
   }
   if (info) {
     const method = trajectory.interpolated ? 'latitude-longitude' : 'SOG/COG';
+    const correctionText = correctionPairs.length ? ` | Koreksi ${correctionPairs.length}` : '';
     info.textContent = trajectory.predicted
-      ? `Trajectory Kalman ${method}: AIS raw ${raw.length} titik | Kalman ${kalman.length} titik.`
-      : `Trajectory (${trajectory.source}): AIS raw ${raw.length} titik | Kalman ${kalman.length} titik`;
+      ? `Trajectory Kalman ${method}: AIS raw ${raw.length} titik | Kalman ${kalman.length} titik${correctionText}.`
+      : `Trajectory (${trajectory.source}): AIS raw ${raw.length} titik | Kalman ${kalman.length} titik${correctionText}`;
   }
   if (fit && all.length) map.fitBounds(L.latLngBounds(all), { padding:[60, 60], maxZoom:12 });
   return true;
