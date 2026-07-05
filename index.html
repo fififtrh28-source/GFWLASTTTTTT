@@ -1797,6 +1797,219 @@ function predictedKalmanRowsForMmsi(mmsi, sceneName = '', contextRow = null, bas
     : [];
 }
 
+function pointObjectFromArray(point, row = null) {
+  if (!point) return null;
+  return {
+    lat: point[0],
+    lon: point[1],
+    row,
+    seconds: row ? rowTrajectoryTime(row) : NaN,
+  };
+}
+
+function rawPointFromRow(row) {
+  return pointObjectFromArray(
+    trajectoryPoint(row, ['raw_lat', 'ais_lat', 'AIS_Latitude', 'lat'], ['raw_lon', 'ais_lon', 'AIS_Longitude', 'lon']),
+    row
+  );
+}
+
+function kalmanPointFromRow(row) {
+  return pointObjectFromArray(
+    trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']),
+    row
+  );
+}
+
+function uniquePointObjects(points) {
+  const seen = new Set();
+  return points.filter(point => {
+    if (!point) return false;
+    const key = `${point.lat.toFixed(7)},${point.lon.toFixed(7)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function resamplePointObjects(points, limit = PANEL_TRAJECTORY_SEQUENCE_LIMIT) {
+  const anchors = uniquePointObjects(points)
+    .sort((a, b) => {
+      const at = Number.isFinite(a.seconds) ? a.seconds : Infinity;
+      const bt = Number.isFinite(b.seconds) ? b.seconds : Infinity;
+      if (at !== bt) return at - bt;
+      return 0;
+    });
+  if (anchors.length < 2) return [];
+
+  const firstSeconds = anchors[0].seconds;
+  const lastSeconds = anchors[anchors.length - 1].seconds;
+  const hasTimeRange = Number.isFinite(firstSeconds) && Number.isFinite(lastSeconds) && lastSeconds > firstSeconds;
+  const rows = [];
+  for (let i = 0; i < limit; i += 1) {
+    const ratio = limit === 1 ? 0 : i / (limit - 1);
+    const segmentCount = anchors.length - 1;
+    const scaled = Math.min(segmentCount, Math.max(0, ratio * segmentCount));
+    const segmentIndex = Math.min(segmentCount - 1, Math.floor(scaled));
+    const localRatio = scaled - segmentIndex;
+    const a = anchors[segmentIndex];
+    const b = anchors[segmentIndex + 1];
+    const seconds = hasTimeRange ? firstSeconds + ((lastSeconds - firstSeconds) * ratio) : NaN;
+    rows.push({
+      lat: a.lat + ((b.lat - a.lat) * localRatio),
+      lon: a.lon + ((b.lon - a.lon) * localRatio),
+      seconds,
+    });
+  }
+  return rows;
+}
+
+function motionFromRowsWithPriority(rows = [], sogNames = [], cogNames = []) {
+  const sourceRows = rows.filter(Boolean);
+  const sog = firstFiniteNumber(sourceRows.flatMap(row => sogNames.map(name => row?.[name])));
+  const cog = firstFiniteNumber(sourceRows.flatMap(row => cogNames.map(name => row?.[name])));
+  return { sog, cog };
+}
+
+function projectPanelMotionSequence(anchorPoint, motion, rows = [], contextRow = null, limit = PANEL_TRAJECTORY_SEQUENCE_LIMIT) {
+  if (!anchorPoint || !Number.isFinite(motion?.sog) || motion.sog <= 0 || !Number.isFinite(motion?.cog)) return [];
+  const horizonSeconds = predictionHorizonSeconds(rows, contextRow);
+  const stepSeconds = Math.max(PREDICTED_KALMAN_MIN_STEP_SECONDS, horizonSeconds / Math.max(1, limit - 1));
+  const baseSeconds = Number.isFinite(anchorPoint.seconds)
+    ? anchorPoint.seconds
+    : rowEpochSeconds(contextRow, ['scene_time_utc', 'last_timestamp_utc', 'timestamp_utc', 'AIS_update_datetime', 'time_iso', 'timestamp']);
+  const sequence = [];
+  for (let i = 0; i < limit; i += 1) {
+    const dt = stepSeconds * i;
+    const point = i === 0
+      ? [anchorPoint.lat, anchorPoint.lon]
+      : predictLatLonFromSogCog(anchorPoint.lat, anchorPoint.lon, motion.sog, motion.cog, dt);
+    if (!point) continue;
+    sequence.push({
+      lat: point[0],
+      lon: point[1],
+      seconds: Number.isFinite(baseSeconds) ? baseSeconds + dt : NaN,
+    });
+  }
+  return uniqueLatLng(sequence.map(point => [point.lat, point.lon])).length >= 2 ? sequence : [];
+}
+
+function combinePanelSequenceRows(mmsi, sceneName, rawSeq, kalmanSeq, method) {
+  const limit = Math.min(PANEL_TRAJECTORY_SEQUENCE_LIMIT, rawSeq.length, kalmanSeq.length);
+  const rows = [];
+  for (let i = 0; i < limit; i += 1) {
+    const raw = rawSeq[i];
+    const kalman = kalmanSeq[i];
+    const seconds = Number.isFinite(raw?.seconds) ? raw.seconds : kalman?.seconds;
+    const iso = Number.isFinite(seconds) ? new Date(seconds * 1000).toISOString().replace('.000Z', 'Z') : '';
+    rows.push({
+      MMSI: mmsi,
+      scene: sceneName,
+      raw_lat: raw.lat,
+      raw_lon: raw.lon,
+      kalman_lat: kalman.lat,
+      kalman_lon: kalman.lon,
+      time_iso: iso,
+      timestamp_utc: iso,
+      sequence_index: String(i + 1),
+      trajectory_source_file: method,
+      _panelSequence25: 'true',
+    });
+  }
+  return rows.length === PANEL_TRAJECTORY_SEQUENCE_LIMIT ? rows : [];
+}
+
+function buildPanelTrajectorySequence(mmsi, candidate, mapTrajectory) {
+  const id = normId(mmsi);
+  const sceneName = candidate?.scene || mapTrajectory?.rows?.[0]?.scene || '';
+  const sourceRows = (mapTrajectory?.realRows?.length ? mapTrajectory.realRows : mapTrajectory?.rows || [])
+    .filter(row => row && (!id || rowMmsi(row) === id))
+    .sort((a, b) => trajectorySortValue(a) - trajectorySortValue(b));
+  if (!id || !sourceRows.length) return null;
+
+  const rawAnchors = sourceRows.map(rawPointFromRow).filter(Boolean);
+  const kalmanAnchors = sourceRows.map(kalmanPointFromRow).filter(Boolean);
+  const anyAnchors = sourceRows
+    .map(row => rawPointFromRow(row) || kalmanPointFromRow(row))
+    .filter(Boolean);
+  const sourceRawCount = uniquePointObjects(rawAnchors).length;
+  const sourceKalmanCount = uniquePointObjects(kalmanAnchors).length;
+  const sourcePointCount = uniquePointObjects(anyAnchors).length;
+
+  const interpolationSource = sourcePointCount >= 2 ? anyAnchors : [];
+  const rawInterpolated = sourceRawCount >= 2
+    ? resamplePointObjects(rawAnchors)
+    : resamplePointObjects(interpolationSource);
+  const kalmanInterpolated = sourceKalmanCount >= 2
+    ? resamplePointObjects(kalmanAnchors)
+    : resamplePointObjects(interpolationSource);
+  const interpolatedRows = rawInterpolated.length && kalmanInterpolated.length
+    ? combinePanelSequenceRows(
+        id,
+        sceneName,
+        rawInterpolated,
+        kalmanInterpolated,
+        '25 sequence interpolasi latitude-longitude dari data MMSI yang sama'
+      )
+    : [];
+
+  if (interpolatedRows.length) {
+    return {
+      rows: interpolatedRows,
+      method: '25 sequence interpolasi latitude-longitude',
+      sourceRows: sourceRows.length,
+      sourceRawCount,
+      sourceKalmanCount,
+      sourcePointCount,
+    };
+  }
+
+  const rawAnchor = rawAnchors[rawAnchors.length - 1] || anyAnchors[anyAnchors.length - 1];
+  const kalmanAnchor = kalmanAnchors[kalmanAnchors.length - 1] || rawAnchor;
+  const rowsForMotion = [candidate, ...sourceRows.slice().reverse()];
+  const rawMotion = motionFromRowsWithPriority(
+    rowsForMotion,
+    ['Sog', 'SOG', 'sog', 'speed', 'Speed', 'raw_sog', 'raw_speed_kn', 'speed_knots'],
+    ['Cog', 'COG', 'cog', 'course', 'Course', 'raw_cog', 'raw_course_deg', 'course_deg']
+  );
+  const kalmanMotion = motionFromRowsWithPriority(
+    rowsForMotion,
+    ['kalman_est_sog', 'kalman_sog', 'Sog', 'SOG', 'sog', 'speed', 'Speed'],
+    ['kalman_est_cog', 'kalman_cog', 'Cog', 'COG', 'cog', 'course', 'Course']
+  );
+  const rawMotionSeq = projectPanelMotionSequence(rawAnchor, rawMotion, sourceRows, candidate);
+  const kalmanMotionSeq = projectPanelMotionSequence(kalmanAnchor, kalmanMotion, sourceRows, candidate);
+  const motionRows = rawMotionSeq.length && kalmanMotionSeq.length
+    ? combinePanelSequenceRows(
+        id,
+        sceneName,
+        rawMotionSeq,
+        kalmanMotionSeq,
+        '25 sequence perhitungan gerak SOG/COG dari data MMSI yang sama'
+      )
+    : [];
+
+  if (motionRows.length) {
+    return {
+      rows: motionRows,
+      method: '25 sequence perhitungan SOG/COG',
+      sourceRows: sourceRows.length,
+      sourceRawCount,
+      sourceKalmanCount,
+      sourcePointCount,
+    };
+  }
+
+  return {
+    rows: [],
+    method: 'data trajectory tidak cukup untuk 25 sequence',
+    sourceRows: sourceRows.length,
+    sourceRawCount,
+    sourceKalmanCount,
+    sourcePointCount,
+  };
+}
+
 function selectedTrajectoryRows(mmsi) {
   const id = normId(mmsi);
   return integrationTrajectoryRows
@@ -2173,11 +2386,10 @@ function miniTrajectoryChart(rows) {
     .map((row, index) => {
       const rawPoint = trajectoryPoint(row, ['raw_lat', 'ais_lat', 'AIS_Latitude', 'lat'], ['raw_lon', 'ais_lon', 'AIS_Longitude', 'lon']);
       const kalmanPoint = trajectoryPoint(row, ['kalman_lat', 'kalman_est_lat'], ['kalman_lon', 'kalman_est_lon']);
-      const sequence = Number(pick(row, ['sequence_index', 'kalman_sequence_index'], index + 1));
       return {
         raw: rawPoint ? { lat: rawPoint[0], lon: rawPoint[1] } : null,
         kalman: kalmanPoint ? { lat: kalmanPoint[0], lon: kalmanPoint[1] } : null,
-        label: `T${Number.isFinite(sequence) ? sequence : index + 1}`,
+        label: `T${index + 1}`,
       };
     })
     .filter(item => item.raw || item.kalman)
@@ -2290,45 +2502,46 @@ function enrichedTrajectoryHtml(mmsi, candidate) {
   const image = selectedTrajectoryImage(mmsi, candidate);
   const enriched = selectedEnrichedTrajectoryRows(mmsi, candidate, PANEL_TRAJECTORY_SEQUENCE_LIMIT);
   const mapTrajectory = selectedMapTrajectoryStats(candidate?.scene || '', mmsi, candidate);
-  const allRows = mapTrajectory.realRows || [];
-  const rows = mapTrajectory.predicted
-    ? mapTrajectory.predictionRows.slice(0, PANEL_TRAJECTORY_SEQUENCE_LIMIT)
-    : mapTrajectory.rows.slice(0, PANEL_TRAJECTORY_SEQUENCE_LIMIT);
+  const panelSequence = image ? null : buildPanelTrajectorySequence(mmsi, candidate, mapTrajectory);
+  const rows = panelSequence?.rows || [];
   const { raw, kalman } = rows.length ? trajectoryRowsStats(rows) : { raw: [], kalman: [] };
-  if (!image && !mapTrajectory.raw.length && !mapTrajectory.kalman.length) return trajectoryDatasetImageHtml(null, mmsi);
-  const estimateMethod = mapTrajectory.interpolated ? 'perhitungan latitude-longitude' : 'perhitungan SOG/COG';
-  const estimateSource = mapTrajectory.interpolated
-    ? 'estimasi Kalman latitude-longitude dari titik historis'
-    : 'estimasi Kalman SOG/COG dari satu titik AIS/Kalman';
+  if (!image && (!panelSequence || !panelSequence.rows.length)) {
+    return `
+      <div class="sb-note">Data trajectory tidak cukup untuk membentuk T1-T25 pada kapal ini. Tidak ada fallback ke kapal lain.</div>
+      ${panelSequence ? rowHtml('Baris sumber', displayValue(panelSequence.sourceRows)) : ''}
+      ${panelSequence ? rowHtml('Titik sumber AIS raw', displayValue(panelSequence.sourceRawCount)) : ''}
+      ${panelSequence ? rowHtml('Titik sumber Kalman', displayValue(panelSequence.sourceKalmanCount)) : ''}
+      ${panelSequence ? rowHtml('Titik posisi sumber', displayValue(panelSequence.sourcePointCount)) : ''}`;
+  }
 
   const startTime = rows.length ? pick(rows[0], ['time_iso', 'timestamp_utc', 'timestamp'], '') : '';
   const endTime = rows.length ? pick(rows[rows.length - 1], ['time_iso', 'timestamp_utc', 'timestamp'], '') : '';
-  const windowText = rows.length
-    ? (mapTrajectory.predicted
-      ? `${rows.length} titik Kalman dari ${allRows.length || 1} titik awal`
-      : `${rows.length} dari ${allRows.length || mapTrajectory.rows.length} titik gabungan`)
-    : '';
+  const sequenceCount = image ? PANEL_TRAJECTORY_SEQUENCE_LIMIT : rows.length;
+  const windowText = rows.length ? `${rows.length} sequence panel dari ${panelSequence?.sourceRows || rows.length} baris sumber` : '';
   const anchorIso = Number.isFinite(enriched.anchorSeconds)
     ? new Date(enriched.anchorSeconds * 1000).toISOString().replace('.000Z', 'Z')
     : '';
   const visual = image
     ? trajectoryDatasetImageHtml(image, mmsi)
-    : trajectoryStatsHasLine({ raw, kalman })
-      ? `${miniTrajectoryChart(rows)}<div class="sb-note">${mapTrajectory.predicted ? `Visual ini memakai ${estimateMethod} karena trajectory Kalman kapal ini belum mencapai dua titik.` : 'Visual dibuat dari semua data trajectory yang cocok dengan MMSI kapal ini.'}</div>`
-      : `<div class="sb-note">trajectory tidak tersedia karena data hanya satu titik.</div>`;
-  const source = mapTrajectory.predicted
-    ? estimateSource
-    : 'gabungan CSV/JSON/GeoJSON trajectory';
+    : `${miniTrajectoryChart(rows)}<div class="sb-note">Visual T1-T25 dibuat dari data trajectory MMSI yang sama. Tidak ada fallback ke kapal lain.</div>`;
+  const source = image
+    ? 'gambar 25 sequence Dataset_Test_Enriched'
+    : panelSequence.method;
 
   return `
     ${visual}
     ${rowHtml('MMSI trajectory', displayValue(mmsi), true)}
     ${rowHtml('Sumber data', displayValue(source))}
-    ${rows.length ? rowHtml('Status trajectory', displayValue(mapTrajectory.predicted ? 'Kalman estimasi' : 'Trajectory aktual')) : ''}
+    ${sequenceCount ? rowHtml('Status trajectory', displayValue('25 Sequence')) : ''}
     ${image ? rowHtml('File gambar', displayValue(image.fileName)) : ''}
     ${windowText ? rowHtml('Window titik', displayValue(windowText)) : ''}
-    ${rows.length ? rowHtml('Titik AIS raw', displayValue(raw.length)) : ''}
-    ${rows.length ? rowHtml('Titik Kalman', displayValue(kalman.length)) : ''}
+    ${panelSequence ? rowHtml('Baris sumber', displayValue(panelSequence.sourceRows)) : ''}
+    ${panelSequence ? rowHtml('Titik sumber AIS raw', displayValue(panelSequence.sourceRawCount)) : ''}
+    ${panelSequence ? rowHtml('Titik sumber Kalman', displayValue(panelSequence.sourceKalmanCount)) : ''}
+    ${panelSequence ? rowHtml('Titik posisi sumber', displayValue(panelSequence.sourcePointCount)) : ''}
+    ${sequenceCount ? rowHtml('Sequence panel', displayValue(sequenceCount)) : ''}
+    ${rows.length ? rowHtml('Titik AIS raw panel', displayValue(raw.length)) : ''}
+    ${rows.length ? rowHtml('Titik Kalman panel', displayValue(kalman.length)) : ''}
     ${startTime ? rowHtml('Waktu awal', displayValue(startTime)) : ''}
     ${endTime ? rowHtml('Waktu akhir', displayValue(endTime)) : ''}
     ${anchorIso ? rowHtml('Waktu scene', displayValue(anchorIso)) : ''}
