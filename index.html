@@ -2926,10 +2926,6 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
       ${rowHtml('Residual Kalman', displayValue(pick(candidate, ['kalman_pred_residual_m'], pick(kalman, ['kalman_pred_residual_m'], '')), 'm'))}
     </div>
     <div class="sb-section">
-      <div class="sb-section-title">Trajectory AIS-Kalman (25 Sequence)</div>
-      ${enrichedTrajectoryHtml(mmsi, candidate)}
-    </div>
-    <div class="sb-section">
       <div class="sb-section-title">REKAP KANDIDAT</div>
       ${summaryForCandidate(candidate)}
     </div>
