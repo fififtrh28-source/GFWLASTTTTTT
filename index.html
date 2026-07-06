@@ -712,6 +712,8 @@ let integrationExtraTrajectoryRows = [];
 let integrationTrajectoryGeojsons = [];
 let integrationSarManifestRows = [];
 let integrationTrajectoryImages = [];
+let integrationGearTypeRows = [];
+let integrationGearTypeLookup = new Map();
 let integrationExampleColumnsLogged = false;
 let sidebarFocusLatLng = null;
 let sidebarTelegramPayload = null;
@@ -760,6 +762,12 @@ const INTEGRATION_DATA_FILES = {
     'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/fixed_gear.csv',
     'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/purse_seines.csv',
     'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trawlers.csv',
+  ],
+  gearTypeCsvs: [
+    { key: 'drifting_longlines', label: 'Drifting Longlines', path: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/drifting_longlines.csv' },
+    { key: 'fixed_gear', label: 'Fixed Gear', path: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/fixed_gear.csv' },
+    { key: 'purse_seines', label: 'Purse Seines', path: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/purse_seines.csv' },
+    { key: 'trawlers', label: 'Trawlers', path: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trawlers.csv' },
   ],
   trajectoryGeojsons: [
     'new/metadata/ais_trajectories_raw.geojson',
@@ -1177,6 +1185,79 @@ function displayCandidateType(value) {
   }
 }
 
+function normalizeGearKey(value) {
+  const text = String(value || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+  const aliases = {
+    drifting_longline: 'drifting_longlines',
+    drift_longline: 'drifting_longlines',
+    drift_longlines: 'drifting_longlines',
+    longline: 'drifting_longlines',
+    longlines: 'drifting_longlines',
+    fixed: 'fixed_gear',
+    fixed_gears: 'fixed_gear',
+    fixedgear: 'fixed_gear',
+    purse_seine: 'purse_seines',
+    purseseine: 'purse_seines',
+    purseseines: 'purse_seines',
+    trawler: 'trawlers',
+    trawl: 'trawlers',
+  };
+  return aliases[text] || text;
+}
+
+function gearLabelFromKey(key) {
+  const found = INTEGRATION_DATA_FILES.gearTypeCsvs.find(item => item.key === normalizeGearKey(key));
+  return found?.label || gearShortLabel(key);
+}
+
+function isFishingShipType(row) {
+  const text = [
+    row?.Ship_Type,
+    row?.gfw_shiptype,
+    row?.category,
+    row?.Elaborated_type,
+  ].map(value => String(value || '').toLowerCase()).join(' ');
+  return /\bfishing\b/.test(text);
+}
+
+function buildGearTypeLookup(rows = []) {
+  const priority = new Map(INTEGRATION_DATA_FILES.gearTypeCsvs.map((item, index) => [item.key, index]));
+  const grouped = new Map();
+  for (const row of rows) {
+    const mmsi = normId(row.mmsi || row.MMSI || row.ssvid || row.gfw_ssvid);
+    const key = normalizeGearKey(row._gear_key || row.gear_label || row.gear_inferred || row.gear_raw_gfw || row.gear_registry);
+    if (!mmsi || !priority.has(key)) continue;
+    if (!grouped.has(mmsi)) grouped.set(mmsi, []);
+    grouped.get(mmsi).push({ row, key, label: gearLabelFromKey(key) });
+  }
+
+  const lookup = new Map();
+  for (const [mmsi, items] of grouped.entries()) {
+    const byKey = new Map();
+    for (const item of items) {
+      const current = byKey.get(item.key) || { key: item.key, label: item.label, count: 0, rows: [] };
+      current.count += 1;
+      current.rows.push(item.row);
+      byKey.set(item.key, current);
+    }
+    const best = [...byKey.values()].sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return (priority.get(a.key) ?? 999) - (priority.get(b.key) ?? 999);
+    })[0];
+    if (!best) continue;
+    const firstRow = best.rows[0] || {};
+    lookup.set(mmsi, {
+      key: best.key,
+      label: best.label,
+      count: best.count,
+      totalRows: items.length,
+      source: firstRow._gear_path || '',
+      vesselName: firstRow.vessel_name || firstRow.Name || '',
+    });
+  }
+  return lookup;
+}
+
 function detectionScore(row) {
   const score = Number(row?.score);
   if (Number.isFinite(score)) return score;
@@ -1384,7 +1465,7 @@ function buildMatchedFinalDetectionRows(ruleRows, godarkRows, existingRows) {
   return [...bestByKey.values()].sort((a, b) => detectionScore(b) - detectionScore(a));
 }
 
-function buildDashboardCandidateRows(candidateRows, existingRows = []) {
+function buildDashboardCandidateRows(candidateRows, existingRows = [], gearLookup = new Map()) {
   const localByKey = new Map();
   for (const row of existingRows || []) {
     const key = `${row.scene || ''}|${normId(row.MMSI || row.mmsi)}`;
@@ -1396,13 +1477,23 @@ function buildDashboardCandidateRows(candidateRows, existingRows = []) {
       const item = normalizeDetectionRow(row, row.candidate_type, 'FINAL_4_PIPELINE_MODELS.h5 / scene candidate output');
       if (!item) return null;
       const local = localByKey.get(`${item.scene || ''}|${normId(item.MMSI || item.mmsi)}`);
+      if (!isFishingShipType(item) && !isFishingShipType(local)) return null;
+      const mmsi = normId(item.MMSI || item.mmsi);
+      const gearMatch = gearLookup.get(mmsi);
+      if (!gearMatch) return null;
       return {
         ...item,
         ...(local ? {
           local_vessel: local.local_vessel,
           dashboard_local_match: 'true',
-          gear: item.gear || local.gear || '',
         } : {}),
+        gear: gearMatch.key,
+        gear_type_key: gearMatch.key,
+        gear_type: gearMatch.label,
+        gear_type_source: gearMatch.source,
+        gear_type_match_rows: String(gearMatch.count),
+        gear_type_total_rows: String(gearMatch.totalRows),
+        gear_vessel_name: gearMatch.vesselName,
         model_source: item.model_source || `${INTEGRATION_DATA_FILES.finalModel} + scene candidate output`,
       };
     })
@@ -1422,6 +1513,13 @@ function candidateToAiResult(row) {
       pred_label: detectedType,
       confidence: typeScore,
       probs: { [detectedType]: typeScore },
+    };
+  }
+  if (row.gear_type_key) {
+    tasks.gear = {
+      pred_label: row.gear_type_key,
+      confidence: 1,
+      probs: { [row.gear_type_key]: 1 },
     };
   }
   return {
@@ -1454,6 +1552,16 @@ async function ensureIntegrationRows() {
       const extraTrajectoryPromise = Promise.all(
         INTEGRATION_DATA_FILES.extraTrajectoryCsvs.map(path => loadCsvRows(path))
       );
+      const gearTypePromise = Promise.all(
+        INTEGRATION_DATA_FILES.gearTypeCsvs.map(item =>
+          loadCsvRows(item.path).then(rows => rows.map(row => ({
+            ...row,
+            _gear_key: item.key,
+            _gear_label: item.label,
+            _gear_path: item.path,
+          })))
+        )
+      );
       const trajectoryGeojsonPromise = Promise.all(
         INTEGRATION_DATA_FILES.trajectoryGeojsons.map(path => loadJsonData(path))
       );
@@ -1461,15 +1569,17 @@ async function ensureIntegrationRows() {
         INTEGRATION_DATA_FILES.trajectoryGalleries.map(path => loadTrajectoryImageRows(path))
       );
       const kalmanPromises = INTEGRATION_DATA_FILES.kalman.map(path => loadCsvRows(path));
-      const [candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
-        await Promise.all([candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
+      const [candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, gearTypeRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
+        await Promise.all([candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, gearTypePromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
       integrationRuleCandidates = candidates || [];
       integrationGodarkH5Rows = godarkH5Rows || [];
       if (localKalmanJson) localKalmanData = localKalmanJson;
       integrationExistingVesselRows = flattenExistingVesselRows(localKalmanData);
-      integrationCandidates = buildDashboardCandidateRows(integrationRuleCandidates, integrationExistingVesselRows);
+      integrationGearTypeRows = (gearTypeRows || []).flat();
+      integrationGearTypeLookup = buildGearTypeLookup(integrationGearTypeRows);
+      integrationCandidates = buildDashboardCandidateRows(integrationRuleCandidates, integrationExistingVesselRows, integrationGearTypeLookup);
       aiResults = integrationCandidates.map(candidateToAiResult);
-      aiInferenceMessage = `${aiResults.length} kandidat aktivitas kapal dari output final lokal.`;
+      aiInferenceMessage = `${aiResults.length} kandidat fishing match gear type dari output final lokal.`;
       integrationSummaryRows = summaryRows || [];
       integrationSarManifestRows = sarManifestRows || [];
       integrationTrajectoryRows = trajectoryRows || [];
@@ -2849,6 +2959,9 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
   const mmsi = pick(candidate, ['MMSI'], pick(kalman, ['MMSI'], vessel?.mmsi || ''));
   const title = pick(candidate, ['Name', 'gfw_name'], pick(kalman, ['Name', 'gfw_name'], vessel?.name || ''));
   const shipType = pick(candidate, ['Ship_Type', 'gfw_shiptype'], pick(kalman, ['Ship_Type', 'gfw_shiptype'], vessel?.category || vessel?.gear || ''));
+  const gearType = pick(candidate, ['gear_type'], '');
+  const gearSource = basename(pick(candidate, ['gear_type_source'], ''));
+  const gearMatchRows = pick(candidate, ['gear_type_match_rows'], '');
   const sceneTime = pick(candidate, ['scene_time_utc'], pick(kalman, ['kalman_scene_timestamp_utc', 'sog_cog_scene_timestamp_utc', 'AIS_update_datetime'], ''));
   const candidateType = pick(candidate, ['candidate_type'], '');
   const candidateLabel = detectionTypesLabel(candidate) || candidateType;
@@ -2910,6 +3023,8 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
       <div class="sb-section-title">DATA</div>
       ${rowHtml('MMSI', displayValue(mmsi), true)}
       ${rowHtml('Jenis kapal', displayValue(shipType || 'unknown'))}
+      ${rowHtml('Gear Type', displayValue(gearType || 'tidak tersedia'))}
+      ${gearSource ? rowHtml('Sumber Gear', displayValue(gearSource), true) : ''}
       ${rowHtml('Dataset', displayValue(dataset), true)}
       ${rowHtml('Event ID', displayValue(eventId), true)}
       ${rowHtml('Sumber model', displayValue(modelSource))}
@@ -2920,7 +3035,7 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
       ${rowHtml('nextSeenAt', displayValue(panelDate(pick(candidate, ['nextSeenAt', 'next_seen_at', 'next_timestamp_utc'], ''))), true)}
       ${rowHtml('lastSpeedKnots', displayValue(pick(candidate, ['Sog'], pick(kalman, ['Sog', 'kalman_est_sog'], '')), 'kn'))}
       ${rowHtml('COG', displayValue(pick(candidate, ['Cog'], pick(kalman, ['Cog', 'kalman_est_cog'], '')), 'deg'))}
-      ${rowHtml('gear', displayValue(pick(candidate, ['gear', 'gfw_shiptype', 'Ship_Type'], shipType || 'unknown')))}
+      ${gearMatchRows ? rowHtml('Baris Gear Match', displayValue(gearMatchRows)) : ''}
       ${rowHtml('Jarak SAR-AIS', displayValue(pick(candidate, ['sar_ais_distance_km'], ''), 'km'))}
       ${rowHtml('Jarak SAR-Kalman', displayValue(pick(candidate, ['sar_kalman_est_distance_km'], ''), 'km'))}
       ${rowHtml('Residual Kalman', displayValue(pick(candidate, ['kalman_pred_residual_m'], pick(kalman, ['kalman_pred_residual_m'], '')), 'm'))}
@@ -3072,7 +3187,7 @@ function renderIntegrationCandidateMarkers() {
     const vessel = {
       mmsi: row.MMSI,
       name: row.Name,
-      category: row.Ship_Type || row.gfw_shiptype,
+      category: row.gear_type || row.Ship_Type || row.gfw_shiptype,
       sar: { lat, lon },
       ais: { lat: row.AIS_Latitude, lon: row.AIS_Longitude },
       detection: row.candidate_type,
@@ -3085,6 +3200,10 @@ function renderIntegrationCandidateMarkers() {
       iconAnchor: [14, 14],
     });
     L.marker([lat, lon], { icon })
+      .bindTooltip(
+        `<b>${esc(row.Name || `MMSI ${row.MMSI || '-'}`)}</b><br>MMSI: ${esc(row.MMSI || '-')}<br>Gear Type: ${esc(row.gear_type || 'tidak tersedia')}<br>${esc(detectionTypesLabel(row) || displayCandidateType(row.candidate_type))}`,
+        { direction:'top', offset:[0,-12], opacity:.92 }
+      )
       .on('click', () => openIntegratedSarDetail(row.scene, vessel))
       .addTo(localKalmanLayer);
   }
@@ -3878,7 +3997,7 @@ function renderInferenceState() {
   if (!resultEls.length) return;
 
   if (!aiResults.length) {
-    const emptyHtml = '<div style="color:var(--text-3);font-size:12px">Belum ada kandidat aktivitas kapal yang termuat dari output final lokal.</div>';
+    const emptyHtml = '<div style="color:var(--text-3);font-size:12px">Tidak ada kandidat fishing yang match dengan 4 CSV gear type.</div>';
     resultEls.forEach(el => { el.innerHTML = emptyHtml; });
     updateAiCounters();
     return;
@@ -3987,7 +4106,7 @@ async function syncInferenceResults() {
     if (!aiResults.length) setInferenceMessage('Memuat output lokal FINAL_4_PIPELINE_MODELS.h5...');
     await ensureIntegrationRows();
     renderInferenceState();
-    setInferenceMessage(`${aiResults.length} kandidat aktivitas kapal dari output final lokal.`);
+    setInferenceMessage(`${aiResults.length} kandidat fishing match gear type dari output final lokal.`);
     saveInferenceCache();
   } catch (err) {
     setInferenceMessage('Error memuat output final lokal: ' + err.message);
@@ -4026,7 +4145,7 @@ function renderAiResults(vessels) {
     const gearHtml = gear ? `
       <div class="ai-task-row">
         <span class="ai-task-label">Gear</span>
-        <span class="ai-task-pred" style="color:${gc}">${esc(gear.pred_label)}</span>
+        <span class="ai-task-pred" style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}</span>
       </div>
       <div class="ai-conf-bar"><div class="ai-conf-fill" style="width:${Math.round(gear.confidence*100)}%;background:${gc}"></div></div>` : '';
 
@@ -4103,7 +4222,7 @@ function plotAiMarkers(vessels) {
 
     // ── Popup detail saat diklik ──────────────────────────────────────
     let popup = `<div class="popup-name">MMSI: ${esc(v.mmsi)}</div>`;
-    if (gear)  popup += `<div class="popup-row"><span>Gear</span><b style="color:${gc}">${esc(gear.pred_label)}</b></div>`;
+    if (gear)  popup += `<div class="popup-row"><span>Gear</span><b style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}</b></div>`;
     if (spoof) popup += `<div class="popup-row"><span>Spoofing</span><b style="color:${spoofColor(spoof.pred_label)}">${esc(spoof.pred_label)}</b></div>`;
     if (dark)  popup += `<div class="popup-row"><span>Go Dark</span><b style="color:${darkColor(dark.pred_label)}">${esc(dark.pred_label)}</b></div>`;
     popup += `<div class="popup-coord">${v.last_lat.toFixed(4)}°, ${v.last_lon.toFixed(4)}°</div>`;
@@ -4113,8 +4232,9 @@ function plotAiMarkers(vessels) {
 
     const label = detectionTypesLabel(v) || v.detection_label || displayCandidateType(v.detection_type || normalizedCandidateType(v.rawRow?.candidate_type));
     const confidence = detectionConfidence(v);
+    const gearLine = gear ? `<br>Gear Type: <b style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}</b>` : '';
     marker.bindTooltip(
-      `<b>${esc(v.name || `MMSI ${v.mmsi || '-'}`)}</b><br>MMSI: ${esc(v.mmsi || '-')}<br>${esc(label)} ${Math.round(confidence * 100)}%`,
+      `<b>${esc(v.name || `MMSI ${v.mmsi || '-'}`)}</b><br>MMSI: ${esc(v.mmsi || '-')}${gearLine}<br>${esc(label)} ${Math.round(confidence * 100)}%`,
       { direction:'top', offset:[0,-12], opacity:.92 }
     );
     marker.on('click', () => focusAiVessel(i));
