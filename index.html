@@ -970,6 +970,10 @@ function updateLegend(m) {
       <div class="leg-row"><span class="leg-dot" style="background:#a371f7"></span><span class="leg-label">Gillnet</span></div>
       <div class="leg-row"><span class="leg-dot" style="background:#e3901a"></span><span class="leg-label">Trawler</span></div>
       <div class="leg-row"><span class="leg-dot" style="background:#3fb950"></span><span class="leg-label">Troller / Fishing</span></div>
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px"></div>
+      <span class="leg-title">Trajectory AIS-Kalman</span>
+      <div class="leg-row"><span style="width:26px;border-top:3px dashed #ff2d2d;display:inline-block"></span><span class="leg-label">Trajectory AIS mentah</span></div>
+      <div class="leg-row"><span style="width:26px;border-top:3px solid #0b63d8;display:inline-block"></span><span class="leg-label">Trajectory AIS Kalman</span></div>
       <div class="leg-row"><span class="leg-dot" style="background:#f85149;border:2px solid #f85149"></span><span class="leg-label">⚠ Spoofing / Go Dark</span></div>`;
   } else if (m === 'ais') {
     el.innerHTML = `
