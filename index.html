@@ -1480,20 +1480,20 @@ function buildDashboardCandidateRows(candidateRows, existingRows = [], gearLooku
       if (!isFishingShipType(item) && !isFishingShipType(local)) return null;
       const mmsi = normId(item.MMSI || item.mmsi);
       const gearMatch = gearLookup.get(mmsi);
-      if (!gearMatch) return null;
+      const gearKey = gearMatch?.key || 'unknown';
       return {
         ...item,
         ...(local ? {
           local_vessel: local.local_vessel,
           dashboard_local_match: 'true',
         } : {}),
-        gear: gearMatch.key,
-        gear_type_key: gearMatch.key,
-        gear_type: gearMatch.label,
-        gear_type_source: gearMatch.source,
-        gear_type_match_rows: String(gearMatch.count),
-        gear_type_total_rows: String(gearMatch.totalRows),
-        gear_vessel_name: gearMatch.vesselName,
+        gear: gearKey,
+        gear_type_key: gearKey,
+        gear_type: gearMatch?.label || 'Unknown',
+        gear_type_source: gearMatch?.source || '',
+        gear_type_match_rows: String(gearMatch?.count || 0),
+        gear_type_total_rows: String(gearMatch?.totalRows || 0),
+        gear_vessel_name: gearMatch?.vesselName || '',
         model_source: item.model_source || `${INTEGRATION_DATA_FILES.finalModel} + scene candidate output`,
       };
     })
@@ -1516,10 +1516,11 @@ function candidateToAiResult(row) {
     };
   }
   if (row.gear_type_key) {
+    const unknownGear = String(row.gear_type_key).toLowerCase() === 'unknown';
     tasks.gear = {
       pred_label: row.gear_type_key,
-      confidence: 1,
-      probs: { [row.gear_type_key]: 1 },
+      confidence: unknownGear ? null : 1,
+      probs: unknownGear ? {} : { [row.gear_type_key]: 1 },
     };
   }
   return {
@@ -1579,7 +1580,9 @@ async function ensureIntegrationRows() {
       integrationGearTypeLookup = buildGearTypeLookup(integrationGearTypeRows);
       integrationCandidates = buildDashboardCandidateRows(integrationRuleCandidates, integrationExistingVesselRows, integrationGearTypeLookup);
       aiResults = integrationCandidates.map(candidateToAiResult);
-      aiInferenceMessage = `${aiResults.length} kandidat fishing match gear type dari output final lokal.`;
+      const matchedGearCount = integrationCandidates.filter(row => Number(row.gear_type_match_rows || 0) > 0).length;
+      const unknownGearCount = integrationCandidates.length - matchedGearCount;
+      aiInferenceMessage = `${aiResults.length} kandidat fishing dari output final lokal. ${matchedGearCount} match gear type, ${unknownGearCount} Unknown.`;
       integrationSummaryRows = summaryRows || [];
       integrationSarManifestRows = sarManifestRows || [];
       integrationTrajectoryRows = trajectoryRows || [];
@@ -3898,6 +3901,7 @@ function gearShortLabel(label) {
     'squid_jig':          'Squid Jig',
     'other_fishing':      'Other Fishing',
     'fishing':            'Fishing',
+    'unknown':            'Unknown',
   };
   return m[(label||'').toLowerCase()] || (label || '?');
 }
@@ -3914,6 +3918,7 @@ function gearColor(label) {
     'squid_jig':          '#f7c948',
     'other_fishing':      '#8b949e',
     'fishing':            '#3fb950',
+    'unknown':            '#8b949e',
   };
   return m[(label||'').toLowerCase()] || '#8b949e';
 }
@@ -3997,7 +4002,7 @@ function renderInferenceState() {
   if (!resultEls.length) return;
 
   if (!aiResults.length) {
-    const emptyHtml = '<div style="color:var(--text-3);font-size:12px">Tidak ada kandidat fishing yang match dengan 4 CSV gear type.</div>';
+    const emptyHtml = '<div style="color:var(--text-3);font-size:12px">Tidak ada kandidat fishing dari output final lokal.</div>';
     resultEls.forEach(el => { el.innerHTML = emptyHtml; });
     updateAiCounters();
     return;
@@ -4141,13 +4146,16 @@ function renderAiResults(vessels) {
     const spoof = v.tasks?.spoofing;
     const dark  = v.tasks?.godark;
     const gc    = gear ? gearColor(gear.pred_label) : '#8b949e';
+    const gearConfidence = Number(gear?.confidence);
+    const gearConfidenceText = Number.isFinite(gearConfidence) ? ` ${Math.round(gearConfidence*100)}%` : '';
+    const gearBarHtml = Number.isFinite(gearConfidence) ? `<div class="ai-conf-bar"><div class="ai-conf-fill" style="width:${Math.round(gearConfidence*100)}%;background:${gc}"></div></div>` : '';
 
     const gearHtml = gear ? `
       <div class="ai-task-row">
         <span class="ai-task-label">Gear</span>
-        <span class="ai-task-pred" style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}</span>
+        <span class="ai-task-pred" style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}${gearConfidenceText}</span>
       </div>
-      <div class="ai-conf-bar"><div class="ai-conf-fill" style="width:${Math.round(gear.confidence*100)}%;background:${gc}"></div></div>` : '';
+      ${gearBarHtml}` : '';
 
     const spoofAlert = (spoof?.pred_label||'').toLowerCase().includes('spoof');
     const darkAlert  = (dark?.pred_label||'').toLowerCase().includes('dark');
@@ -4203,12 +4211,13 @@ function plotAiMarkers(vessels) {
     const spoofAlert = (spoof?.pred_label||'').toLowerCase().includes('spoof');
     const darkAlert  = (dark?.pred_label||'').toLowerCase().includes('dark');
     const gc = gear ? gearColor(gear.pred_label) : '#8b949e';
+    const gearConfidence = Number(gear?.confidence);
 
     // ── Permanent label di peta ───────────────────────────────────────
     let tipHtml = `<div style="font-weight:700;color:#cdd9e5;margin-bottom:2px">MMSI ${esc(v.mmsi)}</div>`;
     if (gear) {
-      const pct = Math.round(gear.confidence * 100);
-      tipHtml += `<div style="color:${gc};font-weight:700">${esc(gearShortLabel(gear.pred_label))} <span style="color:var(--text-3);font-weight:400">${pct}%</span></div>`;
+      const pct = Number.isFinite(gearConfidence) ? ` <span style="color:var(--text-3);font-weight:400">${Math.round(gearConfidence * 100)}%</span>` : '';
+      tipHtml += `<div style="color:${gc};font-weight:700">${esc(gearShortLabel(gear.pred_label))}${pct}</div>`;
     }
     if (spoofAlert) tipHtml += `<div style="color:#f85149;font-weight:700;margin-top:1px">⚠ Spoofing</div>`;
     if (darkAlert)  tipHtml += `<div style="color:#e3901a;font-weight:700;margin-top:1px">⚠ Go Dark</div>`;
@@ -4279,7 +4288,7 @@ function openAiDetail(i) {
         AI PREDICTION
         <span class="sb-section-badge" style="background:${gc}22;color:${gc};border:1px solid ${gc}44">${gear ? esc(gearShortLabel(gear.pred_label)) : 'N/A'}</span>
       </div>
-      ${gear ? `<div class="sb-row"><span class="sb-key">Gear</span><span class="sb-val" style="color:${gc}">${esc(gear.pred_label)} (${Math.round(gear.confidence*100)}%)</span></div>` : ''}
+      ${gear ? `<div class="sb-row"><span class="sb-key">Gear</span><span class="sb-val" style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}${Number.isFinite(Number(gear.confidence)) ? ` (${Math.round(Number(gear.confidence)*100)}%)` : ''}</span></div>` : ''}
       ${spoof ? `<div class="sb-row"><span class="sb-key">Spoofing</span><span class="sb-val" style="color:${spoofColor(spoof.pred_label)}">${esc(spoof.pred_label)}${spoof.confidence != null ? ` (${Math.round(spoof.confidence*100)}%)` : ''}</span></div>` : ''}
       ${dark ? `<div class="sb-row"><span class="sb-key">Go Dark</span><span class="sb-val" style="color:${darkColor(dark.pred_label)}">${esc(dark.pred_label)}${dark.confidence != null ? ` (${Math.round(dark.confidence*100)}%)` : ''}</span></div>` : ''}
       ${(spoofAlert || darkAlert) ? `<div style="margin:10px 16px;padding:8px 10px;border-radius:4px;background:#f8514922;color:#f85149;border:1px solid #f8514944;font-size:12px;font-weight:700">⚠ ${spoofAlert ? 'Spoofing terdeteksi' : ''}${spoofAlert && darkAlert ? ' · ' : ''}${darkAlert ? 'Go Dark terdeteksi' : ''}</div>` : ''}
