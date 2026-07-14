@@ -474,11 +474,15 @@
     .ai-map-tip.leaflet-tooltip-top::before { border-bottom-color:var(--border-2) !important; border-top-color:var(--border-2) !important; }
 
     .detection-marker {
-      width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+      width:28px; height:28px; display:flex; align-items:center; justify-content:center; position:relative;
     }
     .detection-marker-dot {
       width:13px; height:13px; border-radius:50%; border:2px solid #f85149;
       box-shadow:0 0 0 2px rgba(248,81,73,.18),0 4px 10px rgba(0,0,0,.35);
+    }
+    .ai-evidence-pip {
+      position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%;
+      background:#39c5cf; border:1.5px solid #fff; box-shadow:0 1px 5px rgba(0,0,0,.45);
     }
     .detection-tip {
       background:rgba(12,28,50,.94) !important; color:#dbeafe !important; border:1px solid #203d61 !important;
@@ -714,6 +718,7 @@ let integrationSarManifestRows = [];
 let integrationTrajectoryImages = [];
 let integrationGearTypeRows = [];
 let integrationGearTypeLookup = new Map();
+let integrationH5ReferenceCoverage = new Map();
 let integrationExampleColumnsLogged = false;
 let sidebarFocusLatLng = null;
 let sidebarTelegramPayload = null;
@@ -722,6 +727,10 @@ let sidebarTelegramSending = false;
 const GFW_CACHE_KEY = 'gfw-events-cache-v7';
 const GFW_CACHE_TTL = 10 * 60 * 1000;
 const AIS_TRAIL_MAX = 120;
+const H5_REQUIRED_SEQUENCE_LENGTH = 120;
+const H5_REFERENCE_SEQUENCE_STRIDE = 6;
+const H5_REFERENCE_MAX_GAP_SECONDS = 12 * 3600;
+const AI_UNAVAILABLE_SHORT_TEXT = 'Model AI belum dapat memverifikasi kandidat ini karena data trajectory AIS belum mencukupi.';
 const AIS_BBOXES    = [
   [[-8.0,105.0],[-4.0,116.0]],
   [[ 1.0, 99.0],[ 6.0,104.0]],
@@ -746,6 +755,7 @@ const EARTH_RADIUS_M = 6371000;
 
 const INTEGRATION_DATA_FILES = {
   finalModel: 'KAPAL YG TERDETEKSI/FINAL_4_PIPELINE_MODELS.h5',
+  finalFusion: 'KAPAL YG TERDETEKSI/final_ai_fusion_results.csv',
   godarkH5: 'KAPAL YG TERDETEKSI/godark_h5_predictions_by_scene.csv',
   candidates: 'KAPAL YG TERDETEKSI/scene_candidates_godark_spoofing_transshipment.csv',
   summary: 'KAPAL YG TERDETEKSI/scene_candidates_summary.csv',
@@ -1138,6 +1148,7 @@ function dedupeTrajectoryImages(images) {
 
 function normalizedCandidateType(value) {
   const type = String(value || '').toLowerCase().replace(/[\s_-]+/g, '');
+  if (type.includes('yolo')) return 'yolo_sar';
   if (type.includes('transship')) return 'transshipment';
   if (type.includes('spoof')) return 'spoofing';
   if (type.includes('godark') || type.includes('dark')) return 'godark';
@@ -1185,6 +1196,7 @@ function displayCandidateType(value) {
     case 'godark': return 'Go Dark';
     case 'spoofing': return 'Spoofing';
     case 'transshipment': return 'Transshipment';
+    case 'yolo_sar': return 'YOLO SAR';
     default: return value || 'Detection';
   }
 }
@@ -1262,6 +1274,61 @@ function buildGearTypeLookup(rows = []) {
   return lookup;
 }
 
+function buildH5ReferenceCoverage(rows = []) {
+  const grouped = new Map();
+  for (const row of rows) {
+    const mmsi = normId(row.mmsi || row.MMSI || row.ssvid || row.gfw_ssvid);
+    if (!mmsi) continue;
+    const timestamp = rowEpochSeconds(row, ['timestamp', 'timestamp_utc', 'time', 'time_iso']);
+    const lat = Number(pick(row, ['lat', 'ais_lat', 'AIS_Latitude'], ''));
+    const lon = Number(pick(row, ['lon', 'ais_lon', 'AIS_Longitude'], ''));
+    if (!Number.isFinite(timestamp) || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const speedRaw = Number(pick(row, ['speed', 'sog', 'Sog'], '0'));
+    const speed = Number.isFinite(speedRaw) ? speedRaw : 0;
+    if (!grouped.has(mmsi)) grouped.set(mmsi, []);
+    grouped.get(mmsi).push({ timestamp, speed, source: row._gear_key || basename(row._gear_path || '') });
+  }
+
+  const coverage = new Map();
+  for (const [mmsi, points] of grouped.entries()) {
+    const byTimestamp = new Map();
+    for (const point of points) byTimestamp.set(point.timestamp, point);
+    const rawPoints = [...byTimestamp.values()].sort((a, b) => a.timestamp - b.timestamp);
+    const modelPoints = rawPoints.filter(point => point.speed >= 1 && point.speed <= 12);
+    let maxSequenceLength = 0;
+    let sequenceCount = 0;
+    let currentLength = 0;
+    let previousTime = NaN;
+    for (const point of modelPoints) {
+      if (!Number.isFinite(previousTime) || point.timestamp - previousTime > H5_REFERENCE_MAX_GAP_SECONDS) {
+        if (currentLength > 0) {
+          maxSequenceLength = Math.max(maxSequenceLength, currentLength);
+          sequenceCount += 1;
+        }
+        currentLength = 1;
+      } else {
+        currentLength += 1;
+      }
+      previousTime = point.timestamp;
+    }
+    if (currentLength > 0) {
+      maxSequenceLength = Math.max(maxSequenceLength, currentLength);
+      sequenceCount += 1;
+    }
+    const windows = modelPoints.length
+      ? Math.max(0, Math.floor((maxSequenceLength - H5_REQUIRED_SEQUENCE_LENGTH) / H5_REFERENCE_SEQUENCE_STRIDE) + 1)
+      : 0;
+    coverage.set(mmsi, {
+      rawPointCount: rawPoints.length,
+      modelPointCount: modelPoints.length,
+      sequenceCount,
+      maxSequenceLength,
+      windows,
+    });
+  }
+  return coverage;
+}
+
 function detectionScore(row) {
   const score = Number(row?.score);
   if (Number.isFinite(score)) return score;
@@ -1289,7 +1356,7 @@ function normalizeDetectionRow(row, fallbackType, sourceLabel) {
     ...row,
     candidate_type: candidateType,
     score: String(detectionScore(row)),
-    model_source: sourceLabel,
+    model_source: row.model_source || sourceLabel,
     final_model_file: INTEGRATION_DATA_FILES.finalModel,
     Center_latitude: row.Center_latitude || String(lat),
     Center_longitude: row.Center_longitude || String(lon),
@@ -1369,6 +1436,7 @@ function detectionTypesFor(value) {
     if (s.includes('spoof')) found.add('spoofing');
     if (s.includes('go_dark') || s.includes('godark') || s.includes('go dark')) found.add('godark');
     if (s.includes('transship')) found.add('transshipment');
+    if (s.includes('yolo')) found.add('yolo_sar');
     const normalized = normalizedCandidateType(s);
     if (normalized) found.add(normalized);
   };
@@ -1392,7 +1460,7 @@ function detectionTypesFor(value) {
     addFromText(value);
   }
 
-  return ['spoofing', 'godark', 'transshipment'].filter(type => found.has(type));
+  return ['spoofing', 'godark', 'transshipment', 'yolo_sar'].filter(type => found.has(type));
 }
 
 function primaryDetectionType(value) {
@@ -1407,6 +1475,8 @@ function detectionTypesLabel(value) {
 function candidateTypeScore(row, type) {
   const keys = type === 'godark'
     ? ['godark_score', 'go_dark_probability_calibrated', 'go_dark_probability_raw_mean', 'score']
+    : type === 'yolo_sar'
+    ? ['yolo_confidence', 'score']
     : [`${type}_score`, 'score'];
   for (const key of keys) {
     const value = Number(row?.[key]);
@@ -1469,7 +1539,7 @@ function buildMatchedFinalDetectionRows(ruleRows, godarkRows, existingRows) {
   return [...bestByKey.values()].sort((a, b) => detectionScore(b) - detectionScore(a));
 }
 
-function buildDashboardCandidateRows(candidateRows, existingRows = [], gearLookup = new Map()) {
+function buildDashboardCandidateRows(candidateRows, existingRows = [], gearLookup = new Map(), includeAll = false) {
   const localByKey = new Map();
   for (const row of existingRows || []) {
     const key = `${row.scene || ''}|${normId(row.MMSI || row.mmsi)}`;
@@ -1481,7 +1551,7 @@ function buildDashboardCandidateRows(candidateRows, existingRows = [], gearLooku
       const item = normalizeDetectionRow(row, row.candidate_type, 'FINAL_4_PIPELINE_MODELS.h5 / scene candidate output');
       if (!item) return null;
       const local = localByKey.get(`${item.scene || ''}|${normId(item.MMSI || item.mmsi)}`);
-      if (!isFishingShipType(item) && !isFishingShipType(local)) return null;
+      if (!includeAll && !isFishingShipType(item) && !isFishingShipType(local)) return null;
       const mmsi = normId(item.MMSI || item.mmsi);
       const gearMatch = gearLookup.get(mmsi);
       const gearKey = gearMatch?.key || 'unknown';
@@ -1519,7 +1589,52 @@ function candidateToAiResult(row) {
       probs: { [detectedType]: typeScore },
     };
   }
-  if (row.gear_type_key) {
+  const h5GearLabel = row.ai_gear_label || row.gear_label;
+  const h5GearProbability = Number(row.ai_gear_probability || row.gear_probability);
+  if (h5GearLabel) {
+    const key = normalizeGearKey(h5GearLabel);
+    tasks.gear = {
+      pred_label: key,
+      confidence: Number.isFinite(h5GearProbability) ? h5GearProbability : null,
+      probs: Number.isFinite(h5GearProbability) ? { [key]: h5GearProbability } : {},
+    };
+  }
+  const godarkProbability = Number(row.ai_godark_probability || row.godark_probability);
+  if (Number.isFinite(godarkProbability)) {
+    const label = row.godark_label || (godarkProbability >= 0.325 ? 'go_dark' : 'normal');
+    tasks.godark = {
+      pred_label: label,
+      confidence: godarkProbability,
+      probs: { godark: godarkProbability },
+    };
+  }
+  const spoofingProbability = Number(row.ai_spoofing_probability || row.spoofing_probability);
+  if (Number.isFinite(spoofingProbability)) {
+    const label = row.spoofing_label || (spoofingProbability >= 0.4154211424307387 ? 'spoofing' : 'normal');
+    tasks.spoofing = {
+      pred_label: label,
+      confidence: spoofingProbability,
+      probs: { spoofing: spoofingProbability },
+    };
+  }
+  const transshipmentProbability = Number(row.ai_transshipment_probability || row.transshipment_probability);
+  if (Number.isFinite(transshipmentProbability)) {
+    const label = row.transshipment_label || (transshipmentProbability >= 0.525 ? 'potential_transshipment' : 'normal');
+    tasks.transshipment = {
+      pred_label: label,
+      confidence: transshipmentProbability,
+      probs: { transshipment: transshipmentProbability },
+    };
+  }
+  const yoloConfidence = Number(row.yolo_confidence);
+  if (row.yolo_class || Number.isFinite(yoloConfidence)) {
+    tasks.yolo = {
+      pred_label: row.yolo_class || 'YOLO',
+      confidence: Number.isFinite(yoloConfidence) ? yoloConfidence : null,
+      probs: Number.isFinite(yoloConfidence) && row.yolo_class ? { [row.yolo_class]: yoloConfidence } : {},
+    };
+  }
+  if (!tasks.gear && row.gear_type_key) {
     const unknownGear = String(row.gear_type_key).toLowerCase() === 'unknown';
     tasks.gear = {
       pred_label: row.gear_type_key,
@@ -1546,6 +1661,7 @@ async function ensureIntegrationRows() {
   if (integrationRowsLoaded) return;
   if (!integrationLoadPromise) {
     integrationLoadPromise = (async () => {
+      const finalFusionPromise = loadCsvRows(INTEGRATION_DATA_FILES.finalFusion);
       const candidatePromise = loadCsvRows(INTEGRATION_DATA_FILES.candidates);
       const godarkH5Promise = loadCsvRows(INTEGRATION_DATA_FILES.godarkH5);
       const summaryPromise = loadCsvRows(INTEGRATION_DATA_FILES.summary);
@@ -1574,19 +1690,24 @@ async function ensureIntegrationRows() {
         INTEGRATION_DATA_FILES.trajectoryGalleries.map(path => loadTrajectoryImageRows(path))
       );
       const kalmanPromises = INTEGRATION_DATA_FILES.kalman.map(path => loadCsvRows(path));
-      const [candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, gearTypeRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
-        await Promise.all([candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, gearTypePromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
+      const [fusionRows, candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, gearTypeRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
+        await Promise.all([finalFusionPromise, candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, gearTypePromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
       integrationRuleCandidates = candidates || [];
       integrationGodarkH5Rows = godarkH5Rows || [];
       if (localKalmanJson) localKalmanData = localKalmanJson;
       integrationExistingVesselRows = flattenExistingVesselRows(localKalmanData);
       integrationGearTypeRows = (gearTypeRows || []).flat();
       integrationGearTypeLookup = buildGearTypeLookup(integrationGearTypeRows);
-      integrationCandidates = buildDashboardCandidateRows(integrationRuleCandidates, integrationExistingVesselRows, integrationGearTypeLookup);
+      integrationH5ReferenceCoverage = buildH5ReferenceCoverage(integrationGearTypeRows);
+      const usingFusionRows = Boolean(fusionRows && fusionRows.length);
+      const dashboardCandidateRows = usingFusionRows ? fusionRows : integrationRuleCandidates;
+      integrationCandidates = buildDashboardCandidateRows(dashboardCandidateRows, integrationExistingVesselRows, integrationGearTypeLookup, usingFusionRows);
       aiResults = integrationCandidates.map(candidateToAiResult);
       const matchedGearCount = integrationCandidates.filter(row => Number(row.gear_type_match_rows || 0) > 0).length;
       const unknownGearCount = integrationCandidates.length - matchedGearCount;
-      aiInferenceMessage = `${aiResults.length} kandidat fishing dari output final lokal. ${matchedGearCount} match gear type, ${unknownGearCount} Unknown.`;
+      aiInferenceMessage = usingFusionRows
+        ? `${aiResults.length} baris dari final_ai_fusion_results.csv. ${matchedGearCount} match gear type, ${unknownGearCount} Unknown.`
+        : `${aiResults.length} kandidat fishing dari output final lokal. ${matchedGearCount} match gear type, ${unknownGearCount} Unknown.`;
       integrationSummaryRows = summaryRows || [];
       integrationSarManifestRows = sarManifestRows || [];
       integrationTrajectoryRows = trajectoryRows || [];
@@ -2870,6 +2991,25 @@ function configureSidebarTelegramAlert(payload, unavailableMessage = 'Alert Tele
     lat: cleanAlertText(payload.lat),
     lon: cleanAlertText(payload.lon),
     time: cleanAlertText(payload.time, new Date().toISOString()),
+    hybrid_status: cleanAlertText(payload.hybrid_status),
+    ai_source: cleanAlertText(payload.ai_source),
+    yolo_class: cleanAlertText(payload.yolo_class),
+    yolo_confidence: cleanAlertText(payload.yolo_confidence),
+    yolo_bbox: cleanAlertText(payload.yolo_bbox),
+    gear_label: cleanAlertText(payload.gear_label),
+    godark_label: cleanAlertText(payload.godark_label),
+    spoofing_label: cleanAlertText(payload.spoofing_label),
+    transshipment_label: cleanAlertText(payload.transshipment_label),
+    model_indication_text: cleanAlertText(payload.model_indication_text),
+    model_unavailable_reason: cleanAlertText(payload.model_unavailable_reason),
+    max_sequence_length: cleanAlertText(payload.max_sequence_length),
+    required_sequence_length: cleanAlertText(payload.required_sequence_length),
+    transshipment_event_steps: cleanAlertText(payload.transshipment_event_steps),
+    ai_gear_label: cleanAlertText(payload.ai_gear_label),
+    ai_gear_probability: cleanAlertText(payload.ai_gear_probability),
+    ai_godark_probability: cleanAlertText(payload.ai_godark_probability),
+    ai_spoofing_probability: cleanAlertText(payload.ai_spoofing_probability),
+    ai_transshipment_probability: cleanAlertText(payload.ai_transshipment_probability),
   };
   setTelegramButton(true, 'Kirim Alert', 'ready');
   setTelegramInfo(`Siap kirim alert Telegram: ${alertType}.`);
@@ -2927,6 +3067,7 @@ function detectionBadgeStyle(type) {
     case 'godark': return 'background:#f8514922;color:#ff6b66;border:1px solid #f8514966';
     case 'spoofing': return 'background:#d2992222;color:#ffb84d;border:1px solid #d2992266';
     case 'transshipment': return 'background:#a371f722;color:#c69cff;border:1px solid #a371f766';
+    case 'yolo_sar': return 'background:#4493f822;color:#58a6ff;border:1px solid #4493f866';
     default: return 'background:#4493f822;color:#58a6ff;border:1px solid #4493f866';
   }
 }
@@ -2962,6 +3103,160 @@ function compactText(value, fallback = '-') {
   return text || fallback;
 }
 
+function hasModelValue(value) {
+  const text = String(value ?? '').trim();
+  return Boolean(text) && text.toLowerCase() !== 'not_available';
+}
+
+function hasValidAiEvidence(row = {}) {
+  return [
+    row.ai_gear_label,
+    row.ai_godark_probability,
+    row.ai_spoofing_probability,
+    row.ai_transshipment_probability,
+    row.yolo_class,
+  ].some(hasModelValue);
+}
+
+function hasAiEvidenceMarker(row = {}) {
+  return String(row.hybrid_status || '').trim().toLowerCase() !== 'not_available' && hasValidAiEvidence(row);
+}
+
+function prettyGearLabel(value) {
+  return String(value ?? '').trim().replace(/_/g, ' ').replace(/\s+/g, ' ');
+}
+
+function modelLabelEquals(value, expected) {
+  return String(value ?? '').trim().toLowerCase() === expected;
+}
+
+function joinReadable(items) {
+  if (items.length <= 1) return items[0] || '';
+  if (items.length === 2) return `${items[0]} dan ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, dan ${items[items.length - 1]}`;
+}
+
+function hasAnyH5Output(row = {}) {
+  return [
+    pick(row, ['ai_gear_label', 'gear_label'], ''),
+    pick(row, ['ai_gear_probability', 'gear_probability'], ''),
+    pick(row, ['ai_godark_probability', 'godark_probability'], ''),
+    pick(row, ['ai_spoofing_probability', 'spoofing_probability'], ''),
+    pick(row, ['ai_transshipment_probability', 'transshipment_probability'], ''),
+  ].some(hasModelValue);
+}
+
+function h5ReferenceCoverageFor(row = {}) {
+  const mmsi = normId(row.MMSI || row.mmsi || row.ssvid || row.gfw_ssvid);
+  return mmsi ? integrationH5ReferenceCoverage.get(mmsi) || null : null;
+}
+
+function h5UnavailableDetails(row = {}) {
+  const explicitReason = String(pick(row, ['model_unavailable_reason', 'h5_unavailable_reason', 'ai_unavailable_reason', 'inference_failure_reason'], '')).trim();
+  const reasonKey = explicitReason.toLowerCase();
+  const explicitMaxSequence = Number(pick(row, ['max_sequence_length', 'h5_max_sequence_length', 'sequence_max_length'], ''));
+  const eventSteps = Number(pick(row, ['transshipment_event_steps', 'event_steps', 'max_event_steps'], ''));
+
+  if (reasonKey.includes('insufficient_event_steps') || (Number.isFinite(eventSteps) && eventSteps < 24)) {
+    return {
+      reason: 'insufficient_event_steps',
+      eventSteps: Number.isFinite(eventSteps) ? eventSteps : '',
+      text: AI_UNAVAILABLE_SHORT_TEXT,
+    };
+  }
+  if (reasonKey.includes('mmsi_not_found')) {
+    return {
+      reason: 'MMSI_not_found',
+      text: AI_UNAVAILABLE_SHORT_TEXT,
+    };
+  }
+  if (reasonKey.includes('insufficient_sequence') || (Number.isFinite(explicitMaxSequence) && explicitMaxSequence < H5_REQUIRED_SEQUENCE_LENGTH)) {
+    const maxSequenceLength = Number.isFinite(explicitMaxSequence) ? explicitMaxSequence : 0;
+    return {
+      reason: 'insufficient_sequence',
+      maxSequenceLength,
+      requiredSequenceLength: H5_REQUIRED_SEQUENCE_LENGTH,
+      text: AI_UNAVAILABLE_SHORT_TEXT,
+    };
+  }
+
+  const coverage = h5ReferenceCoverageFor(row);
+  if (!coverage) {
+    return {
+      reason: 'MMSI_not_found',
+      text: AI_UNAVAILABLE_SHORT_TEXT,
+    };
+  }
+  if (coverage.maxSequenceLength < H5_REQUIRED_SEQUENCE_LENGTH) {
+    return {
+      reason: 'insufficient_sequence',
+      maxSequenceLength: coverage.maxSequenceLength,
+      requiredSequenceLength: H5_REQUIRED_SEQUENCE_LENGTH,
+      text: AI_UNAVAILABLE_SHORT_TEXT,
+    };
+  }
+  return {
+    reason: '',
+    maxSequenceLength: coverage.maxSequenceLength,
+    requiredSequenceLength: H5_REQUIRED_SEQUENCE_LENGTH,
+    text: '',
+  };
+}
+
+function buildModelIndicationText(row = {}) {
+  const h5Items = [];
+  const gearLabel = prettyGearLabel(pick(row, ['ai_gear_label', 'gear_label'], ''));
+  const yoloClass = pick(row, ['yolo_class'], '');
+  const godarkProbability = pick(row, ['ai_godark_probability', 'godark_probability'], '');
+  const spoofingProbability = pick(row, ['ai_spoofing_probability', 'spoofing_probability'], '');
+  const transshipmentProbability = pick(row, ['ai_transshipment_probability', 'transshipment_probability'], '');
+  const godarkLabel = pick(row, ['godark_label', 'ai_godark_label'], '');
+  const spoofingLabel = pick(row, ['spoofing_label', 'ai_spoofing_label'], '');
+  const transshipmentLabel = pick(row, ['transshipment_label', 'ai_transshipment_label'], '');
+
+  if (hasModelValue(godarkProbability) && modelLabelEquals(godarkLabel, 'go_dark')) {
+    h5Items.push({
+      clause: 'trajectory AIS menyerupai aktivitas go dark',
+      sentence: 'Pola trajectory AIS menyerupai aktivitas go dark.',
+    });
+  }
+  if (hasModelValue(spoofingProbability) && modelLabelEquals(spoofingLabel, 'spoofing')) {
+    h5Items.push({
+      clause: 'trajectory AIS menyerupai aktivitas spoofing',
+      sentence: 'Pola trajectory AIS menyerupai aktivitas spoofing.',
+    });
+  }
+  if (hasModelValue(transshipmentProbability) && modelLabelEquals(transshipmentLabel, 'potential_transshipment')) {
+    h5Items.push({
+      clause: 'pergerakan pasangan kapal menyerupai aktivitas transshipment',
+      sentence: 'Pola pergerakan pasangan kapal menyerupai aktivitas transshipment.',
+    });
+  }
+  if (hasModelValue(gearLabel)) {
+    h5Items.push({
+      clause: `trajectory AIS menyerupai karakteristik alat tangkap ${gearLabel}`,
+      sentence: `Pola trajectory AIS menyerupai karakteristik alat tangkap ${gearLabel}.`,
+    });
+  }
+
+  const sentences = [];
+  if (h5Items.length === 1) {
+    sentences.push(h5Items[0].sentence);
+  } else if (h5Items.length > 1) {
+    sentences.push(`Model H5 mengindikasikan ${joinReadable(h5Items.map(item => item.clause))}.`);
+  }
+  if (hasModelValue(yoloClass)) {
+    sentences.push(`Deteksi SAR mengindikasikan kapal kelas ${yoloClass}.`);
+  }
+  if (!sentences.length && hasValidAiEvidence(row)) {
+    sentences.push('Hasil model AI tersedia, tetapi belum menunjukkan indikasi aktivitas anomali pada kandidat ini.');
+  }
+
+  return sentences.length
+    ? sentences.join(' ')
+    : AI_UNAVAILABLE_SHORT_TEXT;
+}
+
 function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
   const mmsi = pick(candidate, ['MMSI'], pick(kalman, ['MMSI'], vessel?.mmsi || ''));
   const title = pick(candidate, ['Name', 'gfw_name'], pick(kalman, ['Name', 'gfw_name'], vessel?.name || ''));
@@ -2980,6 +3275,30 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
   const alertScore = scoreNumbers.length ? Math.max(...scoreNumbers) : detectionScore(candidate);
   const badge = candidateLabel || 'HYBRID';
   const modelSource = pick(candidate, ['model_source'], INTEGRATION_DATA_FILES.finalModel);
+  const hybridStatus = pick(candidate, ['hybrid_status'], '');
+  const aiSource = pick(candidate, ['ai_source'], '');
+  const yoloClass = pick(candidate, ['yolo_class'], '');
+  const yoloConfidence = pick(candidate, ['yolo_confidence'], '');
+  const yoloBbox = pick(candidate, ['yolo_bbox'], '');
+  const aiGearLabel = pick(candidate, ['ai_gear_label', 'gear_label'], '');
+  const aiGearProbability = pick(candidate, ['ai_gear_probability', 'gear_probability'], '');
+  const aiGodarkProbability = pick(candidate, ['ai_godark_probability', 'godark_probability'], '');
+  const aiSpoofingProbability = pick(candidate, ['ai_spoofing_probability', 'spoofing_probability'], '');
+  const aiTransshipmentProbability = pick(candidate, ['ai_transshipment_probability', 'transshipment_probability'], '');
+  const godarkLabel = pick(candidate, ['godark_label', 'ai_godark_label'], '');
+  const spoofingLabel = pick(candidate, ['spoofing_label', 'ai_spoofing_label'], '');
+  const transshipmentLabel = pick(candidate, ['transshipment_label', 'ai_transshipment_label'], '');
+  const modelUnavailable = h5UnavailableDetails(candidate);
+  const hasAiEvidence = hasValidAiEvidence(candidate);
+  const modelIndication = buildModelIndicationText(candidate);
+  const modelIndicationSection = hasAiEvidence
+    ? `<div class="sb-section">
+      <div class="sb-section-title">INDIKASI MODEL</div>
+      <div class="sb-note">${esc(modelIndication)}</div>
+    </div>`
+    : `<div class="sb-section">
+      <div class="sb-note">${esc(modelIndication)}</div>
+    </div>`;
   const confidence = confidenceText(alertScore);
   const severity = severityText(alertScore);
   const method = pick(candidate, ['rule'], pick(kalman, ['rule'], '-'));
@@ -3034,8 +3353,11 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
       ${gearSource ? rowHtml('Sumber Gear', displayValue(gearSource), true) : ''}
       ${rowHtml('Dataset', displayValue(dataset), true)}
       ${rowHtml('Event ID', displayValue(eventId), true)}
+      ${hybridStatus ? rowHtml('Hybrid Status', displayValue(hybridStatus), true) : ''}
       ${rowHtml('Sumber model', displayValue(modelSource))}
+      ${aiSource ? rowHtml('AI Source', displayValue(aiSource)) : ''}
     </div>
+    ${modelIndicationSection}
     <div class="sb-section">
       <div class="sb-section-title">EVIDENCE</div>
       ${rowHtml('gapHours', displayValue(pick(candidate, ['AIS_update_time_gap_hours', 'ais_position_time_gap_hours'], pick(kalman, ['AIS_update_time_gap_hours', 'ais_position_time_gap_hours'], ''))))}
@@ -3066,6 +3388,25 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
     lat: focusLat,
     lon: focusLon,
     time: sceneTime,
+    hybrid_status: hybridStatus,
+    ai_source: aiSource,
+    yolo_class: yoloClass,
+    yolo_confidence: yoloConfidence,
+    yolo_bbox: yoloBbox,
+    gear_label: aiGearLabel,
+    godark_label: godarkLabel,
+    spoofing_label: spoofingLabel,
+    transshipment_label: transshipmentLabel,
+    model_indication_text: modelIndication,
+    model_unavailable_reason: modelUnavailable.reason,
+    max_sequence_length: modelUnavailable.maxSequenceLength ?? '',
+    required_sequence_length: modelUnavailable.requiredSequenceLength ?? '',
+    transshipment_event_steps: modelUnavailable.eventSteps ?? '',
+    ai_gear_label: aiGearLabel,
+    ai_gear_probability: aiGearProbability,
+    ai_godark_probability: aiGodarkProbability,
+    ai_spoofing_probability: aiSpoofingProbability,
+    ai_transshipment_probability: aiTransshipmentProbability,
   });
 }
 
@@ -3190,6 +3531,7 @@ function renderIntegrationCandidateMarkers() {
     if (seen.has(key)) continue;
     seen.add(key);
     const c = candidateColor(row.candidate_type);
+    const aiPip = hasAiEvidenceMarker(row) ? '<span class="ai-evidence-pip"></span>' : '';
     bounds.push([lat, lon]);
     const vessel = {
       mmsi: row.MMSI,
@@ -3202,7 +3544,7 @@ function renderIntegrationCandidateMarkers() {
     };
     const icon = L.divIcon({
       className: '',
-      html: `<div class="detection-marker"><div class="detection-marker-dot" style="background:${c}"></div></div>`,
+      html: `<div class="detection-marker"><div class="detection-marker-dot" style="background:${c}"></div>${aiPip}</div>`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     });
@@ -3932,11 +4274,14 @@ function darkColor(label)  { return (label||'').toLowerCase().includes('dark')  
 function makeAiIcon(vessel, selected) {
   const c  = candidateColor(vessel);
   const sz = selected ? 18 : 13;
+  const rawRow = vessel?.rawRow || vessel || {};
+  const aiPip = hasAiEvidenceMarker(rawRow) ? '<span class="ai-evidence-pip"></span>' : '';
   const ring = `border:2px solid #f85149;box-shadow:0 0 0 2px rgba(248,81,73,.18),0 4px 10px rgba(0,0,0,.35);`;
   return L.divIcon({
     className:'',
-    html:`<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center">
+    html:`<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;position:relative">
       <div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};${ring}transition:.12s"></div>
+      ${aiPip}
     </div>`,
     iconSize:[30,30], iconAnchor:[15,15],
   });
@@ -4279,23 +4624,37 @@ function openAiDetail(i) {
   const gear  = v.tasks?.gear;
   const spoof = v.tasks?.spoofing;
   const dark  = v.tasks?.godark;
+  const trans = v.tasks?.transshipment;
+  const yolo = v.tasks?.yolo;
   const gc    = gear ? gearColor(gear.pred_label) : '#8b949e';
   const spoofAlert = (spoof?.pred_label||'').toLowerCase().includes('spoof');
   const darkAlert  = (dark?.pred_label||'').toLowerCase().includes('dark');
   const trackCount = aiRawTrack.filter(r => String(r.mmsi) === String(v.mmsi)).length;
+  const rawForIndication = v.rawRow || {
+    ai_gear_label: gear?.pred_label || '',
+    gear_label: gear?.pred_label || '',
+    ai_godark_probability: dark?.confidence ?? '',
+    godark_label: dark?.pred_label || '',
+    ai_spoofing_probability: spoof?.confidence ?? '',
+    spoofing_label: spoof?.pred_label || '',
+    ai_transshipment_probability: trans?.confidence ?? '',
+    transshipment_label: trans?.pred_label || '',
+    yolo_class: yolo?.pred_label || '',
+  };
+  const aiDetailUnavailable = h5UnavailableDetails(rawForIndication);
+  const hasAiDetailEvidence = hasValidAiEvidence(rawForIndication);
+  const aiDetailIndication = buildModelIndicationText(rawForIndication);
+  const aiDetailTitle = hasAiDetailEvidence ? 'INDIKASI MODEL' : 'MODEL AI';
 
   document.getElementById('sidebar-title').textContent = v.name || `MMSI: ${v.mmsi}`;
   document.getElementById('sidebar-sub').textContent = 'AI Inference';
   document.getElementById('sidebar-body').innerHTML = `
     <div class="sb-section">
       <div class="sb-section-title">
-        AI PREDICTION
-        <span class="sb-section-badge" style="background:${gc}22;color:${gc};border:1px solid ${gc}44">${gear ? esc(gearShortLabel(gear.pred_label)) : 'N/A'}</span>
+        ${aiDetailTitle}
+        <span class="sb-section-badge" style="background:${gc}22;color:${gc};border:1px solid ${gc}44">${gear ? esc(gearShortLabel(gear.pred_label)) : 'MODEL'}</span>
       </div>
-      ${gear ? `<div class="sb-row"><span class="sb-key">Gear</span><span class="sb-val" style="color:${gc}">${esc(gearShortLabel(gear.pred_label))}${Number.isFinite(Number(gear.confidence)) ? ` (${Math.round(Number(gear.confidence)*100)}%)` : ''}</span></div>` : ''}
-      ${spoof ? `<div class="sb-row"><span class="sb-key">Spoofing</span><span class="sb-val" style="color:${spoofColor(spoof.pred_label)}">${esc(spoof.pred_label)}${spoof.confidence != null ? ` (${Math.round(spoof.confidence*100)}%)` : ''}</span></div>` : ''}
-      ${dark ? `<div class="sb-row"><span class="sb-key">Go Dark</span><span class="sb-val" style="color:${darkColor(dark.pred_label)}">${esc(dark.pred_label)}${dark.confidence != null ? ` (${Math.round(dark.confidence*100)}%)` : ''}</span></div>` : ''}
-      ${(spoofAlert || darkAlert) ? `<div style="margin:10px 16px;padding:8px 10px;border-radius:4px;background:#f8514922;color:#f85149;border:1px solid #f8514944;font-size:12px;font-weight:700">⚠ ${spoofAlert ? 'Spoofing terdeteksi' : ''}${spoofAlert && darkAlert ? ' · ' : ''}${darkAlert ? 'Go Dark terdeteksi' : ''}</div>` : ''}
+      <div class="sb-note">${esc(aiDetailIndication)}</div>
     </div>
     <div class="sb-section">
       <div class="sb-section-title">POSISI TERAKHIR</div>
@@ -4328,6 +4687,25 @@ function openAiDetail(i) {
     lat: v.last_lat,
     lon: v.last_lon,
     time: v.rawRow?.scene_time_utc || v.rawRow?.timestamp_utc || '',
+    hybrid_status: v.rawRow?.hybrid_status || '',
+    ai_source: v.rawRow?.ai_source || '',
+    yolo_class: v.rawRow?.yolo_class || '',
+    yolo_confidence: v.rawRow?.yolo_confidence || '',
+    yolo_bbox: v.rawRow?.yolo_bbox || '',
+    gear_label: v.rawRow?.gear_label || '',
+    godark_label: v.rawRow?.godark_label || '',
+    spoofing_label: v.rawRow?.spoofing_label || '',
+    transshipment_label: v.rawRow?.transshipment_label || '',
+    model_indication_text: aiDetailIndication,
+    model_unavailable_reason: aiDetailUnavailable.reason,
+    max_sequence_length: aiDetailUnavailable.maxSequenceLength ?? '',
+    required_sequence_length: aiDetailUnavailable.requiredSequenceLength ?? '',
+    transshipment_event_steps: aiDetailUnavailable.eventSteps ?? '',
+    ai_gear_label: v.rawRow?.ai_gear_label || v.rawRow?.gear_label || '',
+    ai_gear_probability: v.rawRow?.ai_gear_probability || v.rawRow?.gear_probability || '',
+    ai_godark_probability: v.rawRow?.ai_godark_probability || v.rawRow?.godark_probability || '',
+    ai_spoofing_probability: v.rawRow?.ai_spoofing_probability || v.rawRow?.spoofing_probability || '',
+    ai_transshipment_probability: v.rawRow?.ai_transshipment_probability || v.rawRow?.transshipment_probability || '',
   });
   document.getElementById('sidebar').classList.add('open');
 }
