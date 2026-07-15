@@ -719,6 +719,8 @@ let integrationTrajectoryImages = [];
 let integrationGearTypeRows = [];
 let integrationGearTypeLookup = new Map();
 let integrationH5ReferenceCoverage = new Map();
+let integrationPrimaryYoloPredictions = new Map();
+let integrationRunYoloPredictions = new Map();
 let integrationExampleColumnsLogged = false;
 let sidebarFocusLatLng = null;
 let sidebarTelegramPayload = null;
@@ -757,6 +759,10 @@ const INTEGRATION_DATA_FILES = {
   finalModel: 'KAPAL YG TERDETEKSI/FINAL_4_PIPELINE_MODELS.h5',
   finalFusion: 'KAPAL YG TERDETEKSI/final_ai_fusion_results.csv',
   godarkH5: 'KAPAL YG TERDETEKSI/godark_h5_predictions_by_scene.csv',
+  yoloPrimaryPredictions: 'hasilyolov12n/predictions.csv',
+  yoloPrimaryImageDir: 'hasilyolov12n/',
+  runYoloFinalPredictions: 'RUNYOLO_FINALBISMILLAH/predictions_nms045/YOLOV12N_E150/predictions.csv',
+  runYoloFinalImageDir: 'RUNYOLO_FINALBISMILLAH/predictions_nms045/YOLOV12N_E150/',
   candidates: 'KAPAL YG TERDETEKSI/scene_candidates_godark_spoofing_transshipment.csv',
   summary: 'KAPAL YG TERDETEKSI/scene_candidates_summary.csv',
   sarManifest: 'KAPAL YG TERDETEKSI/SAR_SCENE_GALLERY_ALL/manifest.csv',
@@ -1074,6 +1080,116 @@ async function loadCsvRows(path) {
     console.warn('[dashboard integration] CSV tidak tersedia:', path, err);
     return [];
   }
+}
+
+function yoloImageNameFromPatchValue(value) {
+  if (!value) return '';
+  const cleanName = basename(value).trim();
+  if (!cleanName) return '';
+  const stem = cleanName
+    .replace(/\.(png|jpe?g|tiff?|bmp)$/i, '')
+    .replace(/_(vv|vh)$/i, '');
+  return stem ? `${stem}_vv_vh_rgb.png` : '';
+}
+
+function candidateRunYoloImageName(row = {}) {
+  const patchFields = [
+    'patch_rgb_vv_actual_file',
+    'patch_rgb_vh_actual_file',
+    'patch_uint8_vv_actual_file',
+    'patch_uint8_vh_actual_file',
+    'patch_vv_actual_file',
+    'patch_vh_actual_file',
+  ];
+  for (const field of patchFields) {
+    const imageName = yoloImageNameFromPatchValue(row?.[field]);
+    if (imageName) return imageName;
+  }
+  return basename(pick(row, ['yolo_image_name'], '')).trim();
+}
+
+function buildYoloPredictionMap(rows = []) {
+  const map = new Map();
+  for (const row of rows || []) {
+    const imageName = basename(row.image_name || '').trim();
+    if (!imageName) continue;
+    map.set(imageName, row);
+  }
+  return map;
+}
+
+function yoloCandidateImageKeys(row = {}) {
+  const keys = [
+    basename(pick(row, ['yolo_image_name'], '')).trim(),
+    candidateRunYoloImageName(row),
+  ].filter(Boolean);
+  return [...new Set(keys)];
+}
+
+function yoloPredictionForCandidate(row = {}) {
+  const keys = yoloCandidateImageKeys(row);
+  for (const key of keys) {
+    const prediction = integrationPrimaryYoloPredictions.get(key);
+    if (prediction) {
+      return {
+        prediction,
+        imageDir: INTEGRATION_DATA_FILES.yoloPrimaryImageDir,
+        sourceLabel: 'hasilyolov12n/predictions.csv',
+      };
+    }
+  }
+  for (const key of keys) {
+    const prediction = integrationRunYoloPredictions.get(key);
+    if (prediction) {
+      return {
+        prediction,
+        imageDir: INTEGRATION_DATA_FILES.runYoloFinalImageDir,
+        sourceLabel: 'RUNYOLO_FINALBISMILLAH/predictions_nms045/YOLOV12N_E150',
+      };
+    }
+  }
+  return null;
+}
+
+function yoloBboxText(row = {}) {
+  return [row.x1, row.y1, row.x2, row.y2]
+    .map(value => {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(2) : String(value ?? '').trim();
+    })
+    .filter(Boolean)
+    .join(';');
+}
+
+function enrichRowWithYoloPrediction(row = {}) {
+  const match = yoloPredictionForCandidate(row);
+  const baseAiSource = String(row.ai_source || '')
+    .replace(/\s*\+\s*hasilyolov12n\/predictions\.csv/gi, '')
+    .replace(/\s*\+\s*RUNYOLO_FINALBISMILLAH\/predictions_nms045\/YOLOV12N_E150/gi, '')
+    .trim();
+  if (!match) {
+    return {
+      ...row,
+      yolo_class: '',
+      yolo_confidence: '',
+      yolo_bbox: '',
+      yolo_image_name: '',
+      ai_source: baseAiSource || row.ai_source || '',
+    };
+  }
+  const { prediction, imageDir, sourceLabel } = match;
+  const imageName = basename(prediction.image_name || candidateRunYoloImageName(row)).trim();
+  return {
+    ...row,
+    yolo_class: prediction.pred_class_name || row.yolo_class || '',
+    yolo_confidence: prediction.confidence || row.yolo_confidence || '',
+    yolo_bbox: yoloBboxText(prediction) || row.yolo_bbox || '',
+    yolo_image_name: imageName || row.yolo_image_name || '',
+    yolo_image_dir: imageDir,
+    ai_source: baseAiSource
+      ? `${baseAiSource} + ${sourceLabel}`
+      : sourceLabel,
+  };
 }
 
 async function loadJsonData(path) {
@@ -1662,6 +1778,8 @@ async function ensureIntegrationRows() {
   if (!integrationLoadPromise) {
     integrationLoadPromise = (async () => {
       const finalFusionPromise = loadCsvRows(INTEGRATION_DATA_FILES.finalFusion);
+      const yoloPrimaryPromise = loadCsvRows(INTEGRATION_DATA_FILES.yoloPrimaryPredictions);
+      const runYoloFinalPromise = loadCsvRows(INTEGRATION_DATA_FILES.runYoloFinalPredictions);
       const candidatePromise = loadCsvRows(INTEGRATION_DATA_FILES.candidates);
       const godarkH5Promise = loadCsvRows(INTEGRATION_DATA_FILES.godarkH5);
       const summaryPromise = loadCsvRows(INTEGRATION_DATA_FILES.summary);
@@ -1690,9 +1808,11 @@ async function ensureIntegrationRows() {
         INTEGRATION_DATA_FILES.trajectoryGalleries.map(path => loadTrajectoryImageRows(path))
       );
       const kalmanPromises = INTEGRATION_DATA_FILES.kalman.map(path => loadCsvRows(path));
-      const [fusionRows, candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, gearTypeRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
-        await Promise.all([finalFusionPromise, candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, gearTypePromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
+      const [fusionRows, yoloPrimaryRows, runYoloFinalRows, candidates, godarkH5Rows, summaryRows, sarManifestRows, localKalmanJson, trajectoryRows, enrichedRows, exampleRows, extraTrajectoryRows, gearTypeRows, trajectoryGeojsons, trajectoryImages, ...kalmanSets] =
+        await Promise.all([finalFusionPromise, yoloPrimaryPromise, runYoloFinalPromise, candidatePromise, godarkH5Promise, summaryPromise, sarManifestPromise, localKalmanPromise, trajectoryPromise, enrichedTrajectoryPromise, examplePromise, extraTrajectoryPromise, gearTypePromise, trajectoryGeojsonPromise, trajectoryImagesPromise, ...kalmanPromises]);
       integrationRuleCandidates = candidates || [];
+      integrationPrimaryYoloPredictions = buildYoloPredictionMap(yoloPrimaryRows || []);
+      integrationRunYoloPredictions = buildYoloPredictionMap(runYoloFinalRows || []);
       integrationGodarkH5Rows = godarkH5Rows || [];
       if (localKalmanJson) localKalmanData = localKalmanJson;
       integrationExistingVesselRows = flattenExistingVesselRows(localKalmanData);
@@ -1700,7 +1820,8 @@ async function ensureIntegrationRows() {
       integrationGearTypeLookup = buildGearTypeLookup(integrationGearTypeRows);
       integrationH5ReferenceCoverage = buildH5ReferenceCoverage(integrationGearTypeRows);
       const usingFusionRows = Boolean(fusionRows && fusionRows.length);
-      const dashboardCandidateRows = usingFusionRows ? fusionRows : integrationRuleCandidates;
+      const dashboardCandidateRows = (usingFusionRows ? fusionRows : integrationRuleCandidates)
+        .map(enrichRowWithYoloPrediction);
       integrationCandidates = buildDashboardCandidateRows(dashboardCandidateRows, integrationExistingVesselRows, integrationGearTypeLookup, usingFusionRows);
       aiResults = integrationCandidates.map(candidateToAiResult);
       const matchedGearCount = integrationCandidates.filter(row => Number(row.gear_type_match_rows || 0) > 0).length;
@@ -2921,6 +3042,34 @@ function vvVhPatchItems(candidate, sceneName) {
   return items.slice(0, 2);
 }
 
+function yoloPredictionImageItems(candidate) {
+  const items = [];
+  const match = yoloPredictionForCandidate(candidate);
+  if (!match) return items;
+  const { prediction, imageDir } = match;
+  const imageName = prediction.image_name;
+  if (!imageName) return items;
+  const clean = basename(imageName).trim();
+  if (!clean) return items;
+  const yoloClass = prediction?.pred_class_name || pick(candidate, ['yolo_class'], 'YOLO');
+  const yoloConfidence = Number(prediction?.confidence || pick(candidate, ['yolo_confidence'], ''));
+  const label = Number.isFinite(yoloConfidence)
+    ? `Hasil prediksi YOLO - ${yoloClass} ${Math.round(yoloConfidence * 100)}%`
+    : `Hasil prediksi YOLO - ${yoloClass}`;
+  items.push({ label, src: `${imageDir}${clean}` });
+  return items;
+}
+
+function yoloPredictionSectionTitle(candidate) {
+  return 'HASIL PREDIKSI YOLO';
+}
+
+function renderYoloPredictionOrPatchItems(candidate, sceneName) {
+  const yoloItems = yoloPredictionImageItems(candidate);
+  if (yoloItems.length) return renderImageItems(yoloItems);
+  return '<div class="sb-note">Hasil prediksi YOLO belum tersedia untuk kandidat ini.</div>';
+}
+
 function renderVvVhPatchItems(candidate, sceneName) {
   const items = vvVhPatchItems(candidate, sceneName);
   if (!items.length) return '<div class="sb-note">Patch VV/VH belum tersedia untuk kapal ini.</div>';
@@ -3374,8 +3523,8 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
       ${summaryForCandidate(candidate)}
     </div>
     <div class="sb-section">
-      <div class="sb-section-title">Patch VV / VH</div>
-      ${renderVvVhPatchItems(candidate, sceneName)}
+      <div class="sb-section-title">${yoloPredictionSectionTitle(candidate)}</div>
+      ${renderYoloPredictionOrPatchItems(candidate, sceneName)}
     </div>`;
 
   configureSidebarTelegramAlert({
