@@ -33,6 +33,7 @@ MODEL_DIR = ROOT / "KAPAL YG TERDETEKSI"
 DEFAULT_H5 = MODEL_DIR / "FINAL_4_PIPELINE_MODELS.h5"
 DEFAULT_AIS_DIR = ROOT / "Dataset_Test_Enriched" / "Dataset_Test_Enriched_EEZ_Indonesia"
 DEFAULT_YOLO = ROOT / "hasilyolov12n" / "predictions.csv"
+DEFAULT_YOLO_FALLBACK = ROOT / "RUNYOLO_FINALBISMILLAH" / "predictions_nms045" / "YOLOV12N_E150" / "predictions.csv"
 DEFAULT_CANDIDATES = MODEL_DIR / "scene_candidates_godark_spoofing_transshipment.csv"
 DEFAULT_METADATA = ROOT / "new" / "metadata" / "metadata_with_vh_gfw_ais_identity_sog_cog_enriched_FINAL_kalman_estimated.csv"
 DEFAULT_H5_OUT = MODEL_DIR / "final_h5_ai_predictions.csv"
@@ -40,6 +41,7 @@ DEFAULT_FUSION_OUT = MODEL_DIR / "final_ai_fusion_results.csv"
 
 MODEL_SOURCE = "FINAL_4_PIPELINE_MODELS.h5"
 YOLO_SOURCE = "hasilyolov12n/predictions.csv"
+YOLO_FALLBACK_SOURCE = "RUNYOLO_FINALBISMILLAH/predictions_nms045/YOLOV12N_E150/predictions.csv"
 
 GEAR_LABELS = {
     0: "drifting_longlines",
@@ -1460,6 +1462,39 @@ def basename_key(value: object) -> str:
     return text.lower()
 
 
+YOLO_PATCH_FIELDS = [
+    "patch_rgb_vv_actual_file",
+    "patch_rgb_vh_actual_file",
+    "patch_uint8_vv_actual_file",
+    "patch_uint8_vh_actual_file",
+    "patch_vv_actual_file",
+    "patch_vh_actual_file",
+]
+
+
+def yolo_source_label(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def candidate_patch_keys(row: pd.Series | dict) -> list[str]:
+    keys: list[str] = []
+    for field in YOLO_PATCH_FIELDS:
+        value = row.get(field, "") if hasattr(row, "get") else ""
+        if str(value or "").strip():
+            key = basename_key(value)
+            if key and key not in keys:
+                keys.append(key)
+    image_name = row.get("yolo_image_name", "") if hasattr(row, "get") else ""
+    if str(image_name or "").strip():
+        key = basename_key(image_name)
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
 def load_metadata(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(path)
@@ -1480,43 +1515,90 @@ def load_candidates(path: Path) -> pd.DataFrame:
     return df
 
 
-def yolo_join_map(yolo_path: Path, metadata: pd.DataFrame) -> tuple[dict[str, list[dict]], dict[str, str], pd.DataFrame]:
-    if not yolo_path.exists():
-        raise FileNotFoundError(yolo_path)
-    yolo = pd.read_csv(yolo_path, low_memory=False)
-    required = ["image_name", "pred_class_name", "confidence", "x1", "y1", "x2", "y2"]
-    missing = [c for c in required if c not in yolo.columns]
-    if missing:
-        raise ValueError(f"YOLO predictions missing required columns: {missing}")
-    yolo["_patch_key"] = yolo["image_name"].map(basename_key)
+def metadata_patch_maps(metadata: pd.DataFrame) -> tuple[dict[str, str], dict[str, str], dict[str, pd.Series]]:
     meta_key_to_scene: dict[str, str] = {}
     meta_key_to_mmsi: dict[str, str] = {}
+    meta_by_patch: dict[str, pd.Series] = {}
     for _, row in metadata.iterrows():
-        for field in ["patch_rgb_vv_actual_file", "patch_rgb_vh_actual_file", "patch_uint8_vv_actual_file", "patch_uint8_vh_actual_file"]:
+        for field in YOLO_PATCH_FIELDS:
             if field in metadata.columns and str(row.get(field, "")).strip():
                 key = basename_key(row.get(field, ""))
                 if key:
                     meta_key_to_scene[key] = str(row.get("scene", ""))
                     meta_key_to_mmsi[key] = norm_mmsi(row.get("MMSI", ""))
-    yolo["_scene"] = yolo["_patch_key"].map(meta_key_to_scene).fillna("")
-    yolo["_MMSI"] = yolo["_patch_key"].map(meta_key_to_mmsi).fillna("")
-    if not (yolo["_scene"].astype(str).str.len() > 0).any():
-        raise ValueError("YOLO join key mismatch: no hasilyolov12n image_name matched SAR metadata patch basenames")
-    by_scene: dict[str, list[dict]] = {}
-    for _, row in yolo.iterrows():
-        scene = str(row.get("_scene", ""))
-        if not scene:
+                    meta_by_patch[key] = row
+    return meta_key_to_scene, meta_key_to_mmsi, meta_by_patch
+
+
+def yolo_entry_from_row(row: pd.Series) -> dict:
+    confidence = float(pd.to_numeric(pd.Series([row.get("confidence")]), errors="coerce").iloc[0])
+    return {
+        "yolo_class": str(row.get("pred_class_name", "")),
+        "yolo_confidence": confidence,
+        "yolo_bbox": f"{row.get('x1')},{row.get('y1')},{row.get('x2')},{row.get('y2')}",
+        "yolo_image_name": str(row.get("image_name", "")),
+        "yolo_patch_key": str(row.get("_patch_key", "")),
+        "yolo_source": str(row.get("_source_label", "")),
+        "_source_priority": int(row.get("_source_priority", 0)),
+        "MMSI": str(row.get("_MMSI", "")),
+    }
+
+
+def load_yolo_predictions(yolo_paths: list[Path], metadata: pd.DataFrame) -> tuple[dict[str, dict], pd.DataFrame, dict[str, pd.Series]]:
+    required = ["image_name", "pred_class_name", "confidence", "x1", "y1", "x2", "y2"]
+    meta_key_to_scene, meta_key_to_mmsi, meta_by_patch = metadata_patch_maps(metadata)
+    frames: list[pd.DataFrame] = []
+    by_patch: dict[str, dict] = {}
+
+    for priority, yolo_path in enumerate(yolo_paths):
+        if not yolo_path.exists():
+            log(f"[yolo] skip missing source: {yolo_path}")
             continue
-        entry = {
-            "yolo_class": str(row.get("pred_class_name", "")),
-            "yolo_confidence": float(pd.to_numeric(pd.Series([row.get("confidence")]), errors="coerce").iloc[0]),
-            "yolo_bbox": f"{row.get('x1')},{row.get('y1')},{row.get('x2')},{row.get('y2')}",
-            "yolo_image_name": str(row.get("image_name", "")),
-            "yolo_patch_key": str(row.get("_patch_key", "")),
-            "MMSI": str(row.get("_MMSI", "")),
-        }
-        by_scene.setdefault(scene, []).append(entry)
-    return by_scene, meta_key_to_scene, yolo
+        yolo = pd.read_csv(yolo_path, low_memory=False)
+        missing = [c for c in required if c not in yolo.columns]
+        if missing:
+            raise ValueError(f"YOLO predictions missing required columns in {yolo_path}: {missing}")
+        yolo["_source_priority"] = priority
+        yolo["_source_label"] = yolo_source_label(yolo_path)
+        yolo["_patch_key"] = yolo["image_name"].map(basename_key)
+        yolo["_scene"] = yolo["_patch_key"].map(meta_key_to_scene).fillna("")
+        yolo["_MMSI"] = yolo["_patch_key"].map(meta_key_to_mmsi).fillna("")
+        frames.append(yolo)
+
+        for _, row in yolo.iterrows():
+            patch_key = str(row.get("_patch_key", ""))
+            if not patch_key or not str(row.get("_scene", "")).strip():
+                continue
+            confidence = pd.to_numeric(pd.Series([row.get("confidence")]), errors="coerce").iloc[0]
+            if pd.isna(confidence):
+                continue
+            entry = yolo_entry_from_row(row)
+            current = by_patch.get(patch_key)
+            if current is None:
+                by_patch[patch_key] = entry
+                continue
+            current_priority = int(current.get("_source_priority", priority))
+            if priority < current_priority or (
+                priority == current_priority and float(entry.get("yolo_confidence", -1)) > float(current.get("yolo_confidence", -1))
+            ):
+                by_patch[patch_key] = entry
+
+    if not frames:
+        raise FileNotFoundError("No YOLO prediction CSV source exists")
+
+    yolo_df = pd.concat(frames, ignore_index=True)
+    if not by_patch:
+        raise ValueError("YOLO join key mismatch: no YOLO image_name matched SAR metadata patch basenames")
+    log(f"[yolo] sources={len(frames)} matched_patch_keys={len(by_patch)}")
+    return by_patch, yolo_df, meta_by_patch
+
+
+def yolo_for_row(row: pd.Series | dict, yolo_by_patch: dict[str, dict]) -> dict:
+    for key in candidate_patch_keys(row):
+        yolo = yolo_by_patch.get(key)
+        if yolo:
+            return yolo
+    return {}
 
 
 def score_for_rule_type(candidate_type: str, h5: dict) -> tuple[bool | None, float | None]:
@@ -1582,8 +1664,9 @@ def h5_inference_status(values: dict) -> str:
 def build_outputs(
     candidates: pd.DataFrame,
     metadata: pd.DataFrame,
-    yolo_by_scene: dict[str, list[dict]],
+    yolo_by_patch: dict[str, dict],
     yolo_df: pd.DataFrame,
+    yolo_meta_by_patch: dict[str, pd.Series],
     gear_summary: dict,
     godark_summary: dict,
     spoofing_summary: dict,
@@ -1615,8 +1698,7 @@ def build_outputs(
         }
         h5_rows.append(h5_row)
 
-        yolo_entries = yolo_by_scene.get(scene, [])
-        yolo = max(yolo_entries, key=lambda x: x.get("yolo_confidence", -1)) if yolo_entries else {}
+        yolo = yolo_for_row(row, yolo_by_patch)
         supports, ai_score = score_for_rule_type(str(row.get("candidate_type", "")), h5)
         any_ai_available = any(h5.get(k) != "" for k in ["godark_probability", "spoofing_probability", "transshipment_probability"])
         if supports is True:
@@ -1636,13 +1718,15 @@ def build_outputs(
                 "yolo_confidence": yolo.get("yolo_confidence", ""),
                 "yolo_bbox": yolo.get("yolo_bbox", ""),
                 "yolo_image_name": yolo.get("yolo_image_name", ""),
+                "yolo_source": yolo.get("yolo_source", ""),
+                "yolo_patch_key": yolo.get("yolo_patch_key", ""),
                 "ai_gear_label": h5.get("gear_label", ""),
                 "ai_gear_probability": h5.get("gear_probability", ""),
                 "ai_godark_probability": h5.get("godark_probability", ""),
                 "ai_spoofing_probability": h5.get("spoofing_probability", ""),
                 "ai_transshipment_probability": h5.get("transshipment_probability", ""),
                 "hybrid_status": hybrid_status,
-                "ai_source": f"{MODEL_SOURCE} + {YOLO_SOURCE}",
+                "ai_source": f"{MODEL_SOURCE} + {yolo.get('yolo_source', YOLO_SOURCE)}",
             }
         )
 
@@ -1668,8 +1752,7 @@ def build_outputs(
             ctype, score = "transshipment", h5.get("transshipment_probability", "")
         else:
             continue
-        yolo_entries = yolo_by_scene.get(scene, [])
-        yolo = max(yolo_entries, key=lambda x: x.get("yolo_confidence", -1)) if yolo_entries else {}
+        yolo = yolo_for_row(row, yolo_by_patch)
         h5_row = {
             "scene": scene,
             "MMSI": mmsi,
@@ -1693,13 +1776,15 @@ def build_outputs(
                 "yolo_confidence": yolo.get("yolo_confidence", ""),
                 "yolo_bbox": yolo.get("yolo_bbox", ""),
                 "yolo_image_name": yolo.get("yolo_image_name", ""),
+                "yolo_source": yolo.get("yolo_source", ""),
+                "yolo_patch_key": yolo.get("yolo_patch_key", ""),
                 "ai_gear_label": h5.get("gear_label", ""),
                 "ai_gear_probability": h5.get("gear_probability", ""),
                 "ai_godark_probability": h5.get("godark_probability", ""),
                 "ai_spoofing_probability": h5.get("spoofing_probability", ""),
                 "ai_transshipment_probability": h5.get("transshipment_probability", ""),
                 "hybrid_status": "ai_only",
-                "ai_source": f"{MODEL_SOURCE} + {YOLO_SOURCE}",
+                "ai_source": f"{MODEL_SOURCE} + {yolo.get('yolo_source', YOLO_SOURCE)}",
             }
         )
 
@@ -1710,8 +1795,9 @@ def build_outputs(
         mmsi = norm_mmsi(yrow.get("_MMSI", ""))
         if not scene or (scene, mmsi) in existing_scene_mmsi:
             continue
-        meta = meta_by_scene.get(scene, pd.Series(dtype=object))
+        meta = yolo_meta_by_patch.get(str(yrow.get("_patch_key", "")), meta_by_scene.get(scene, pd.Series(dtype=object)))
         base = meta.to_dict() if hasattr(meta, "to_dict") else {}
+        source_label = str(yrow.get("_source_label", YOLO_SOURCE))
         fusion_rows.append(
             {
                 **base,
@@ -1738,13 +1824,15 @@ def build_outputs(
                 "yolo_confidence": yrow.get("confidence", ""),
                 "yolo_bbox": f"{yrow.get('x1')},{yrow.get('y1')},{yrow.get('x2')},{yrow.get('y2')}",
                 "yolo_image_name": yrow.get("image_name", ""),
+                "yolo_source": source_label,
+                "yolo_patch_key": yrow.get("_patch_key", ""),
                 "ai_gear_label": "",
                 "ai_gear_probability": "",
                 "ai_godark_probability": "",
                 "ai_spoofing_probability": "",
                 "ai_transshipment_probability": "",
                 "hybrid_status": "ai_only",
-                "ai_source": f"{MODEL_SOURCE} + {YOLO_SOURCE}",
+                "ai_source": f"{MODEL_SOURCE} + {source_label}",
             }
         )
 
@@ -1758,6 +1846,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--h5", type=Path, default=DEFAULT_H5)
     parser.add_argument("--ais-dir", type=Path, default=DEFAULT_AIS_DIR)
     parser.add_argument("--yolo", type=Path, default=DEFAULT_YOLO)
+    parser.add_argument("--yolo-fallback", type=Path, default=DEFAULT_YOLO_FALLBACK)
     parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
     parser.add_argument("--metadata", type=Path, default=DEFAULT_METADATA)
     parser.add_argument("--h5-output", type=Path, default=DEFAULT_H5_OUT)
@@ -1773,7 +1862,10 @@ def main() -> int:
     ais = load_ais_data(args.ais_dir)
     candidates = load_candidates(args.candidates)
     metadata = load_metadata(args.metadata)
-    yolo_by_scene, _, yolo_df = yolo_join_map(args.yolo, metadata)
+    yolo_paths = [args.yolo]
+    if args.yolo_fallback and args.yolo_fallback != args.yolo:
+        yolo_paths.append(args.yolo_fallback)
+    yolo_by_patch, yolo_df, yolo_meta_by_patch = load_yolo_predictions(yolo_paths, metadata)
 
     gear_rows, gear_summary = run_gear(models, ais)
     godark_rows, godark_summary = run_godark(models, ais)
@@ -1783,8 +1875,9 @@ def main() -> int:
     h5_df, fusion_df = build_outputs(
         candidates,
         metadata,
-        yolo_by_scene,
+        yolo_by_patch,
         yolo_df,
+        yolo_meta_by_patch,
         gear_summary,
         godark_summary,
         spoofing_summary,
