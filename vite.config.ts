@@ -86,9 +86,7 @@ function vercelApiPlugin() {
         };
 
         try {
-          const handlerUrl = pathToFileURL(handlerPath);
-          handlerUrl.search = `?v=${fs.statSync(handlerPath).mtimeMs}`;
-          const mod = await import(handlerUrl.href);
+          const mod = await import(pathToFileURL(handlerPath).href);
           await (mod.default ?? mod)(mockReq, mockRes);
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -105,4 +103,24 @@ function vercelApiPlugin() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), tsConfigPaths(), vercelApiPlugin()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        dashboard: path.resolve(__dirname, "dashboard.html"),
+        anomalyAlert: path.resolve(__dirname, "anomaly-alert.html"),
+        dataReports: path.resolve(__dirname, "data-reports.html"),
+        mapBackground: path.resolve(__dirname, "map-background-preview.html"),
+        sceneViewer: path.resolve(__dirname, "lihat_scene_kapal.html"),
+      },
+    },
+  },
+  server: {
+    host: "127.0.0.1",
+    port: 5174,
+    strictPort: true,
+    watch: {
+      ignored: ["**/.local-dev/**"],
+    },
+  },
 });

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anomaly Alert Center | Ocean Nexus 2026</title>
+  <link rel="stylesheet" href="assets/css/anomaly-feature.css">
+  <script type="module" src="assets/js/anomaly-data.js"></script>
+  <script type="module" src="assets/js/anomaly-alert.js"></script>
+</head>
+<body class="onx-body">
+  <div class="onx-shell">
+    <header class="onx-topbar">
+      <a class="onx-brand" href="index.html" aria-label="Ocean Nexus 2026">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4"></circle>
+          <path d="M10 36c8-11 16-14 27-8 8 4 13 3 18-3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+          <path d="M14 44c10-7 19-7 28 0 4 3 8 3 12 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+          <path d="M39 12 25 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+        </svg>
+        <span>
+          <strong>OCEAN NEXUS 2026</strong>
+          <span>AI-Driven Maritime Surveillance</span>
+        </span>
+      </a>
+
+      <div class="onx-partners" aria-label="Partner logos">
+        <img class="onx-partner-logo is-its" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember">
+        <img class="onx-partner-logo is-len" src="assets/logos/pt-len.png" alt="PT LEN Industri">
+      </div>
+
+      <div class="onx-topbar-spacer"></div>
+
+      <button class="onx-icon-button" type="button" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          <path d="M10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+      </button>
+
+      <div class="onx-profile">
+        <strong>Fifi Fitriah</strong>
+        <span>Administrator</span>
+      </div>
+    </header>
+
+    <aside class="onx-sidebar" aria-label="Anomaly navigation">
+      <nav>
+        <a href="index.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+          </svg>
+          Home
+        </a>
+        <a href="dashboard.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6 9 4l6 2 5-2v14l-5 2-6-2-5 2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+            <path d="M9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2"></path>
+          </svg>
+          Wilayah Indonesia
+        </a>
+        <a class="is-active" href="anomaly-alert.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 2 20h20Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+            <path d="M12 9v4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          Anomaly Alert Center
+        </a>
+        <a href="data-reports.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h9l3 3v15H6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+            <path d="M14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          Data &amp; Reports
+        </a>
+      </nav>
+    </aside>
+
+    <main class="onx-main">
+      <div class="onx-page-head">
+        <div>
+          <p class="onx-kicker">Operations Console</p>
+          <h1>Anomaly Alert Center</h1>
+          <p>Review detected vessel anomalies, verify supporting data, and send validated alerts.</p>
+        </div>
+      </div>
+
+      <section class="onx-summary-strip" aria-label="Anomaly summary">
+        <div class="onx-stat">
+          <span>Total Anomalies</span>
+          <strong id="total-count">0</strong>
+        </div>
+        <div class="onx-stat">
+          <span>New</span>
+          <strong id="new-count">0</strong>
+        </div>
+        <div class="onx-stat">
+          <span>Reviewed</span>
+          <strong id="reviewed-count">0</strong>
+        </div>
+        <div class="onx-stat">
+          <span>Sent</span>
+          <strong id="sent-count">0</strong>
+        </div>
+      </section>
+
+      <section class="onx-panel onx-filter-panel" aria-label="Anomaly filters">
+        <div class="onx-field">
+          <label>Date Range</label>
+          <div class="onx-range">
+            <input id="filter-start" type="date" aria-label="Start date">
+            <input id="filter-end" type="date" aria-label="End date">
+          </div>
+        </div>
+        <div class="onx-field">
+          <label for="filter-type">All Anomaly Types</label>
+          <select id="filter-type">
+            <option value="">All Anomaly Types</option>
+          </select>
+        </div>
+        <div class="onx-field">
+          <label for="filter-status">All Status</label>
+          <select id="filter-status">
+            <option value="">All Status</option>
+            <option>New</option>
+            <option>Reviewed</option>
+            <option>Sent</option>
+          </select>
+        </div>
+        <div class="onx-field">
+          <label for="filter-search">Search Vessel Name / MMSI / IMO</label>
+          <input id="filter-search" type="search" placeholder="Search Vessel Name / MMSI / IMO">
+        </div>
+      </section>
+
+      <div class="onx-tabs" role="tablist" aria-label="Status tabs">
+        <button class="is-active" type="button" data-tab="All">All</button>
+        <button type="button" data-tab="New">New</button>
+        <button type="button" data-tab="Reviewed">Reviewed</button>
+        <button type="button" data-tab="Sent">Sent</button>
+      </div>
+
+      <div class="onx-workbench">
+        <section class="onx-panel">
+          <div class="onx-panel-head">
+            <div>
+              <h2>Detected Anomalies</h2>
+              <p>Select a vessel row to inspect and validate details.</p>
+            </div>
+          </div>
+          <div class="onx-table-scroll">
+            <table class="onx-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Vessel Name</th>
+                  <th>MMSI</th>
+                  <th>Anomaly Type</th>
+                  <th>Date &amp; Time (WIB)</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="anomaly-table-body"></tbody>
+            </table>
+          </div>
+
+          <section class="onx-history" aria-label="Alert history">
+            <div class="onx-panel-head">
+              <div>
+                <h2>Alert History (Last 5 Sent)</h2>
+                <p>Recently simulated Telegram alert deliveries.</p>
+              </div>
+            </div>
+            <div class="onx-table-scroll">
+              <table class="onx-table">
+                <thead>
+                  <tr>
+                    <th>Date &amp; Time</th>
+                    <th>Vessel Name</th>
+                    <th>MMSI</th>
+                    <th>Anomaly Type</th>
+                    <th>Sent To</th>
+                  </tr>
+                </thead>
+                <tbody id="alert-history-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <aside class="onx-panel onx-detail" aria-label="Anomaly detail panel">
+          <div id="anomaly-detail-body" class="onx-detail-body"></div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="onx-modal" id="telegram-modal" aria-hidden="true">
+    <section class="onx-modal-card" role="dialog" aria-modal="true" aria-labelledby="telegram-title">
+      <div class="onx-modal-head">
+        <h2 id="telegram-title">Telegram Alert Preview</h2>
+        <button class="onx-close" id="close-telegram-modal" type="button" aria-label="Close">X</button>
+      </div>
+      <pre class="onx-alert-preview" id="telegram-preview"></pre>
+      <div class="onx-modal-body">
+        <div class="onx-field">
+          <label>Send To</label>
+          <input value="Ocean Nexus Alert Group" readonly>
+        </div>
+        <div class="onx-checkbox">
+          <span>Options</span>
+          <label><input type="checkbox"> Include map snapshot</label>
+          <label><input type="checkbox" checked> Include key details</label>
+        </div>
+        <div class="onx-modal-actions">
+          <a class="onx-button" href="https://web.telegram.org/a/#8877408117" target="_blank" rel="noopener">Open Telegram Group</a>
+          <button class="onx-button" id="cancel-telegram-alert" type="button">Cancel</button>
+          <button class="onx-button is-primary" id="send-telegram-alert" type="button">Send Alert</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="onx-toast" id="onx-toast" role="status" aria-live="polite"></div>
+</body>
+</html>

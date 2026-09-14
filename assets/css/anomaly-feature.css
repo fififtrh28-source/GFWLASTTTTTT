@@ -1,0 +1,936 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body.onx-body {
+  margin: 0;
+  color: #f7fbff;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background:
+    linear-gradient(135deg, rgba(3, 18, 32, 0.96), rgba(6, 58, 85, 0.94)),
+    #041827;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.onx-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 258px minmax(0, 1fr);
+  grid-template-rows: 78px minmax(0, 1fr);
+  background:
+    linear-gradient(rgba(143, 220, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 220, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(145deg, rgba(3, 28, 45, 0.82), rgba(4, 51, 75, 0.62));
+  background-size: 42px 42px, 42px 42px, auto;
+}
+
+.onx-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 30px;
+  border-bottom: 1px solid rgba(190, 231, 255, 0.22);
+  background: rgba(2, 21, 34, 0.86);
+  backdrop-filter: blur(18px);
+}
+
+.onx-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 244px;
+  color: #f7fbff;
+  text-decoration: none;
+}
+
+.onx-brand svg {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  color: #8fdcff;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.24));
+}
+
+.onx-brand strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.onx-brand span,
+.onx-profile span,
+.onx-kicker,
+.onx-muted {
+  color: #9bb8cc;
+}
+
+.onx-brand span {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.onx-partners {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(190, 231, 255, 0.24);
+}
+
+.onx-partner-logo {
+  display: block;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
+}
+
+.onx-partner-logo.is-len {
+  max-width: 78px;
+  height: 28px;
+}
+
+.onx-partner-logo.is-its {
+  max-width: 104px;
+  height: 32px;
+}
+
+.onx-topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.onx-icon-button {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(190, 231, 255, 0.28);
+  border-radius: 8px;
+  color: #bdeeff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.onx-profile {
+  min-width: 148px;
+  display: grid;
+  gap: 3px;
+  padding-left: 18px;
+  border-left: 1px solid rgba(190, 231, 255, 0.24);
+}
+
+.onx-profile strong {
+  font-size: 14px;
+}
+
+.onx-profile span {
+  font-size: 12px;
+}
+
+.onx-sidebar {
+  min-height: 0;
+  padding: 24px 18px;
+  border-right: 1px solid rgba(190, 231, 255, 0.2);
+  background: rgba(1, 18, 30, 0.58);
+}
+
+.onx-sidebar nav {
+  display: grid;
+  gap: 10px;
+}
+
+.onx-sidebar a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #d7e9f8;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.onx-sidebar a:hover,
+.onx-sidebar a.is-active {
+  border-color: rgba(143, 220, 255, 0.62);
+  color: #f7fbff;
+  background: rgba(143, 220, 255, 0.12);
+}
+
+.onx-sidebar svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.onx-main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px;
+}
+
+.onx-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.onx-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.onx-page-head h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(32px, 3.6vw, 48px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.onx-page-head p {
+  max-width: 780px;
+  margin: 10px 0 0;
+  color: #d7e9f8;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.onx-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.onx-stat,
+.onx-panel {
+  border: 1px solid rgba(190, 231, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(3, 31, 50, 0.72);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px);
+}
+
+.onx-stat {
+  padding: 14px 16px;
+}
+
+.onx-stat span {
+  display: block;
+  color: #9bb8cc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.onx-stat strong {
+  display: block;
+  margin-top: 6px;
+  color: #f7fbff;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.onx-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(150px, 0.8fr) minmax(240px, 1.4fr);
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.onx-filter-panel.is-reports {
+  grid-template-columns: minmax(330px, 1.35fr) minmax(180px, 0.85fr) minmax(160px, 0.75fr) minmax(180px, 0.85fr) minmax(260px, 1.1fr) max-content max-content;
+  align-items: end;
+}
+
+.onx-field,
+.onx-checkbox {
+  display: grid;
+  gap: 7px;
+}
+
+.onx-field label,
+.onx-checkbox span {
+  color: #9bb8cc;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.onx-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.onx-field input,
+.onx-field select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(190, 231, 255, 0.28);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #f7fbff;
+  background: rgba(1, 18, 30, 0.52);
+  outline: none;
+}
+
+.onx-field input::placeholder {
+  color: rgba(215, 233, 248, 0.58);
+}
+
+.onx-field input:focus,
+.onx-field select:focus {
+  border-color: rgba(143, 220, 255, 0.92);
+  box-shadow: 0 0 0 3px rgba(143, 220, 255, 0.12);
+}
+
+.onx-tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 6px;
+  border: 1px solid rgba(190, 231, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(1, 18, 30, 0.38);
+}
+
+.onx-tabs button,
+.onx-button {
+  border: 1px solid rgba(190, 231, 255, 0.28);
+  border-radius: 8px;
+  color: #f7fbff;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.onx-tabs button {
+  min-width: 88px;
+  min-height: 36px;
+  padding: 0 14px;
+}
+
+.onx-tabs button:hover,
+.onx-tabs button.is-active,
+.onx-button:hover {
+  border-color: rgba(143, 220, 255, 0.82);
+  background: rgba(143, 220, 255, 0.14);
+}
+
+.onx-button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  text-decoration: none;
+}
+
+.onx-button.is-primary {
+  border-color: rgba(143, 220, 255, 0.9);
+  color: #052c47;
+  background: linear-gradient(180deg, #bcecff, #7fdcff);
+}
+
+.onx-button.is-danger {
+  border-color: rgba(255, 128, 128, 0.58);
+  background: rgba(176, 42, 55, 0.26);
+}
+
+.onx-button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.onx-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.8fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.onx-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.onx-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(190, 231, 255, 0.18);
+}
+
+.onx-panel-head h2,
+.onx-detail-title h2,
+.onx-preview-title h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.onx-panel-head p,
+.onx-detail-title p,
+.onx-preview-title p {
+  margin: 5px 0 0;
+  color: #9bb8cc;
+  font-size: 12px;
+}
+
+.onx-table-scroll {
+  overflow: auto;
+}
+
+.onx-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.onx-table th,
+.onx-table td {
+  border-bottom: 1px solid rgba(190, 231, 255, 0.14);
+  padding: 13px 14px;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.onx-table th {
+  color: #9bb8cc;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.onx-table tbody tr {
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.onx-table tbody tr:hover,
+.onx-table tbody tr.is-selected {
+  background: rgba(143, 220, 255, 0.1);
+}
+
+.onx-table .onx-empty {
+  padding: 28px;
+  color: #9bb8cc;
+  text-align: center;
+}
+
+.onx-vessel-name {
+  display: grid;
+  gap: 3px;
+}
+
+.onx-vessel-name strong {
+  color: #f7fbff;
+  font-size: 13px;
+}
+
+.onx-vessel-name span {
+  color: #9bb8cc;
+  font-size: 12px;
+}
+
+.onx-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.onx-status-new {
+  color: #ff8b96;
+  background: rgba(176, 42, 55, 0.16);
+}
+
+.onx-status-reviewed {
+  color: #8fdcff;
+  background: rgba(37, 124, 179, 0.16);
+}
+
+.onx-status-sent {
+  color: #80e4ad;
+  background: rgba(22, 134, 82, 0.18);
+}
+
+.onx-detail {
+  position: sticky;
+  top: 20px;
+}
+
+.onx-detail-body {
+  padding: 18px;
+}
+
+.onx-detail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.onx-key-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.onx-key,
+.onx-mini-map,
+.onx-report-card {
+  border: 1px solid rgba(190, 231, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(1, 18, 30, 0.36);
+}
+
+.onx-key {
+  padding: 12px;
+}
+
+.onx-key span,
+.onx-detail-list dt {
+  display: block;
+  color: #9bb8cc;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.onx-key strong {
+  display: block;
+  margin-top: 6px;
+  color: #f7fbff;
+  font-size: 14px;
+}
+
+.onx-section-label {
+  margin: 4px 0 12px;
+  color: #8fdcff;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.onx-detail-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 0;
+}
+
+.onx-detail-list dd {
+  margin: 5px 0 0;
+  color: #f7fbff;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.onx-mini-map {
+  position: relative;
+  min-height: 220px;
+  margin-top: 18px;
+  overflow: hidden;
+  background: rgba(1, 18, 30, 0.36);
+}
+
+.onx-map-frame {
+  width: 100%;
+  height: 220px;
+  display: block;
+  border: 0;
+}
+
+.onx-map-toolbar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(190, 231, 255, 0.22);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(1, 18, 30, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.onx-map-toolbar span,
+.onx-map-toolbar a {
+  color: #d7e9f8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.onx-map-toolbar a {
+  color: #8fdcff;
+  text-decoration: none;
+}
+
+.onx-map-toolbar a:hover {
+  text-decoration: underline;
+}
+
+.onx-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.onx-history {
+  margin-top: 16px;
+}
+
+.onx-history .onx-table {
+  min-width: 600px;
+}
+
+.onx-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  place-items: center;
+  padding: 22px;
+  background: rgba(1, 13, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.onx-modal.is-open {
+  display: grid;
+}
+
+.onx-modal-card {
+  width: min(540px, 100%);
+  border: 1px solid rgba(190, 231, 255, 0.38);
+  border-radius: 8px;
+  color: #f7fbff;
+  background: rgba(3, 31, 50, 0.98);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.46);
+}
+
+.onx-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(190, 231, 255, 0.18);
+}
+
+.onx-modal-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.onx-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(190, 231, 255, 0.26);
+  border-radius: 8px;
+  color: #f7fbff;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.onx-alert-preview {
+  margin: 0;
+  padding: 18px 20px;
+  color: #d7e9f8;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.onx-modal-body {
+  padding: 0 20px 20px;
+}
+
+.onx-checkbox {
+  margin: 12px 0;
+}
+
+.onx-checkbox label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #d7e9f8;
+  font-size: 13px;
+}
+
+.onx-checkbox input,
+.onx-record-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #7fdcff;
+}
+
+.onx-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.onx-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  max-width: 340px;
+  display: none;
+  border: 1px solid rgba(128, 228, 173, 0.5);
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: #f7fbff;
+  background: rgba(7, 65, 50, 0.96);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+}
+
+.onx-toast.is-visible {
+  display: block;
+}
+
+.onx-reports-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.onx-record-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.onx-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-top: 1px solid rgba(190, 231, 255, 0.16);
+}
+
+.onx-pagination span {
+  color: #9bb8cc;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.onx-preview {
+  position: sticky;
+  top: 20px;
+}
+
+.onx-preview-body {
+  padding: 18px;
+}
+
+.onx-report-card {
+  min-height: 420px;
+  padding: 20px;
+  color: #09273b;
+  background: linear-gradient(180deg, #f7fbff, #e7f4fb);
+}
+
+.onx-report-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 2px solid #075f92;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.onx-report-title h3 {
+  margin: 0;
+  color: #052c47;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.onx-report-title span {
+  color: #366078;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.onx-report-section {
+  margin-top: 16px;
+}
+
+.onx-report-section h4 {
+  margin: 0 0 8px;
+  color: #075f92;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.onx-report-section p,
+.onx-report-section li {
+  color: #173b52;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.onx-report-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.onx-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.onx-report-table th,
+.onx-report-table td {
+  border: 1px solid #b8d2e2;
+  padding: 6px;
+  color: #173b52;
+  font-size: 10px;
+  text-align: left;
+}
+
+.onx-report-table th {
+  color: #052c47;
+  background: #d7eef9;
+}
+
+.onx-preview-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 1160px) {
+  .onx-shell {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+
+  .onx-workbench,
+  .onx-reports-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .onx-detail,
+  .onx-preview {
+    position: static;
+  }
+
+  .onx-filter-panel,
+  .onx-filter-panel.is-reports {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .onx-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .onx-topbar {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .onx-brand {
+    min-width: 0;
+  }
+
+  .onx-partners {
+    order: 3;
+    width: 100%;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .onx-sidebar {
+    padding: 12px 16px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(190, 231, 255, 0.2);
+  }
+
+  .onx-sidebar nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .onx-main {
+    padding: 18px 16px 24px;
+  }
+
+  .onx-page-head {
+    display: block;
+  }
+
+  .onx-summary-strip,
+  .onx-filter-panel,
+  .onx-filter-panel.is-reports,
+  .onx-key-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .onx-record-actions,
+  .onx-pagination,
+  .onx-modal-actions {
+    justify-content: stretch;
+  }
+
+  .onx-record-actions .onx-button,
+  .onx-modal-actions .onx-button,
+  .onx-pagination .onx-button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data &amp; Reports | Ocean Nexus 2026</title>
+  <link rel="stylesheet" href="assets/css/anomaly-feature.css">
+  <script type="module" src="assets/js/anomaly-data.js"></script>
+  <script type="module" src="assets/js/data-reports.js"></script>
+</head>
+<body class="onx-body">
+  <div class="onx-shell">
+    <header class="onx-topbar">
+      <a class="onx-brand" href="index.html" aria-label="Ocean Nexus 2026">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4"></circle>
+          <path d="M10 36c8-11 16-14 27-8 8 4 13 3 18-3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+          <path d="M14 44c10-7 19-7 28 0 4 3 8 3 12 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+          <path d="M39 12 25 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+        </svg>
+        <span>
+          <strong>OCEAN NEXUS 2026</strong>
+          <span>AI-Driven Maritime Surveillance</span>
+        </span>
+      </a>
+
+      <div class="onx-partners" aria-label="Partner logos">
+        <img class="onx-partner-logo is-its" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember">
+        <img class="onx-partner-logo is-len" src="assets/logos/pt-len.png" alt="PT LEN Industri">
+      </div>
+
+      <div class="onx-topbar-spacer"></div>
+
+      <button class="onx-icon-button" type="button" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          <path d="M10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+      </button>
+
+      <div class="onx-profile">
+        <strong>Fifi Fitriah</strong>
+        <span>Administrator</span>
+      </div>
+    </header>
+
+    <aside class="onx-sidebar" aria-label="Reports navigation">
+      <nav>
+        <a href="index.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+          </svg>
+          Home
+        </a>
+        <a href="dashboard.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6 9 4l6 2 5-2v14l-5 2-6-2-5 2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+            <path d="M9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2"></path>
+          </svg>
+          Wilayah Indonesia
+        </a>
+        <a href="anomaly-alert.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 2 20h20Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+            <path d="M12 9v4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          Anomaly Alert Center
+        </a>
+        <a class="is-active" href="data-reports.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h9l3 3v15H6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+            <path d="M14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+          Data &amp; Reports
+        </a>
+      </nav>
+    </aside>
+
+    <main class="onx-main">
+      <div class="onx-page-head">
+        <div>
+          <p class="onx-kicker">Records Console</p>
+          <h1>Data &amp; Reports</h1>
+          <p>Explore detection data, analyze records, and generate official reports.</p>
+        </div>
+      </div>
+
+      <section class="onx-summary-strip" aria-label="Report summary">
+        <div class="onx-stat">
+          <span>Total Anomalies</span>
+          <strong id="total-count">0</strong>
+        </div>
+        <div class="onx-stat">
+          <span>New</span>
+          <strong id="new-count">0</strong>
+        </div>
+        <div class="onx-stat">
+          <span>Reviewed</span>
+          <strong id="reviewed-count">0</strong>
+        </div>
+        <div class="onx-stat">
+          <span>Sent</span>
+          <strong id="sent-count">0</strong>
+        </div>
+      </section>
+
+      <section class="onx-panel onx-filter-panel is-reports" aria-label="Filter Data">
+        <div class="onx-field">
+          <label>Date Range</label>
+          <div class="onx-range">
+            <input id="filter-start" type="date" aria-label="Start date">
+            <input id="filter-end" type="date" aria-label="End date">
+          </div>
+        </div>
+        <div class="onx-field">
+          <label for="filter-type">Anomaly Type</label>
+          <select id="filter-type">
+            <option value="">Anomaly Type</option>
+          </select>
+        </div>
+        <div class="onx-field">
+          <label for="filter-status">Status</label>
+          <select id="filter-status">
+            <option value="">Status</option>
+            <option>New</option>
+            <option>Reviewed</option>
+            <option>Sent</option>
+          </select>
+        </div>
+        <div class="onx-field">
+          <label for="filter-region">Region</label>
+          <select id="filter-region">
+            <option value="">Region</option>
+          </select>
+        </div>
+        <div class="onx-field">
+          <label for="filter-search">Search Vessel / MMSI</label>
+          <input id="filter-search" type="search" placeholder="Search Vessel / MMSI">
+        </div>
+        <button class="onx-button is-primary" id="apply-filter" type="button">Apply Filter</button>
+        <button class="onx-button" id="reset-filter" type="button">Reset</button>
+      </section>
+
+      <div class="onx-reports-grid">
+        <section class="onx-panel">
+          <div class="onx-panel-head">
+            <div>
+              <h2>Detection Records</h2>
+              <p id="selection-label">0 selected</p>
+            </div>
+            <div class="onx-record-actions">
+              <button class="onx-button" id="export-csv" type="button">Export Filtered Data (CSV)</button>
+              <button class="onx-button is-primary" id="generate-pdf" type="button">Generate PDF Report</button>
+            </div>
+          </div>
+
+          <div class="onx-table-scroll">
+            <table class="onx-table">
+              <thead>
+                <tr>
+                  <th><input class="onx-record-checkbox" id="select-visible-records" type="checkbox" aria-label="Select visible records"></th>
+                  <th>#</th>
+                  <th>Vessel Name</th>
+                  <th>MMSI</th>
+                  <th>Anomaly Type</th>
+                  <th>Date &amp; Time (WIB)</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="records-table-body"></tbody>
+            </table>
+          </div>
+
+          <div class="onx-pagination">
+            <button class="onx-button" id="prev-page" type="button">Previous</button>
+            <span id="page-info">Page 1 of 1</span>
+            <button class="onx-button" id="next-page" type="button">Next</button>
+          </div>
+        </section>
+
+        <aside class="onx-panel onx-preview" aria-label="Report Preview">
+          <div class="onx-panel-head">
+            <div class="onx-preview-title">
+              <h2>Report Preview</h2>
+              <p>Generate a report from selected records or the current filtered data.</p>
+            </div>
+          </div>
+          <div class="onx-preview-body">
+            <div class="onx-report-card" id="report-preview"></div>
+            <div class="onx-preview-actions">
+              <button class="onx-button is-primary" id="download-pdf" type="button" disabled>Download PDF</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
