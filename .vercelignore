@@ -9,11 +9,29 @@
 node_modules/
 dist/
 
-Dataset_Test_Enriched/
-KAPAL YG TERDETEKSI/
-RUNYOLO_FINALBISMILLAH/
-new/
-Inference/
+# Folder riset di root project (tanpa "/" di depan, pola ini dulu ikut membuang
+# public/KAPAL YG TERDETEKSI sehingga Kalman Lokal & kandidat anomali 404 di situs online).
+/Dataset_Test_Enriched/
+/KAPAL YG TERDETEKSI/
+/RUNYOLO_FINALBISMILLAH/
+/new/
+/Inference/
+/server/
+/scripts/
+
+# Folder/file besar di public/ yang tidak dipakai halaman mana pun (yang dipakai dashboard.html:
+# INTEGRATION_DATA_FILES). Sengaja tanpa pola "!" — Vercel tidak memasukkan kembali file di dalam folder
+# yang sudah dikecualikan.
+/public/RUNYOLO_FINALBISMILLAH/
+/public/hasilyolov12n/
+/public/new/Patch_RGB/
+/public/new/Patch_Uint8/
+/public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/drifting_longlines.csv
+/public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/fixed_gear.csv
+/public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/purse_seines.csv
+/public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trawlers.csv
+/public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/images/
+/public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/trajectory_points_raw_vs_kalman.csv
 
 *.h5
 *.pt
@@ -22,8 +40,20 @@ Inference/
 *.tiff
 *.zip
 *.xlsx
+*.sqlite*
 
 vite-*.log
 
-# Keep the curated deployment bundle in public.
-!public/**
+# Kode + dataset penelitian dari pembuat model H5 (2 GB). Bukan bagian situs; jangan ikut ter-upload saat deploy.
+/newcodinggfw_fixbuanget/
+
+# PREVIEW TAMPILAN H5 (belum disetujui untuk tayang): hapus baris ini kalau jadi dipakai.
+/dashboard-h5.html
+/dashboard-gabung.html
+
+# PREVIEW "Pencocokan AIS-SAR (satelit)" (belum disetujui untuk tayang): hapus tiga baris ini kalau jadi dipakai.
+/dashboard-tanpa-ais.html
+/api/gfw/sar-ais.js
+
+# Data lintasan untuk PREVIEW pencocokan AIS-SAR (belum disetujui untuk tayang).
+/preview-data/

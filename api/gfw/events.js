@@ -7,21 +7,57 @@ const GFW_EVENT_DATASETS = [
   "public-global-encounters-events:latest",
   "public-global-loitering-events:latest",
 ];
-const INDONESIA_POLY = {
-  type: "Polygon",
-  coordinates: [[[95.0, -11.0], [141.0, -11.0], [141.0, 6.0], [95.0, 6.0], [95.0, -11.0]]],
-};
+// Hanya event di ZEE Indonesia (id 8492 di dataset public-eez-areas GFW), bukan kotak lintang/bujur
+// yang ikut mencakup perairan Malaysia/Singapura.
+// PENTING: GFW hanya menerapkan batas wilayah ini kalau satu permintaan berisi SATU dataset. Kalau beberapa dataset
+// dikirim sekaligus, batas wilayahnya diabaikan dan yang datang adalah event seluruh dunia. Karena itu tiap
+// dataset diminta sendiri-sendiri (fetchDataset) lalu hasilnya digabung.
+const INDONESIA_EEZ = { dataset: "public-eez-areas", id: 8492 };
+const INDONESIA_EEZ_ID = String(INDONESIA_EEZ.id);
 
 const FRESH_TTL_SECONDS = 10 * 60;
 const STALE_TTL_SECONDS = 6 * 60 * 60;
-const MAX_EVENTS = 200;
+// Cache CDN Vercel: segar 1 jam, lalu tetap disajikan langsung (maks. 1 hari) sambil diperbarui di belakang.
+// Data GFW sendiri baru berubah kira-kira sekali sehari (jeda ~72 jam), jadi pengunjung tidak perlu menunggu.
+const CDN_CACHE = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400";
+const CDN_CACHE_STALE = "public, max-age=60, s-maxage=300, stale-while-revalidate=3600";
+// 700 event terbaru di ZEE Indonesia dari ketiga jenis (sekitar 1,5–2 hari data GFW).
+const MAX_EVENTS = 700;
 
 function toIsoDate(date) {
   return date.includes("T") ? date : `${date}T00:00:00Z`;
 }
 
 function cacheKey(start, end) {
-  return `gfw:events:idn:v2:${start}:${end}:fishing-encounter-loitering`;
+  return `gfw:events:idn-eez:v5:${MAX_EVENTS}:${start}:${end}:fishing-encounter-loitering`;
+}
+
+// Event terbaru satu dataset di ZEE Indonesia.
+async function fetchDataset(token, dataset, start, end) {
+  const url = new URL(`${GFW_BASE}/events`);
+  url.searchParams.set("limit", String(MAX_EVENTS));
+  url.searchParams.set("offset", "0");
+  url.searchParams.set("sort", "-start");
+
+  const gfwRes = await fetch(url.toString(), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      datasets: [dataset],
+      startDate: toIsoDate(start),
+      endDate: toIsoDate(end),
+      region: INDONESIA_EEZ,
+      vesselTypes: ["FISHING"],
+    }),
+  });
+
+  if (!gfwRes.ok) {
+    const text = await gfwRes.text().catch(() => "");
+    console.error(`[gfw] error ${gfwRes.status} (${dataset}): ${text.slice(0, 200)}`);
+    throw new Error(`GFW ${gfwRes.status}: ${text.slice(0, 200)}`);
+  }
+  const json = await gfwRes.json();
+  return json?.entries ?? [];
 }
 
 function cacheEnvelope(payload) {
@@ -54,7 +90,7 @@ export default async function handler(req, res) {
       events: (cached.payload.events || []).slice(0, MAX_EVENTS),
     };
     res.setHeader("x-cache", "HIT");
-    res.setHeader("cache-control", "public, max-age=60, stale-while-revalidate=600");
+    res.setHeader("cache-control", CDN_CACHE);
     res.setHeader("x-data-fetched-at", new Date(cached.fetchedAt).toISOString());
     return res.json(payload);
   }
@@ -63,46 +99,27 @@ export default async function handler(req, res) {
   if (!token) return res.status(500).json({ events: [], error: "GFW_TOKEN not configured" });
 
   try {
-    const url = new URL(`${GFW_BASE}/events`);
-    url.searchParams.set("limit", "200");
-    url.searchParams.set("offset", "0");
-    url.searchParams.set("sort", "-start");
-
     console.log(`[gfw] fetching ${start} -> ${end} ...`);
     const t0 = Date.now();
 
-    const gfwRes = await fetch(url.toString(), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        datasets: GFW_EVENT_DATASETS,
-        startDate: toIsoDate(start),
-        endDate: toIsoDate(end),
-        geometry: INDONESIA_POLY,
-        vesselTypes: ["FISHING"],
-      }),
-    });
-
-    if (!gfwRes.ok) {
-      const text = await gfwRes.text().catch(() => "");
-      console.error(`[gfw] error ${gfwRes.status}: ${text.slice(0, 200)}`);
-      throw new Error(`GFW ${gfwRes.status}: ${text.slice(0, 200)}`);
-    }
-
-    const json = await gfwRes.json();
-    const data = (json?.entries ?? []).slice(0, MAX_EVENTS);
+    const lists = await Promise.all(GFW_EVENT_DATASETS.map((dataset) => fetchDataset(token, dataset, start, end)));
+    // Pengaman: apa pun jawaban GFW, yang diteruskan hanya event yang memang tercatat di ZEE Indonesia.
+    const data = lists.flat()
+      .filter((event) => (event?.regions?.eez ?? []).map(String).includes(INDONESIA_EEZ_ID))
+      .sort((x, y) => String(y.start).localeCompare(String(x.start)))
+      .slice(0, MAX_EVENTS);
     console.log(`[gfw] OK - ${data.length} events (${Date.now() - t0}ms)`);
 
     const payload = { events: data };
     await cacheSet(key, cacheEnvelope(payload), STALE_TTL_SECONDS);
     res.setHeader("x-cache", "MISS");
-    res.setHeader("cache-control", "public, max-age=60, stale-while-revalidate=600");
+    res.setHeader("cache-control", CDN_CACHE);
     res.json(payload);
   } catch (e) {
     console.error("[gfw] catch:", e?.message);
     if (cached?.payload) {
       res.setHeader("x-cache", "STALE");
-      res.setHeader("cache-control", "public, max-age=30, stale-while-revalidate=600");
+      res.setHeader("cache-control", CDN_CACHE_STALE);
       res.setHeader("x-data-fetched-at", new Date(cached.fetchedAt).toISOString());
       return res.json({
         ...cached.payload,
@@ -110,6 +127,7 @@ export default async function handler(req, res) {
         warning: "Serving stale GFW data because live fetch failed",
       });
     }
+    res.setHeader("cache-control", "no-store");
     res.status(500).json({ events: [], error: e?.message || "events failed" });
   }
 }

@@ -8,16 +8,11 @@
   <script type="module" src="assets/js/anomaly-data.js"></script>
   <script type="module" src="assets/js/anomaly-alert.js"></script>
 </head>
-<body class="onx-body">
+<body class="onx-body onx-light">
   <div class="onx-shell">
     <header class="onx-topbar">
       <a class="onx-brand" href="index.html" aria-label="Ocean Nexus 2026">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4"></circle>
-          <path d="M10 36c8-11 16-14 27-8 8 4 13 3 18-3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-          <path d="M14 44c10-7 19-7 28 0 4 3 8 3 12 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-          <path d="M39 12 25 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-        </svg>
+        <img src="assets/logos/ocean-nexus.png" alt="" width="38" height="38">
         <span>
           <strong>OCEAN NEXUS 2026</strong>
           <span>AI-Driven Maritime Surveillance</span>
@@ -25,8 +20,9 @@
       </a>
 
       <div class="onx-partners" aria-label="Partner logos">
+        <img class="onx-partner-logo is-kemdik" src="assets/logos/kemendiktisaintek.png" alt="Kemendiktisaintek Berdampak">
+        <img class="onx-partner-logo is-len" src="assets/logos/len.png" alt="PT LEN">
         <img class="onx-partner-logo is-its" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember">
-        <img class="onx-partner-logo is-len" src="assets/logos/pt-len.png" alt="PT LEN Industri">
       </div>
 
       <div class="onx-topbar-spacer"></div>
@@ -82,6 +78,7 @@
           <p class="onx-kicker">Operations Console</p>
           <h1>Anomaly Alert Center</h1>
           <p>Review detected vessel anomalies, verify supporting data, and send validated alerts.</p>
+          <p class="onx-muted" id="data-source-note" style="font-size:13px"></p>
         </div>
       </div>
 
@@ -157,7 +154,7 @@
                   <th>MMSI</th>
                   <th>Anomaly Type</th>
                   <th>Date &amp; Time (WIB)</th>
-                  <th>Confidence</th>
+                  <th>Basis</th>
                   <th>Status</th>
                 </tr>
               </thead>

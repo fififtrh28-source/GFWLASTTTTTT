@@ -32,11 +32,20 @@ function resolveHandler(urlPath: string): string | null {
   return candidates.find(fs.existsSync) ?? null;
 }
 
+type AisRelay = { handle: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>; start: () => void };
+
+// Relay AIS live (server/ais-relay.mjs) ikut berjalan di dalam `npm run dev`.
+async function loadAisRelay(): Promise<AisRelay> {
+  return import(pathToFileURL(path.join(__dirname, "server", "ais-relay.mjs")).href);
+}
+
 function vercelApiPlugin() {
   return {
     name: "local-vercel-api",
     configureServer(server: { middlewares: { use: (fn: (req: IncomingMessage, res: ServerResponse, next: () => void) => void) => void } }) {
       loadDotEnv();
+      // Relay langsung jalan saat server mulai, supaya riwayat AIS terkumpul walau dashboard belum dibuka.
+      loadAisRelay().then((relay) => relay.start()).catch((err) => console.error("[ais-relay] gagal dimulai:", err));
 
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
         if (!req.url?.startsWith("/api/")) return next();
@@ -45,6 +54,11 @@ function vercelApiPlugin() {
         res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
         if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
+
+        if (req.url.startsWith("/api/ais/")) {
+          const relay = await loadAisRelay();
+          if (await relay.handle(req, res)) return;
+        }
 
         const handlerPath = resolveHandler(req.url);
         if (!handlerPath) {

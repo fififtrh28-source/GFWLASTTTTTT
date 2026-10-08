@@ -150,7 +150,7 @@
       text-decoration: none;
     }
 
-    .brand-mark svg {
+    .brand-mark img {
       width: 38px;
       height: 38px;
       flex: 0 0 auto;
@@ -184,6 +184,11 @@
 
     .partner-logo.is-missing {
       display: none;
+    }
+
+    .partner-logo.kemdik {
+      max-width: 36px;
+      height: 34px;
     }
 
     .partner-logo.len {
@@ -423,15 +428,40 @@
       gap: 11px;
     }
 
-    .dots span {
+    /* Penanda langkah (1 Welcome, 2 Login, 3 Menu): tampil di ketiga layar, yang terang = layar sekarang, bisa diklik. */
+    .dots button {
+      position: relative;
       width: 10px;
       height: 10px;
+      padding: 0;
+      border: 0;
       border-radius: 50%;
       background: rgba(179, 225, 255, 0.54);
+      cursor: pointer;
     }
 
-    .dots span.active {
+    /* Area klik lebih besar dari titiknya supaya mudah ditekan. */
+    .dots button::after {
+      content: "";
+      position: absolute;
+      inset: -5px;
+    }
+
+    .dots button:hover,
+    .dots button.active {
       background: #bdeeff;
+    }
+
+    /* Posisi yang sama dengan titik di layar Welcome. */
+    .login-left > .dots {
+      position: absolute;
+      left: clamp(22px, 4vw, 42px);
+      bottom: 26px;
+    }
+
+    .option-screen .screen-footer {
+      justify-content: flex-start;
+      gap: 22px;
     }
 
     .login-screen {
@@ -453,6 +483,17 @@
       grid-template-rows: 88px 1fr auto;
       padding: 0 clamp(26px, 4vw, 48px) 36px;
       background: rgba(2, 47, 72, 0.48);
+    }
+
+    /* Header panel kiri login: tanpa padding ganda supaya logo mitra tetap di dalam panel gelap */
+    .login-left .brand-row {
+      padding: 0;
+      gap: 14px;
+    }
+
+    .login-left .partner-logos {
+      gap: 8px;
+      padding-left: 12px;
     }
 
     .login-copy {
@@ -602,8 +643,7 @@
       accent-color: #05699e;
     }
 
-    .login-tools a,
-    .signup-row a {
+    .login-tools a {
       color: #045b91;
       font-weight: 700;
       text-decoration: none;
@@ -619,13 +659,6 @@
       cursor: pointer;
       font-weight: 800;
       box-shadow: 0 14px 26px rgba(5, 92, 144, 0.22);
-    }
-
-    .signup-row {
-      margin-top: 26px;
-      color: #294f68;
-      text-align: center;
-      font-size: 13px;
     }
 
     .login-status {
@@ -1014,6 +1047,11 @@
         border-left: 0;
       }
 
+      .partner-logo.kemdik {
+        max-width: 30px;
+        height: 30px;
+      }
+
       .partner-logo.len {
         max-width: 70px;
       }
@@ -1143,16 +1181,12 @@
       <div class="screen-content">
         <header class="brand-row">
           <a class="brand-mark" href="#" aria-label="Ocean Nexus 2026">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4"></circle>
-              <path d="M10 36c8-11 16-14 27-8 8 4 13 3 18-3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M14 44c10-7 19-7 28 0 4 3 8 3 12 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M39 12 25 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-            </svg>
+            <img src="assets/logos/ocean-nexus.png" alt="" width="38" height="38">
             <strong>OCEAN NEXUS 2026</strong>
           </a>
           <div class="partner-logos" aria-label="Partner logos">
-            <img class="partner-logo len" src="assets/logos/pt-len.png" alt="PT LEN" onerror="this.classList.add('is-missing')">
+            <img class="partner-logo kemdik" src="assets/logos/kemendiktisaintek.png" alt="Kemendiktisaintek Berdampak" onerror="this.classList.add('is-missing')">
+            <img class="partner-logo len" src="assets/logos/len.png" alt="PT LEN" onerror="this.classList.add('is-missing')">
             <img class="partner-logo its" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember" onerror="this.classList.add('is-missing')">
           </div>
           <nav class="nav-links" aria-label="Welcome navigation">
@@ -1192,10 +1226,10 @@
         </main>
 
         <footer class="screen-footer">
-          <div class="dots" aria-hidden="true">
-            <span class="active"></span>
-            <span></span>
-            <span></span>
+          <div class="dots" role="group" aria-label="Steps">
+            <button type="button" data-dot="0" aria-label="Step 1: Welcome"></button>
+            <button type="button" data-dot="1" aria-label="Step 2: Login"></button>
+            <button type="button" data-dot="2" aria-label="Step 3: Menu"></button>
           </div>
         </footer>
       </div>
@@ -1205,21 +1239,22 @@
       <aside class="login-left">
         <header class="brand-row">
           <a class="brand-mark" href="#" aria-label="Ocean Nexus 2026">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4"></circle>
-              <path d="M10 36c8-11 16-14 27-8 8 4 13 3 18-3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M14 44c10-7 19-7 28 0 4 3 8 3 12 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M39 12 25 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-            </svg>
+            <img src="assets/logos/ocean-nexus.png" alt="" width="38" height="38">
             <strong>OCEAN NEXUS 2026</strong>
           </a>
           <div class="partner-logos" aria-label="Partner logos">
-            <img class="partner-logo len" src="assets/logos/pt-len.png" alt="PT LEN" onerror="this.classList.add('is-missing')">
+            <img class="partner-logo kemdik" src="assets/logos/kemendiktisaintek.png" alt="Kemendiktisaintek Berdampak" onerror="this.classList.add('is-missing')">
+            <img class="partner-logo len" src="assets/logos/len.png" alt="PT LEN" onerror="this.classList.add('is-missing')">
             <img class="partner-logo its" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember" onerror="this.classList.add('is-missing')">
           </div>
         </header>
         <div class="login-copy">
           <h2 data-i18n="login.sideTitle">Welcome to Ocean Nexus 2026</h2>
+        </div>
+        <div class="dots" role="group" aria-label="Steps">
+          <button type="button" data-dot="0" aria-label="Step 1: Welcome"></button>
+          <button type="button" data-dot="1" aria-label="Step 2: Login"></button>
+          <button type="button" data-dot="2" aria-label="Step 3: Menu"></button>
         </div>
       </aside>
 
@@ -1281,7 +1316,6 @@
 
             <button class="login-submit" type="submit" data-i18n="login.submit">Login</button>
             <div class="login-status" id="login-status" aria-live="polite"></div>
-            <div class="signup-row"><span data-i18n="login.noAccount">Don't have an account?</span> <a href="#" data-i18n="login.signup">Sign up</a></div>
             <button class="login-back" type="button" data-prev data-i18n="common.previous">Previous</button>
           </form>
         </main>
@@ -1292,16 +1326,12 @@
       <div class="screen-content">
         <header class="brand-row">
           <a class="brand-mark" href="#" aria-label="Ocean Nexus 2026">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="4"></circle>
-              <path d="M10 36c8-11 16-14 27-8 8 4 13 3 18-3" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M14 44c10-7 19-7 28 0 4 3 8 3 12 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-              <path d="M39 12 25 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
-            </svg>
+            <img src="assets/logos/ocean-nexus.png" alt="" width="38" height="38">
             <strong>OCEAN NEXUS 2026</strong>
           </a>
           <div class="partner-logos" aria-label="Partner logos">
-            <img class="partner-logo len" src="assets/logos/pt-len.png" alt="PT LEN" onerror="this.classList.add('is-missing')">
+            <img class="partner-logo kemdik" src="assets/logos/kemendiktisaintek.png" alt="Kemendiktisaintek Berdampak" onerror="this.classList.add('is-missing')">
+            <img class="partner-logo len" src="assets/logos/len.png" alt="PT LEN" onerror="this.classList.add('is-missing')">
             <img class="partner-logo its" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember" onerror="this.classList.add('is-missing')">
           </div>
           <nav class="nav-links" aria-label="Option navigation">
@@ -1388,6 +1418,11 @@
         </main>
 
         <footer class="screen-footer">
+          <div class="dots" role="group" aria-label="Steps">
+            <button type="button" data-dot="0" aria-label="Step 1: Welcome"></button>
+            <button type="button" data-dot="1" aria-label="Step 2: Login"></button>
+            <button type="button" data-dot="2" aria-label="Step 3: Menu"></button>
+          </div>
           <button class="ghost-button" type="button" data-prev data-i18n="common.previous">Previous</button>
         </footer>
       </div>
@@ -1413,6 +1448,9 @@
     let language = "en";
     let activeModalType = null;
     let current = 0;
+    let loggedIn = false; // layar Menu (indeks 2) baru boleh dibuka lewat titik setelah login berhasil
+    // Login diingat selama tab ini terbuka, supaya kembali dari dashboard (index.html#menu) tidak perlu login ulang.
+    try { loggedIn = sessionStorage.getItem("onx-login") === "1"; } catch (error) { /* penyimpanan diblokir: abaikan */ }
 
     const translations = {
       en: {
@@ -1436,8 +1474,6 @@
         "login.submit": "Login",
         "login.required": "Enter username and password first.",
         "login.invalid": "Username or password is incorrect.",
-        "login.noAccount": "Don't have an account?",
-        "login.signup": "Sign up",
         "option.title": "Choose Your Path",
         "option.subtitle": "Select an action to continue inside Ocean Nexus 2026",
         "option.indonesiaTitle": "Indonesian Waters",
@@ -1469,8 +1505,6 @@
         "login.submit": "Masuk",
         "login.required": "Isi nama pengguna dan kata sandi terlebih dahulu.",
         "login.invalid": "Nama pengguna atau kata sandi salah.",
-        "login.noAccount": "Belum punya akun?",
-        "login.signup": "Daftar",
         "option.title": "Pilih Menu",
         "option.subtitle": "Pilih aksi berikut untuk melanjutkan di Ocean Nexus 2026",
         "option.indonesiaTitle": "Wilayah Indonesia",
@@ -1575,6 +1609,16 @@
       screens.forEach((screen, i) => {
         screen.classList.toggle("active", i === current);
       });
+      updateDots();
+    }
+
+    function updateDots() {
+      document.querySelectorAll("[data-dot]").forEach((dot) => {
+        const isCurrent = Number(dot.dataset.dot) === current;
+        dot.classList.toggle("active", isCurrent);
+        if (isCurrent) dot.setAttribute("aria-current", "step");
+        else dot.removeAttribute("aria-current");
+      });
     }
 
     function closeLanguageMenus() {
@@ -1641,6 +1685,14 @@
       button.addEventListener("click", () => showScreen(current - 1));
     });
 
+    // Titik penanda langkah. Sebelum login, titik ketiga membawa ke layar Login (tidak bisa melompati login).
+    document.querySelectorAll("[data-dot]").forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const target = Number(dot.dataset.dot);
+        showScreen(target === 2 && !loggedIn ? 1 : target);
+      });
+    });
+
     document.querySelectorAll("[data-go]").forEach((button) => {
       button.addEventListener("click", () => showScreen(Number(button.dataset.go)));
     });
@@ -1694,6 +1746,8 @@
 
       delete status.dataset.messageKey;
       status.textContent = "";
+      loggedIn = true;
+      try { sessionStorage.setItem("onx-login", "1"); } catch (error) { /* penyimpanan diblokir: abaikan */ }
       showScreen(2);
     });
 
@@ -1711,6 +1765,9 @@
     });
 
     setLanguage("en");
+    updateDots();
+    // Datang dari menu tiga garis di dashboard: langsung ke layar Menu; kalau belum login, ke layar Login.
+    if (location.hash === "#menu") showScreen(loggedIn ? 2 : 1);
   </script>
 </body>
 </html>

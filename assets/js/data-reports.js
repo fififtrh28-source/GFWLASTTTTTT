@@ -14,7 +14,7 @@
       end: "",
       type: "",
       status: "",
-      region: "",
+      flag: "",
       search: "",
     },
   };
@@ -58,7 +58,7 @@
       end: elements.endDate.value,
       type: elements.typeFilter.value,
       status: elements.statusFilter.value,
-      region: elements.regionFilter.value,
+      flag: elements.flagFilter.value,
       search: elements.searchInput.value.trim().toLowerCase(),
     };
   }
@@ -71,10 +71,10 @@
       const matchesEnd = !filters.end || day <= filters.end;
       const matchesType = !filters.type || record.anomalyType === filters.type;
       const matchesStatus = !filters.status || record.status === filters.status;
-      const matchesRegion = !filters.region || record.region === filters.region;
+      const matchesFlag = !filters.flag || record.flag === filters.flag;
       const haystack = `${record.vesselName} ${record.mmsi} ${record.imo}`.toLowerCase();
       const matchesSearch = !filters.search || haystack.includes(filters.search);
-      return matchesStart && matchesEnd && matchesType && matchesStatus && matchesRegion && matchesSearch;
+      return matchesStart && matchesEnd && matchesType && matchesStatus && matchesFlag && matchesSearch;
     });
 
     const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.perPage));
@@ -124,7 +124,7 @@
           <td>${escapeHtml(record.mmsi)}</td>
           <td>${escapeHtml(record.anomalyType)}</td>
           <td>${escapeHtml(record.dateLabel)}</td>
-          <td>${escapeHtml(record.confidence)}%</td>
+          <td>${escapeHtml(record.basis)}</td>
           <td>${statusBadge(record.status)}</td>
         </tr>
       `).join("");
@@ -167,7 +167,6 @@
           <li>New: ${summary.newCount}</li>
           <li>Reviewed: ${summary.reviewed}</li>
           <li>Sent: ${summary.sent}</li>
-          <li>Average Confidence: ${summary.average}%</li>
         </ul>
       </div>
 
@@ -186,7 +185,7 @@
               <th>Vessel</th>
               <th>MMSI</th>
               <th>Anomaly</th>
-              <th>Confidence</th>
+              <th>Basis</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -196,7 +195,7 @@
                 <td>${escapeHtml(record.vesselName)}</td>
                 <td>${escapeHtml(record.mmsi)}</td>
                 <td>${escapeHtml(record.anomalyType)}</td>
-                <td>${escapeHtml(record.confidence)}%</td>
+                <td>${escapeHtml(record.basis)}</td>
                 <td>${escapeHtml(record.status)}</td>
               </tr>
             `).join("")}
@@ -223,7 +222,7 @@
   }
 
   function resetFilters() {
-    [elements.startDate, elements.endDate, elements.typeFilter, elements.statusFilter, elements.regionFilter, elements.searchInput].forEach((input) => {
+    [elements.startDate, elements.endDate, elements.typeFilter, elements.statusFilter, elements.flagFilter, elements.searchInput].forEach((input) => {
       input.value = "";
     });
     applyFilterInputs();
@@ -242,18 +241,22 @@
 
   function exportCsv() {
     const records = state.filtered;
-    const headers = ["Vessel Name", "MMSI", "IMO", "Flag", "Anomaly Type", "Date & Time (WIB)", "Location", "Confidence", "Status", "Region"];
+    const headers = ["Vessel Name", "MMSI", "IMO", "Flag", "Vessel Type", "Anomaly Type", "Date & Time (WIB)", "Location (satellite)", "AIS Position", "Basis", "Evidence", "Rule", "Status", "Satellite Scene"];
     const rows = records.map((record) => [
       record.vesselName,
       record.mmsi,
       record.imo,
       record.flag,
+      record.shipType,
       record.anomalyType,
       record.detectionTime,
       record.location,
-      `${record.confidence}%`,
+      record.aisLocation,
+      record.basis,
+      record.evidence,
+      record.rule,
       record.status,
-      record.region,
+      record.scene,
     ]);
     const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
     downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "ocean-nexus-filtered-data.csv");
@@ -347,7 +350,7 @@
     elements.endDate = $("#filter-end");
     elements.typeFilter = $("#filter-type");
     elements.statusFilter = $("#filter-status");
-    elements.regionFilter = $("#filter-region");
+    elements.flagFilter = $("#filter-flag");
     elements.searchInput = $("#filter-search");
     elements.applyFilter = $("#apply-filter");
     elements.resetFilter = $("#reset-filter");
@@ -364,16 +367,22 @@
   }
 
   function init() {
-    collectElements();
     state.records = dataStore.getAnomalies();
     populateSelect(elements.typeFilter, "Anomaly Type", uniqueValues("anomalyType"));
-    populateSelect(elements.regionFilter, "Region", uniqueValues("region"));
+    populateSelect(elements.flagFilter, "Flag", uniqueValues("flag").filter((flag) => flag !== "-"));
+    const note = $("#data-source-note");
+    if (note) note.textContent = dataStore.getSourceNote();
     bindEvents();
     readFilters();
     renderAll();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  // Data dibaca dari file yang sama dengan dashboard peta, jadi halaman menunggu sampai file itu selesai dimuat.
+  document.addEventListener("DOMContentLoaded", () => {
+    collectElements();
+    elements.tableBody.innerHTML = '<tr><td class="onx-empty" colspan="8">Loading data from the map dashboard...</td></tr>';
+    dataStore.ready.then(init);
+  });
 
   function cleanPdfText(value) {
     return String(value ?? "")
@@ -491,7 +500,6 @@
     text(`New: ${summary.newCount}`, 190, 610);
     text(`Reviewed: ${summary.reviewed}`, 280, 610);
     text(`Sent: ${summary.sent}`, 402, 610);
-    text(`Average Confidence: ${summary.average}%`, 42, 594);
 
     op("0.03 0.16 0.25 rg");
     text("2. Vessel Information", 42, 560, 12, true);
@@ -512,10 +520,10 @@
       text(`Anomaly Type: ${first.anomalyType}`, 42, 474);
       text(`Detection Time: ${first.detectionTime}`, 42, 458);
       text(`Location: ${first.location}`, 42, 442);
-      text(`Confidence Score: ${first.confidence}%`, 318, 474);
+      text(`Basis: ${first.basis}`, 318, 474);
       text(`Status: ${first.status}`, 318, 458);
       text(`Remarks: ${first.remarks}`, 318, 442);
-      wrapText(`Behavior: ${first.behavior}`, 86).forEach((lineText, index) => {
+      wrapText(`Evidence: ${first.evidence}`, 86).forEach((lineText, index) => {
         text(lineText, 42, 420 - (index * 14));
       });
     }
@@ -529,8 +537,8 @@
     text("Vessel", 50, tableTop - 12, 8, true);
     text("MMSI", 170, tableTop - 12, 8, true);
     text("Anomaly", 242, tableTop - 12, 8, true);
-    text("Time", 352, tableTop - 12, 8, true);
-    text("Conf.", 468, tableTop - 12, 8, true);
+    text("Time", 306, tableTop - 12, 8, true);
+    text("Basis", 384, tableTop - 12, 8, true);
     text("Status", 520, tableTop - 12, 8, true);
     op("0.45 0.60 0.70 RG");
     rect(42, tableTop - 18, 528, 20);
@@ -544,8 +552,8 @@
       text(record.vesselName, 50, y + 3, 7);
       text(record.mmsi, 170, y + 3, 7);
       text(record.anomalyType, 242, y + 3, 7);
-      text(record.dateLabel, 352, y + 3, 7);
-      text(`${record.confidence}%`, 468, y + 3, 7);
+      text(record.dateLabel, 306, y + 3, 7);
+      text(record.basis, 384, y + 3, 7);
       text(record.status, 520, y + 3, 7);
     });
 

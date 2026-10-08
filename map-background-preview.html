@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ocean Nexus Map Background</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html,
+    body,
+    #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: #0b314c;
+    }
+
+    body {
+      overflow: hidden;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .leaflet-container {
+      background: #0b314c;
+      font: inherit;
+    }
+
+    .leaflet-control-attribution {
+      display: none;
+    }
+
+    .fallback-points {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 220ms ease;
+    }
+
+    .fallback-points.visible {
+      opacity: 1;
+    }
+
+    .fallback-points span {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ff514a;
+      box-shadow: 0 0 12px rgba(255, 81, 74, 0.72);
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+  <div id="map" aria-label="Peta titik kapal Ocean Nexus"></div>
+  <div class="fallback-points" id="fallback-points" aria-hidden="true"></div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const interactive = params.get("interactive") === "1";
+    const dataFile = "KAPAL%20YG%20TERDETEKSI/scene_candidates_godark_spoofing_transshipment.csv";
+
+    const map = L.map("map", {
+      zoomControl: interactive,
+      attributionControl: false,
+      preferCanvas: true,
+      dragging: interactive,
+      touchZoom: interactive,
+      scrollWheelZoom: interactive,
+      doubleClickZoom: interactive,
+      boxZoom: interactive,
+      keyboard: interactive,
+    }).setView([-2.5, 117.0], 5);
+
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 13,
+      attribution: "Esri, GEBCO, NOAA",
+    }).addTo(map);
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            field += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+          continue;
+        }
+
+        if (char === "," && !inQuotes) {
+          row.push(field);
+          field = "";
+          continue;
+        }
+
+        if ((char === "\n" || char === "\r") && !inQuotes) {
+          if (char === "\r" && next === "\n") i += 1;
+          row.push(field);
+          if (row.some((value) => value.trim() !== "")) rows.push(row);
+          row = [];
+          field = "";
+          continue;
+        }
+
+        field += char;
+      }
+
+      row.push(field);
+      if (row.some((value) => value.trim() !== "")) rows.push(row);
+      return rows;
+    }
+
+    function rowsToObjects(rows) {
+      const headers = rows.shift() || [];
+      return rows.map((row) => {
+        const item = {};
+        headers.forEach((header, index) => {
+          item[header] = row[index] || "";
+        });
+        return item;
+      });
+    }
+
+    function candidateColor(type) {
+      const value = String(type || "").toLowerCase();
+      if (value.includes("godark") || value.includes("go dark")) return "#d9901d";
+      if (value.includes("transshipment")) return "#8e5cf7";
+      if (value.includes("normal")) return "#35b85b";
+      return "#ff514a";
+    }
+
+    function plotFallbackPoints() {
+      const holder = document.getElementById("fallback-points");
+      const positions = [
+        [11, 35], [14, 41], [17, 48], [22, 54], [28, 59], [33, 62], [39, 65],
+        [46, 61], [53, 58], [61, 54], [68, 50], [76, 49], [83, 55], [86, 63],
+        [73, 67], [62, 70], [52, 73], [43, 75], [34, 72], [25, 67], [18, 60],
+      ];
+
+      holder.innerHTML = positions.map(([left, top]) => {
+        return `<span style="left:${left}%;top:${top}%"></span>`;
+      }).join("");
+      holder.classList.add("visible");
+    }
+
+    async function loadCandidates() {
+      const response = await fetch(dataFile, { cache: "no-store" });
+      if (!response.ok) throw new Error(`CSV ${response.status}`);
+      const rows = rowsToObjects(parseCsv(await response.text()));
+      const points = [];
+
+      rows.forEach((row) => {
+        const lat = Number(row.Center_latitude);
+        const lon = Number(row.Center_longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+        if (lat < -13 || lat > 9 || lon < 92 || lon > 142) return;
+
+        const color = candidateColor(row.candidate_type);
+        const marker = L.circleMarker([lat, lon], {
+          radius: 5.8,
+          color,
+          fillColor: color,
+          fillOpacity: 0.86,
+          weight: 1.4,
+          opacity: 0.96,
+        }).addTo(map);
+
+        if (interactive) {
+          marker.bindPopup(`<b>${row.candidate_type || "candidate"}</b><br>MMSI: ${row.MMSI || "-"}<br>${row.Name || ""}`);
+        }
+
+        points.push([lat, lon]);
+      });
+
+      if (!points.length) {
+        plotFallbackPoints();
+        return;
+      }
+
+      try {
+        map.fitBounds(L.latLngBounds(points), {
+          padding: [26, 26],
+          maxZoom: 5,
+        });
+      } catch {
+        map.setView([-2.5, 117.0], 5);
+      }
+    }
+
+    loadCandidates().catch(() => {
+      plotFallbackPoints();
+    });
+  </script>
+</body>
+</html>

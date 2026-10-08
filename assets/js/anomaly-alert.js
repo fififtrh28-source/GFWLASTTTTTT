@@ -132,7 +132,7 @@
         <td>${escapeHtml(record.mmsi)}</td>
         <td>${escapeHtml(record.anomalyType)}</td>
         <td>${escapeHtml(record.dateLabel)}</td>
-        <td>${escapeHtml(record.confidence)}%</td>
+        <td>${escapeHtml(record.basis)}</td>
         <td>${statusBadge(record.status)}</td>
       </tr>
     `).join("");
@@ -187,20 +187,24 @@
           <dd>${escapeHtml(record.detectionTime)}</dd>
         </div>
         <div>
-          <dt>Location</dt>
+          <dt>Location (satellite)</dt>
           <dd>${escapeHtml(record.location)}</dd>
         </div>
         <div>
-          <dt>Confidence Score</dt>
-          <dd>${escapeHtml(record.confidence)}%</dd>
+          <dt>AIS Position</dt>
+          <dd>${escapeHtml(record.aisLocation)}</dd>
         </div>
         <div>
-          <dt>Last Known Port</dt>
-          <dd>${escapeHtml(record.lastKnownPort)}</dd>
+          <dt>Vessel Type</dt>
+          <dd>${escapeHtml(record.shipType)}</dd>
         </div>
         <div>
-          <dt>Behavior</dt>
-          <dd>${escapeHtml(record.behavior)}</dd>
+          <dt>Basis of Finding</dt>
+          <dd>${escapeHtml(record.evidence)}</dd>
+        </div>
+        <div>
+          <dt>Rule</dt>
+          <dd>${escapeHtml(record.rule)}</dd>
         </div>
         <div>
           <dt>Remarks</dt>
@@ -291,9 +295,9 @@
       `Anomaly Type: ${record.anomalyType}`,
       `Location    : ${record.location}`,
       `Detection Time: ${record.detectionTime}`,
-      `Confidence  : ${record.confidence}%`,
+      `Basis       : ${record.basis}`,
       "",
-      "Please verify and take necessary action.",
+      "Rule-based candidate. Please verify before taking action.",
     ].join("\n");
   }
 
@@ -314,21 +318,22 @@
     const record = getSelectedRecord();
     if (!record) return;
 
-    const updated = dataStore.updateAnomaly(record.id, { status: "Sent", remarks: "Telegram alert sent" });
+    // Telegram belum disambungkan: yang terjadi hanya perubahan status di browser ini, tidak ada pesan yang terkirim.
+    const updated = dataStore.updateAnomaly(record.id, { status: "Sent", remarks: "Marked as sent (simulation; Telegram is not connected yet)" });
     dataStore.addAlertHistory({
       id: `hist-${Date.now()}`,
       sentAt: dataStore.formatNowWib(),
       vesselName: updated.vesselName,
       mmsi: updated.mmsi,
       anomalyType: updated.anomalyType,
-      sentTo: "Telegram",
+      sentTo: "Telegram (simulation)",
     });
 
     closeAlertPreview();
     syncRecords();
     state.selectedId = updated.id;
     renderAll();
-    showToast("Alert sent to Ocean Nexus Alert Group. Status updated to Sent.");
+    showToast("Simulation only: Telegram is not connected yet, so no message was sent. Status updated to Sent.");
   }
 
   function showToast(message) {
@@ -401,13 +406,19 @@
   }
 
   function init() {
-    collectElements();
     syncRecords();
     populateTypeFilter();
     state.selectedId = state.records[0]?.id || null;
+    const note = $("#data-source-note");
+    if (note) note.textContent = dataStore.getSourceNote();
     bindEvents();
     renderAll();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  // Data dibaca dari file yang sama dengan dashboard peta, jadi halaman menunggu sampai file itu selesai dimuat.
+  document.addEventListener("DOMContentLoaded", () => {
+    collectElements();
+    elements.tableBody.innerHTML = '<tr><td class="onx-empty" colspan="7">Loading data from the map dashboard...</td></tr>';
+    dataStore.ready.then(init);
+  });
 })();

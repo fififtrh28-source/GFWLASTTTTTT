@@ -1,0 +1,3556 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ocean Nexus 2026 — Pemantauan Kapal Indonesia</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-velocity@2.1.4/dist/leaflet-velocity.min.css" />
+  <script src="https://unpkg.com/leaflet-velocity@2.1.4/dist/leaflet-velocity.min.js"></script>
+  <style>
+    :root {
+      --bg:          #0a1a2f;
+      --surface:     #0f2340;
+      --surface-2:   #152d50;
+      --surface-3:   #1a3560;
+      --border:      #1e3f6a;
+      --border-2:    #254d7a;
+      --text:        #cdd9e5;
+      --text-2:      #8b949e;
+      --text-3:      #545d68;
+      --blue:        #4493f8;
+      --blue-dim:    rgba(68,147,248,.12);
+      --green:       #3fb950;
+      --green-dim:   rgba(63,185,80,.12);
+      --orange:      #e3901a;
+      --orange-dim:  rgba(227,144,26,.12);
+      --yellow:      #d29922;
+      --yellow-dim:  rgba(210,153,34,.12);
+      --red:         #f85149;
+      --red-dim:     rgba(248,81,73,.12);
+      --purple:      #a371f7;
+      --purple-dim:  rgba(163,113,247,.12);
+      --radius:      6px;
+      --topbar-h:    48px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); font-family:'Segoe UI',system-ui,-apple-system,sans-serif; color:var(--text); overflow:hidden; font-size:13px; }
+    #map { position:fixed; inset:0; background:var(--bg); z-index:1; }
+
+    /* ── TOPBAR ─────────────────────────────────────────────────────────── */
+    #topbar {
+      position:fixed; top:0; left:0; right:0; height:var(--topbar-h);
+      background:rgba(10,26,47,.95); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:0;
+      z-index:900; backdrop-filter:blur(12px);
+    }
+    .tb-brand {
+      padding:0 18px; font-size:13px; font-weight:700; letter-spacing:.04em;
+      color:var(--text); white-space:nowrap; border-right:1px solid var(--border);
+      height:100%; display:flex; align-items:center; gap:10px;
+    }
+    /* Tombol tiga garis di kiri bar atas: membuka/menutup menu pindah halaman (#nav-menu) */
+    .tb-menu-btn {
+      width:48px; height:100%; flex-shrink:0; padding:0; border:none; border-right:1px solid var(--border);
+      background:none; color:var(--text-2); cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:color .15s, background .15s;
+    }
+    .tb-menu-btn:hover, .tb-menu-btn.open { color:var(--text); background:var(--surface-2); }
+    .tb-menu-btn svg { width:20px; height:20px; }
+    #nav-menu {
+      position:fixed; top:calc(var(--topbar-h) + 8px); left:8px; z-index:950; width:220px; padding:6px;
+      background:var(--surface); border:1px solid var(--border-2); border-radius:8px;
+      box-shadow:0 12px 32px rgba(0,0,0,.45); display:none;
+    }
+    #nav-menu.open { display:block; }
+    #nav-menu a {
+      display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:6px;
+      color:var(--text); text-decoration:none; font-size:13px; font-weight:600;
+    }
+    #nav-menu a:hover, #nav-menu a:focus-visible { background:var(--surface-3); outline:none; }
+    #nav-menu a svg { width:18px; height:18px; flex-shrink:0; color:var(--blue); }
+
+    /* Logo Ocean Nexus, sama dengan halaman depan (index.html .brand-mark) */
+    .tb-brand img {
+      width:26px; height:26px; flex-shrink:0;
+      filter:drop-shadow(0 4px 8px rgba(0,0,0,.22));
+    }
+    .tb-modes {
+      display:flex; height:100%; border-right:1px solid var(--border);
+    }
+    .mode-btn {
+      padding:0 18px; height:100%; border:none; background:none;
+      color:var(--text-2); font-size:12px; font-weight:600; letter-spacing:.03em;
+      cursor:pointer; position:relative; transition:color .15s; white-space:nowrap;
+    }
+    .mode-btn:hover { color:var(--text); }
+    .mode-btn.active-gfw { color:var(--green); }
+    .mode-btn.active-gfw::after {
+      content:''; position:absolute; bottom:0; left:18px; right:18px;
+      height:2px; background:var(--green); border-radius:1px 1px 0 0;
+    }
+    .mode-btn.active-ais { color:var(--blue); }
+    .mode-btn.active-ais::after {
+      content:''; position:absolute; bottom:0; left:18px; right:18px;
+      height:2px; background:var(--blue); border-radius:1px 1px 0 0;
+    }
+    .mode-btn.active-ai { color:var(--purple); }
+    .mode-btn.active-ai::after {
+      content:''; position:absolute; bottom:0; left:18px; right:18px;
+      height:2px; background:var(--purple); border-radius:1px 1px 0 0;
+    }
+    .tb-status {
+      padding:0 16px; display:flex; align-items:center; gap:8px;
+      border-right:1px solid var(--border); height:100%;
+    }
+    #dot { width:7px; height:7px; border-radius:50%; background:var(--red); flex-shrink:0; transition:background .3s; }
+    #dot.on { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    #conn-label { font-size:12px; color:var(--text-2); }
+    .tb-counts {
+      display:flex; align-items:center; gap:16px;
+      padding:0 16px; border-right:1px solid var(--border); height:100%;
+    }
+    .tb-count { display:flex; flex-direction:column; gap:1px; }
+    .tb-count-label { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-3); }
+    .tb-count-val   { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text); line-height:1; }
+    #last-update { font-size:11px; color:var(--text-3); font-variant-numeric:tabular-nums; }
+    .tb-actions {
+      margin-left:auto; display:flex; align-items:center; height:100%;
+      border-left:1px solid var(--border);
+    }
+    .tb-btn {
+      padding:0 16px; height:100%; border:none; background:none;
+      color:var(--text-2); font-size:12px; font-weight:600; letter-spacing:.03em;
+      cursor:pointer; transition:color .15s; white-space:nowrap;
+      border-left:1px solid var(--border);
+    }
+    .tb-btn:first-child { border-left:none; }
+    .tb-btn:hover { color:var(--text); background:var(--surface); }
+    .tb-btn.active { color:var(--blue); }
+    /* Logo mitra (PNG) di bar atas; disembunyikan di layar sempit supaya bar tidak sesak */
+    .tb-logos { margin-left:auto; display:flex; align-items:center; gap:14px; padding:0 16px; height:100%; }
+    .tb-logos + .tb-actions { margin-left:0; }
+    .tb-logo { display:block; width:auto; height:26px; object-fit:contain; }
+    .tb-logo.kemdik { height:28px; }
+    @media (max-width:1200px) {
+      .tb-logos { display:none; }
+      .tb-logos + .tb-actions { margin-left:auto; }
+    }
+
+    /* ── STATS PANEL (kiri atas) ──────────────────────────────────────────── */
+    #stats-panel {
+      position:fixed; top:calc(var(--topbar-h) + 16px); left:16px;
+      width:300px; background:rgba(10,26,47,.94); border:1px solid var(--border);
+      border-radius:var(--radius); z-index:700; backdrop-filter:blur(12px);
+      overflow:hidden; transition:width .2s ease;
+    }
+    #stats-panel.ai-mode {
+      width:min(380px, calc(100vw - 32px));
+      max-height:calc(100vh - var(--topbar-h) - 90px);
+      overflow-y:auto;
+    }
+    #stats-panel.ai-mode::-webkit-scrollbar { width:4px; }
+    #stats-panel.ai-mode::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:2px; }
+    .stats-header {
+      padding:16px 20px 12px; border-bottom:1px solid var(--border);
+      font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--text-3); display:flex; justify-content:space-between; align-items:center;
+    }
+    .stats-date { font-size:12px; color:var(--text-3); font-weight:400; letter-spacing:0; text-transform:none; }
+    .stats-body { padding:12px 0; }
+    .stat-row {
+      display:flex; align-items:center; gap:12px;
+      padding:9px 20px; position:relative;
+    }
+    .stat-type { font-size:15px; color:var(--text-2); width:90px; flex-shrink:0; }
+    .stat-bar-wrap { flex:1; height:6px; background:var(--surface-3); border-radius:2px; overflow:hidden; }
+    .stat-bar { height:100%; border-radius:2px; transition:width .4s ease; }
+    .stat-val { font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text); width:32px; text-align:right; flex-shrink:0; }
+    .stats-footer {
+      padding:14px 20px; border-top:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .stats-sub { margin-top:6px; padding:10px 20px 2px; border-top:1px solid var(--border); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); }
+    .stat-row-sm { padding:5px 20px; }
+    .stat-row-sm .stat-type { font-size:13px; }
+    .stat-row-sm .stat-val { font-size:14px; }
+    .stats-note { padding:4px 20px 0; font-size:12px; color:var(--text-3); }
+    .ai-sar-filter { cursor:pointer; border-radius:4px; }
+    .ai-sar-filter:hover, .ai-sar-filter.active { background:var(--surface-3); }
+    .stats-total-label { font-size:13px; color:var(--text-3); }
+    .stats-total-val   { font-size:18px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+
+    /* AIS stats (ganti stats panel saat mode AIS) */
+    .ais-stat-row { padding:8px 12px; display:flex; justify-content:space-between; align-items:baseline; }
+    .ais-stat-label { font-size:11px; color:var(--text-2); }
+    .ais-stat-val   { font-size:18px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+
+    /* ── LEGEND (kiri bawah) ─────────────────────────────────────────────── */
+    .legend-toggle {
+      position:fixed; left:16px; bottom:20px;
+      z-index:860; background:rgba(10,26,47,.96);
+      border:1px solid var(--border-2); border-radius:var(--radius);
+      color:var(--text); padding:9px 14px; font-size:12px;
+      font-weight:700; letter-spacing:.04em; cursor:pointer;
+      backdrop-filter:blur(12px);
+    }
+    /* ── TABEL KAPAL (tab AI Inference, di panel kiri) ── */
+    .ai-table { border-top:1px solid var(--border); font-size:12px; }
+    .ai-table-bar {
+      display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; padding:8px 10px;
+      border-bottom:1px solid var(--border);
+    }
+    .ai-table-title { font-size:13px; font-weight:700; color:var(--text); }
+    .ai-table-count { flex:1; color:var(--text-2); white-space:nowrap; }
+    .ai-table-btn {
+      height:26px; padding:0 8px; border:1px solid var(--border); border-radius:var(--radius);
+      background:transparent; color:var(--text-2); font:inherit; cursor:pointer; white-space:nowrap;
+    }
+    .ai-table-btn:hover { color:var(--text); border-color:var(--blue); }
+    .ai-table-bar input, .ai-table-bar select {
+      flex:1 1 44%; min-width:0; height:28px; padding:0 8px; border:1px solid var(--border);
+      border-radius:var(--radius); background:#0b1e36; color:var(--text); font:inherit; outline:none;
+    }
+    .ai-table-bar input:focus, .ai-table-bar select:focus { border-color:var(--blue); }
+    .ai-table-scroll { max-height:34vh; overflow:auto; padding:0 10px 6px; }
+    .ai-table-scroll::-webkit-scrollbar { width:6px; height:6px; }
+    .ai-table-scroll::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:3px; }
+    /* Lebar kolom dipatok supaya tabel tidak melebar ke samping; nama kapal yang panjang dipotong "…". */
+    .ai-table table { width:100%; border-collapse:separate; border-spacing:0 4px; table-layout:fixed; }
+    .ai-table th {
+      position:sticky; top:0; z-index:1; background:var(--surface-3); text-align:left; font-weight:600;
+      padding:6px 8px; white-space:nowrap; cursor:pointer; user-select:none; box-shadow:0 -6px 0 var(--bg);
+    }
+    .ai-table th:hover { color:var(--blue); }
+    .ai-table-sort { display:inline-block; width:14px; margin-left:4px; color:var(--blue); font-size:10px; }
+    .ai-table td { background:var(--surface); padding:5px 8px; white-space:nowrap; }
+    .ai-table th:first-child, .ai-table td:first-child { border-radius:5px 0 0 5px; }
+    .ai-table th:last-child, .ai-table td:last-child { border-radius:0 5px 5px 0; }
+    .ai-table .col-type { width:108px; }
+    .ai-table .col-time { width:62px; }
+    .ai-table td.col-name { overflow:hidden; }
+    .ai-table tbody tr { cursor:pointer; scroll-margin-top:36px; }
+    .ai-table tbody tr:hover td { background:var(--surface-2); }
+    .ai-table tbody tr.selected td { background:var(--surface-2); box-shadow:inset 0 1px 0 var(--blue), inset 0 -1px 0 var(--blue); }
+    .ai-table-name { display:flex; align-items:center; gap:8px; font-weight:600; }
+    .ai-table-name span:last-child { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; }
+    .ai-table-ico { width:10px; height:10px; flex-shrink:0; }
+    .ai-table-empty { padding:16px 8px; color:var(--text-2); text-align:center; cursor:default; }
+
+    /* Keterangan angin di kursor (hanya saat lapisan Angin di tab AIS Live menyala), di sebelah tombol Legend */
+    #wind-readout {
+      position:fixed; left:104px; bottom:20px; z-index:860; max-width:calc(100vw - 120px); overflow:hidden;
+      background:rgba(10,26,47,.96); border:1px solid var(--border-2); border-radius:var(--radius);
+      color:var(--text); padding:9px 14px; font-size:12px; backdrop-filter:blur(12px);
+      display:flex; align-items:center; gap:10px; white-space:nowrap; pointer-events:none;
+    }
+    #wind-readout[hidden] { display:none; }
+    #wind-readout .wind-scale { width:64px; height:6px; border-radius:3px; flex-shrink:0; }
+    #wind-readout .wind-dim { color:var(--text-3); }
+    .legend-toggle:hover,
+    .legend-toggle.active {
+      color:var(--blue); border-color:var(--blue); background:var(--blue-dim);
+    }
+    .legend-panel {
+      position:fixed; bottom:64px; left:16px;
+      width:300px; max-height:30vh; overflow-y:auto;
+      background:rgba(10,26,47,.94); border:1px solid var(--border);
+      border-radius:var(--radius); z-index:850; backdrop-filter:blur(12px);
+      padding:16px 18px; font-size:15px; line-height:2.05;
+    }
+    .legend-panel::-webkit-scrollbar { width:4px; }
+    .legend-panel::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:2px; }
+    .legend-panel[hidden] {
+      display:none;
+    }
+    .leg-title { font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); display:block; margin-bottom:10px; }
+    .leg-row { display:flex; align-items:center; gap:12px; }
+    .leg-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+    .leg-label { color:var(--text-2); font-size:15px; }
+
+    /* Label nama laut & kota di peta (gaya Google Maps: Roboto, tanpa titik, halo putih) */
+    .map-label { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; pointer-events:none;
+      font-family:'Roboto',Arial,sans-serif; text-shadow:0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff; }
+    .map-label-city { color:#3c4043; font-size:12px; font-weight:400; }
+    .map-label-city.mid { font-size:13px; }
+    .map-label-city.major { color:#202124; font-size:16px; font-weight:500; }
+    .map-label-sea { color:#4a7fc1; font-size:13px; font-weight:400; letter-spacing:.04em; }
+
+    /* ── TOPBAR LOADING BAR ───────────────────────────────────────────────── */
+    #topbar-progress {
+      position:fixed; top:var(--topbar-h); left:0; right:0; height:2px;
+      z-index:901; pointer-events:none; display:none;
+    }
+    #topbar-progress-fill {
+      height:100%; background:var(--green);
+      transition:width .4s ease;
+      box-shadow:0 0 8px var(--green);
+    }
+
+    /* ── LOADING OVERLAY (fallback) ───────────────────────────────────────── */
+    #loading {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:rgba(10,26,47,.96); border:1px solid var(--border);
+      border-radius:var(--radius); padding:24px 32px; z-index:2000;
+      display:none; text-align:center; min-width:220px;
+    }
+    .load-bar {
+      width:100%; height:2px; background:var(--surface-3); border-radius:1px;
+      overflow:hidden; margin-bottom:14px;
+    }
+    .load-bar-fill {
+      height:100%; width:40%; background:var(--green);
+      border-radius:1px; animation:slide 1.2s ease-in-out infinite;
+    }
+    @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+    #loading-label { font-size:13px; color:var(--text-2); }
+
+    /* ── DATASET LOADING BADGES ───────────────────────────────────────────── */
+    .ds-badges {
+      display:flex; gap:4px; flex-wrap:wrap;
+      padding:6px 12px; border-top:1px solid var(--border);
+    }
+    .ds-badge {
+      font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+      padding:2px 7px; border-radius:999px; border:1px solid var(--border-2);
+      color:var(--text-3); background:var(--surface-3);
+      display:flex; align-items:center; gap:4px; transition:.2s;
+    }
+    .ds-badge.loading { color:var(--yellow); border-color:rgba(210,153,34,.3); background:var(--yellow-dim); }
+    .ds-badge.done    { color:var(--green);  border-color:rgba(63,185,80,.3);  background:var(--green-dim); }
+    .ds-badge.err     { color:var(--red);    border-color:rgba(248,81,73,.3);  background:var(--red-dim); }
+    .ds-spin {
+      width:8px; height:8px; border:1.5px solid currentColor;
+      border-top-color:transparent; border-radius:50%;
+      animation:spin .6s linear infinite; flex-shrink:0;
+    }
+
+    /* ── DETAIL PANEL (kanan) ─────────────────────────────────────────────── */
+    #sidebar {
+      position:fixed; right:0; top:var(--topbar-h); bottom:0;
+      width:min(320px, 90vw);
+      background:rgba(10,26,47,.97); border-left:1px solid var(--border);
+      z-index:1200; display:flex; flex-direction:column;
+      transform:translateX(100%); transition:transform .22s ease;
+    }
+    #sidebar.open { transform:translateX(0); }
+
+    #sidebar-header {
+      padding:14px 16px 12px;
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .sb-title-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2px; }
+    #sidebar-title { font-size:15px; font-weight:700; color:var(--text); line-height:1.3; }
+    #sidebar-close {
+      background:none; border:none; color:var(--text-3); cursor:pointer;
+      font-size:16px; line-height:1; padding:2px 4px; border-radius:4px; flex-shrink:0; margin-top:2px;
+    }
+    #sidebar-close:hover { color:var(--text); background:var(--surface-3); }
+    .sb-sub { font-size:11px; color:var(--text-3); margin-top:3px; }
+
+    #sidebar-body { flex:1; overflow-y:auto; padding:0; }
+    #sidebar-body::-webkit-scrollbar { width:4px; }
+    #sidebar-body::-webkit-scrollbar-track { background:transparent; }
+    #sidebar-body::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:2px; }
+
+    /* Section dalam detail panel */
+    .sb-section { border-bottom:1px solid var(--border); }
+    .sb-section-title {
+      padding:10px 16px 8px;
+      font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--text-3); display:flex; justify-content:space-between; align-items:center;
+    }
+    .sb-section-badge {
+      font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; letter-spacing:.02em;
+    }
+    .sb-row {
+      display:flex; justify-content:space-between; align-items:baseline;
+      padding:6px 16px; gap:12px;
+    }
+    .sb-row + .sb-row { border-top:1px solid var(--border); }
+    .sb-key { font-size:12px; color:var(--text-2); flex-shrink:0; }
+    .sb-val { font-size:12px; font-weight:600; color:var(--text); text-align:right; word-break:break-all; font-variant-numeric:tabular-nums; }
+    .sb-val.mono { font-family:'Cascadia Code','Consolas',monospace; font-size:11px; }
+    .sb-val.dim  { color:var(--text-2); font-weight:400; }
+    .sb-loading  { padding:10px 16px; font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:6px; }
+    .sb-note { padding:8px 16px; font-size:11px; color:var(--text-3); line-height:1.45; }
+    .sar-img-wrap { padding:0 16px 12px; }
+    .sar-img-title { font-size:10px; color:var(--text-3); margin:6px 0 4px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .sar-img { width:100%; max-height:220px; object-fit:contain; border:1px solid var(--border); border-radius:4px; background:#05070a; }
+
+    /* History list */
+    .hist-item {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:7px 16px; cursor:pointer; transition:background .1s;
+    }
+    .hist-item + .hist-item { border-top:1px solid var(--border); }
+    .hist-item:hover { background:var(--surface-2); }
+    .hist-date { font-size:11px; color:var(--text-2); font-variant-numeric:tabular-nums; }
+    .hist-badge { font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; }
+
+    /* Trajectory info bar */
+    #sb-traj-info {
+      padding:6px 16px; font-size:11px; color:var(--text-2);
+      border-top:1px solid var(--border); flex-shrink:0; min-height:28px;
+      display:flex; align-items:center;
+    }
+    /* Tombol nyala/mati garis AIS mentah & Kalman (di dalam #sb-traj-info) */
+    .traj-toggle {
+      display:inline-flex; align-items:center; gap:6px; margin-right:6px; padding:3px 9px;
+      border:1px solid var(--border); border-radius:999px; background:var(--surface-2);
+      color:var(--text); font:inherit; cursor:pointer; white-space:nowrap;
+    }
+    .traj-toggle i { width:18px; display:inline-block; }
+    .traj-toggle.off { opacity:.45; text-decoration:line-through; }
+
+    /* Footer buttons */
+    #sidebar-footer {
+      padding:10px 12px; border-top:1px solid var(--border);
+      display:flex; gap:8px; flex-shrink:0;
+    }
+    .sb-btn {
+      flex:1; padding:9px 10px; border-radius:var(--radius);
+      border:1px solid var(--border-2); background:var(--surface-2);
+      color:var(--text-2); cursor:pointer; font-size:12px; font-weight:600;
+      letter-spacing:.02em; transition:.15s; line-height:1;
+    }
+    .sb-btn:hover    { border-color:var(--blue); color:var(--blue); }
+    .sb-btn.traj-on  { border-color:var(--red);  color:var(--red);  background:var(--red-dim); }
+    .sb-btn.loading  { opacity:.5; cursor:not-allowed; }
+
+    /* Track history list */
+    .track-list { max-height:260px; overflow-y:auto; }
+    .track-list::-webkit-scrollbar { width:3px; }
+    .track-list::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:2px; }
+    .track-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:6px 16px; cursor:pointer; transition:background .1s; gap:8px;
+    }
+    .track-row + .track-row { border-top:1px solid var(--border); }
+    .track-row:hover { background:var(--surface-2); }
+    .track-row-left { display:flex; align-items:flex-start; gap:8px; min-width:0; }
+    .track-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .track-time { font-size:11px; color:var(--text); font-variant-numeric:tabular-nums; }
+    .track-coord { font-size:10px; color:var(--text-3); font-variant-numeric:tabular-nums; margin-top:1px; }
+    .track-label { display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; background:var(--surface-3); color:var(--text-2); margin-left:4px; vertical-align:middle; }
+    .track-speed { font-size:11px; font-weight:700; flex-shrink:0; font-variant-numeric:tabular-nums; }
+
+    /* Spinner mikro */
+    .mini-spin {
+      display:inline-block; width:10px; height:10px;
+      border:2px solid var(--border-2); border-top-color:var(--blue);
+      border-radius:50%; animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ── TOOL PANEL ───────────────────────────────────────────────────────── */
+    #tool-panel {
+      position:fixed; top:calc(var(--topbar-h) + 8px); right:8px;
+      width:min(360px, calc(100vw - 16px)); max-height:calc(100vh - var(--topbar-h) - 16px);
+      overflow:auto; background:rgba(10,26,47,.97); border:1px solid var(--border);
+      border-radius:var(--radius); z-index:1000; display:none;
+    }
+    .panel-header {
+      display:flex; border-bottom:1px solid var(--border);
+    }
+    .panel-tab {
+      flex:1; padding:11px 12px; border:none; background:none;
+      color:var(--text-2); font-size:11px; font-weight:700; letter-spacing:.06em;
+      text-transform:uppercase; cursor:pointer; transition:color .15s;
+      border-bottom:2px solid transparent;
+    }
+    .panel-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+    .panel-tab:hover:not(.active) { color:var(--text); }
+    .panel-body { padding:12px; }
+    .p-label { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-3); margin-bottom:8px; display:block; }
+    .p-row { display:flex; gap:8px; margin-bottom:8px; }
+    .p-input {
+      flex:1; min-width:0; border:1px solid var(--border-2); background:var(--surface-2);
+      color:var(--text); border-radius:var(--radius); padding:8px 10px; font-size:12px;
+    }
+    .p-input:focus { outline:none; border-color:var(--blue); }
+    .p-btn {
+      border:1px solid var(--border-2); background:var(--surface-2); color:var(--text-2);
+      border-radius:var(--radius); padding:8px 14px; cursor:pointer; font-size:12px;
+      font-weight:600; white-space:nowrap; transition:.15s;
+    }
+    .p-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .p-btn.primary { border-color:var(--blue); color:var(--blue); background:var(--blue-dim); }
+    .p-btn:disabled { opacity:.4; cursor:not-allowed; }
+    #query-list, #vessel-results { display:grid; gap:6px; }
+    .query-item {
+      border:1px solid var(--border); border-radius:var(--radius);
+      padding:10px; background:var(--surface-2);
+    }
+    .query-item-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; }
+    .query-item-meta { font-size:11px; color:var(--text-2); line-height:1.6; }
+    .vessel-item {
+      border:1px solid var(--border); border-radius:var(--radius);
+      padding:9px; background:var(--surface-2); cursor:pointer; text-align:left;
+      width:100%; transition:border-color .15s;
+    }
+    .vessel-item:hover  { border-color:var(--blue); }
+    .vessel-item.active { border-color:var(--green); background:var(--green-dim); }
+    .vessel-item-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:3px; }
+    .vessel-item-meta { font-size:11px; color:var(--text-2); }
+    #track-summary { margin-top:8px; font-size:11px; color:var(--text-2); line-height:1.6; }
+
+    /* ── AI INFERENCE PANEL ──────────────────────────────────────────────── */
+    #ai-panel {
+      position:fixed; top:calc(var(--topbar-h) + 8px); right:8px;
+      width:min(380px, calc(100vw - 16px)); max-height:calc(100vh - var(--topbar-h) - 16px);
+      overflow:auto; background:rgba(10,26,47,.97); border:1px solid var(--border);
+      border-radius:var(--radius); z-index:1000; display:none;
+    }
+    #ai-panel::-webkit-scrollbar { width:4px; }
+    #ai-panel::-webkit-scrollbar-thumb { background:var(--border-2); border-radius:2px; }
+    .ai-panel-header {
+      display:flex; align-items:center; padding:10px 14px;
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .ai-panel-title {
+      font-size:11px; font-weight:700; letter-spacing:.06em;
+      text-transform:uppercase; color:var(--purple);
+    }
+    .ai-panel-close {
+      margin-left:auto; background:none; border:none; color:var(--text-3);
+      cursor:pointer; font-size:15px; padding:2px 4px; border-radius:4px; line-height:1;
+    }
+    .ai-panel-close:hover { color:var(--text); background:var(--surface-3); }
+    .ai-vessel-card {
+      border:1px solid var(--border); border-radius:var(--radius);
+      padding:10px; background:var(--surface-2); cursor:pointer;
+      transition:border-color .15s; margin-bottom:6px;
+    }
+    .ai-vessel-card:hover { border-color:var(--purple); }
+    .ai-vessel-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; }
+    .ai-vessel-mmsi { font-size:10px; color:var(--text-3); margin-bottom:6px; font-variant-numeric:tabular-nums; }
+    .ai-task-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+    .ai-task-label { font-size:11px; color:var(--text-2); }
+    .ai-task-pred  { font-size:11px; font-weight:700; }
+    .ai-badge { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:700; }
+    .ai-conf-bar  { height:3px; border-radius:2px; background:var(--surface-3); overflow:hidden; margin-top:2px; margin-bottom:4px; }
+    .ai-conf-fill { height:100%; border-radius:2px; }
+    .ai-alert-bar {
+      margin-top:6px; padding:4px 8px; border-radius:4px; font-size:11px;
+      font-weight:700; display:flex; align-items:center; gap:6px;
+    }
+
+
+    /* ── AI MAP TOOLTIP ──────────────────────────────────────────────────── */
+    .ai-map-tip {
+      background:rgba(9,12,16,.92) !important;
+      border:1px solid var(--border-2) !important;
+      border-radius:5px !important;
+      color:var(--text) !important;
+      font-size:10px !important;
+      padding:5px 8px !important;
+      white-space:nowrap !important;
+      box-shadow:0 2px 10px rgba(0,0,0,.5) !important;
+      pointer-events:none !important;
+    }
+    .ai-map-tip.leaflet-tooltip-bottom::before,
+    .ai-map-tip.leaflet-tooltip-top::before { border-bottom-color:var(--border-2) !important; border-top-color:var(--border-2) !important; }
+
+    /* ── POPUP LEAFLET ────────────────────────────────────────────────────── */
+    .leaflet-container { background:var(--bg); }
+    .leaflet-control-zoom a { background:var(--surface) !important; color:var(--text) !important; border-color:var(--border) !important; }
+    .leaflet-control-attribution { background:rgba(9,12,16,.7) !important; color:var(--text-3) !important; font-size:10px !important; }
+    .leaflet-control-attribution a { color:var(--blue) !important; }
+    .leaflet-popup-content-wrapper { background:var(--surface) !important; color:var(--text) !important; border:1px solid var(--border-2) !important; border-radius:var(--radius) !important; box-shadow:0 8px 24px rgba(0,0,0,.5) !important; }
+    .leaflet-popup-tip { background:var(--surface) !important; }
+    .leaflet-popup-content { margin:12px 14px !important; font-size:12px; line-height:1.6; }
+    .popup-name  { font-size:13px; font-weight:700; color:var(--text); margin-bottom:6px; }
+    .popup-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; margin-bottom:8px; }
+    .popup-row   { display:flex; justify-content:space-between; gap:16px; }
+    .popup-row span:first-child { color:var(--text-2); }
+    .popup-row b { color:var(--text); }
+    .popup-coord { font-size:10px; color:var(--text-3); margin-top:6px; border-top:1px solid var(--border); padding-top:6px; font-variant-numeric:tabular-nums; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <button class="tb-menu-btn" id="btn-nav-menu" type="button" onclick="toggleNavMenu()" title="Menu halaman" aria-label="Menu halaman" aria-controls="nav-menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+  </button>
+  <div class="tb-brand" aria-label="Ocean Nexus 2026">
+    <img src="assets/logos/ocean-nexus.png" alt="" width="26" height="26">
+    OCEAN NEXUS 2026
+  </div>
+  <div class="tb-modes">
+    <button class="mode-btn active-gfw" id="btn-gfw" onclick="setMode('gfw')">GFW Events</button>
+    <button class="mode-btn" id="btn-ais" onclick="setMode('ais')">AIS Live</button>
+    <button class="mode-btn" id="btn-ai" onclick="setMode('ai')">AI Inference</button>
+  </div>
+  <div class="tb-status">
+    <span id="dot"></span>
+    <span id="conn-label">Memuat…</span>
+  </div>
+  <div class="tb-counts">
+    <div class="tb-count">
+      <span class="tb-count-label">Kapal</span>
+      <span class="tb-count-val" id="ship-count">0</span>
+    </div>
+    <div class="tb-count">
+      <span class="tb-count-label">Pesan</span>
+      <span class="tb-count-val" id="msg-count">0</span>
+    </div>
+    <span id="last-update">—</span>
+  </div>
+  <div class="tb-logos" aria-label="Logo mitra">
+    <img class="tb-logo kemdik" src="assets/logos/kemendiktisaintek.png" alt="Kemendiktisaintek Berdampak" title="Kemendiktisaintek Berdampak">
+    <img class="tb-logo" src="assets/logos/len.png" alt="PT LEN" title="PT LEN">
+    <img class="tb-logo" src="assets/logos/its.png" alt="Institut Teknologi Sepuluh Nopember" title="Institut Teknologi Sepuluh Nopember">
+  </div>
+  <div class="tb-actions">
+    <button class="tb-btn active" id="btn-local-kalman" onclick="toggleLocalKalman()">Kalman Lokal</button>
+    <button class="tb-btn" id="btn-wind" onclick="toggleWind()" style="display:none">Angin</button>
+    <button class="tb-btn" id="btn-tools" onclick="togglePanel()">Query & Track</button>
+  </div>
+</header>
+
+<!-- MENU HALAMAN (dibuka/ditutup dengan tombol tiga garis) -->
+<nav id="nav-menu" aria-label="Pindah halaman">
+  <a href="index.html#menu">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>
+    Menu / Home
+  </a>
+  <a href="anomaly-alert.html">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18L12 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M12 10v4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+    Anomaly Alert
+  </a>
+  <a href="data-reports.html">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M14 3v5h5M10 13h6M10 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    Data Reports
+  </a>
+</nav>
+
+<!-- TOPBAR PROGRESS BAR -->
+<div id="topbar-progress"><div id="topbar-progress-fill" style="width:0%"></div></div>
+
+<!-- STATS PANEL -->
+<div id="stats-panel">
+  <div class="stats-header">
+    <span id="stats-mode-label">GFW EVENTS</span>
+    <span class="stats-date" id="stats-range">—</span>
+  </div>
+  <div id="ds-badges-row" class="ds-badges" style="display:none">
+    <span class="ds-badge" id="badge-fishing"><span class="ds-spin"></span>Fishing</span>
+    <span class="ds-badge" id="badge-encounter"><span class="ds-spin"></span>Encounter</span>
+    <span class="ds-badge" id="badge-loitering"><span class="ds-spin"></span>Loitering</span>
+  </div>
+  <div class="stats-body" id="stats-body">
+    <div class="stat-row">
+      <span class="stat-type">Fishing</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" id="bar-fishing" style="background:var(--green);width:0%"></div></div>
+      <span class="stat-val" id="cnt-fishing">0</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-type">Encounter</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" id="bar-encounter" style="background:var(--orange);width:0%"></div></div>
+      <span class="stat-val" id="cnt-encounter">0</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-type">Loitering</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" id="bar-loitering" style="background:var(--yellow);width:0%"></div></div>
+      <span class="stat-val" id="cnt-loitering">0</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-type">Lainnya</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" id="bar-other" style="background:var(--text-3);width:0%"></div></div>
+      <span class="stat-val" id="cnt-other">0</span>
+    </div>
+  </div>
+  <div class="stats-footer" id="stats-footer">
+    <span class="stats-total-label">Total events</span>
+    <span class="stats-total-val" id="stats-total">0</span>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div id="wind-readout" hidden></div>
+<button id="legend-toggle" class="legend-toggle" type="button" aria-controls="legend" aria-expanded="false" onclick="toggleLegend()">
+  Legend
+</button><div id="legend" class="legend-panel" hidden>
+  <span class="leg-title">Tipe Event</span>
+  <div class="leg-row"><span class="leg-dot" style="background:var(--green)"></span><span class="leg-label">Fishing</span></div>
+  <div class="leg-row"><span class="leg-dot" style="background:var(--orange)"></span><span class="leg-label">Encounter</span></div>
+  <div class="leg-row"><span class="leg-dot" style="background:var(--yellow)"></span><span class="leg-label">Loitering</span></div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="load-bar"><div class="load-bar-fill"></div></div>
+  <div id="loading-label">Mengambil data GFW…</div>
+</div>
+
+
+<!-- TOOL PANEL -->
+<div id="tool-panel">
+  <div class="panel-header">
+    <button class="panel-tab active" id="tab-queries" onclick="switchTab('queries')">GFWR Query</button>
+    <button class="panel-tab"        id="tab-track"   onclick="switchTab('track')">Trajectory</button>
+  </div>
+  <div class="panel-body">
+    <div id="queries-view">
+      <div id="query-list" style="color:var(--text-2);font-size:12px">Klik untuk memuat katalog…</div>
+    </div>
+    <div id="track-view" style="display:none">
+      <span class="p-label">Cari Kapal</span>
+      <div class="p-row">
+        <input class="p-input" id="vessel-query" placeholder="MMSI / IMO / nama kapal" />
+        <button class="p-btn primary" onclick="searchVessel()">Cari</button>
+      </div>
+      <div id="vessel-results"></div>
+      <span class="p-label" style="margin-top:10px;display:block">Rentang Tanggal</span>
+      <div class="p-row">
+        <input type="date" class="p-input" id="track-start" />
+        <input type="date" class="p-input" id="track-end" />
+      </div>
+      <div class="p-row">
+        <button class="p-btn primary" id="load-track" onclick="loadTrack()" disabled style="flex:1">Plot Trajectory</button>
+        <button class="p-btn" onclick="clearTraj()">Hapus</button>
+      </div>
+      <div id="track-summary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI INFERENCE PANEL -->
+<div id="ai-panel">
+  <div class="ai-panel-header">
+    <span class="ai-panel-title">AI Inference</span>
+    <button class="ai-panel-close" onclick="document.getElementById('ai-panel').style.display='none'" title="Tutup">✕</button>
+  </div>
+  <div class="panel-body">
+    <div id="ai-status" style="font-size:11px;color:var(--text-3);margin-bottom:8px;min-height:16px">Memuat hasil inference batch terbaru...</div>
+    <div id="ai-results"></div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <div class="sb-title-row">
+      <span id="sidebar-title">Detail Kapal</span>
+      <button id="sidebar-close" onclick="closeSidebarFromButton()">✕</button>
+    </div>
+    <div class="sb-sub" id="sidebar-sub"></div>
+  </div>
+  <div id="sidebar-body"></div>
+  <div id="sb-traj-info"></div>
+  <div id="sidebar-footer">
+    <button class="sb-btn" id="sb-traj-btn" onclick="toggleTraj()">Tampilkan Trajectory</button>
+    <button class="sb-btn" onclick="zoomTo()">Zoom ke Posisi</button>
+  </div>
+</aside>
+
+<script>
+// ── MAP ───────────────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl:false }).setView([-2.5, 117.0], 5);
+L.control.zoom({ position:'bottomright' }).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
+  attribution:'&copy; <a href="https://www.esri.com">Esri</a>, GEBCO, NOAA',
+  maxZoom:19,
+}).addTo(map);
+// Syarat lisensi GFW (CC BY-NC 4.0): data GFW wajib diberi atribusi ini.
+map.attributionControl.addAttribution('Powered by <a href="https://globalfishingwatch.org" target="_blank" rel="noopener">Global Fishing Watch</a>');
+
+// ── LABEL PETA ────────────────────────────────────────────────────────────────
+// Peta dasar Esri Ocean Base tidak punya nama tempat; ini nama laut & kota Indonesia.
+// [nama, lat, lon, zoom minimum]. Laut disembunyikan saat zoom sangat dekat.
+const SEA_LABELS = [
+  ['Samudra Hindia', -9.6, 104.0, 4], ['Samudra Pasifik', 3.5, 134.5, 4],
+  ['Laut Jawa', -5.2, 111.5, 4], ['Laut Banda', -6.0, 127.5, 4], ['Laut Sulawesi', 3.3, 122.0, 4],
+  ['Laut Arafura', -8.8, 136.0, 4], ['Laut Natuna Utara', 5.2, 109.5, 5], ['Laut Natuna', 2.0, 107.0, 5],
+  ['Selat Malaka', 3.2, 100.5, 5], ['Selat Karimata', -1.7, 108.6, 5], ['Selat Makassar', -2.2, 118.3, 5],
+  ['Laut Flores', -7.3, 120.5, 5], ['Laut Sawu', -9.3, 122.5, 5], ['Laut Timor', -10.5, 127.0, 5],
+  ['Laut Maluku', 1.0, 126.2, 5], ['Laut Bali', -7.5, 115.6, 6], ['Laut Halmahera', -0.4, 129.0, 6],
+  ['Laut Seram', -2.0, 130.0, 6], ['Selat Sunda', -6.0, 105.7, 7], ['Teluk Bone', -4.0, 120.9, 6],
+  ['Teluk Tomini', -0.3, 121.6, 6], ['Teluk Cenderawasih', -2.4, 135.2, 6],
+];
+const CITY_LABELS = [
+  ['Jakarta', -6.13, 106.83, 5], ['Surabaya', -7.25, 112.75, 5], ['Semarang', -6.97, 110.42, 5],
+  ['Medan', 3.59, 98.67, 5], ['Makassar', -5.14, 119.42, 5], ['Palembang', -2.98, 104.76, 5],
+  ['Balikpapan', -1.27, 116.83, 5], ['Pontianak', -0.03, 109.33, 5], ['Manado', 1.47, 124.84, 5],
+  ['Denpasar', -8.65, 115.22, 5], ['Kupang', -10.17, 123.6, 5], ['Ambon', -3.69, 128.18, 5],
+  ['Jayapura', -2.53, 140.72, 5], ['Banjarmasin', -3.32, 114.59, 5], ['Padang', -0.95, 100.35, 5],
+  ['Batam', 1.13, 104.05, 5], ['Sorong', -0.88, 131.25, 5], ['Banda Aceh', 5.55, 95.32, 5],
+  ['Pekanbaru', 0.51, 101.45, 6], ['Bandar Lampung', -5.43, 105.26, 6], ['Ternate', 0.79, 127.38, 6],
+  ['Kendari', -3.97, 122.51, 6], ['Palu', -0.9, 119.87, 6], ['Gorontalo', 0.54, 123.06, 6],
+  ['Mataram', -8.58, 116.12, 6], ['Merauke', -8.49, 140.4, 6], ['Samarinda', -0.5, 117.15, 6],
+  ['Jambi', -1.61, 103.61, 6], ['Bengkulu', -3.8, 102.27, 6], ['Pangkalpinang', -2.13, 106.11, 6],
+  ['Tarakan', 3.3, 117.63, 6], ['Bitung', 1.44, 125.19, 6], ['Tual', -5.64, 132.75, 6],
+  ['Cirebon', -6.71, 108.56, 6], ['Tanjungpinang', 0.92, 104.45, 7], ['Tegal', -6.87, 109.14, 7],
+  ['Pekalongan', -6.89, 109.68, 7], ['Cilacap', -7.73, 109.0, 7], ['Probolinggo', -7.75, 113.22, 7],
+  ['Pelabuhan Ratu', -6.99, 106.55, 7], ['Tanjung Pandan', -2.74, 107.65, 7], ['Ranai', 3.94, 108.38, 7],
+  ['Sibolga', 1.74, 98.78, 7], ['Dumai', 1.67, 101.45, 7], ['Sabang', 5.89, 95.32, 7],
+  ['Maumere', -8.62, 122.21, 7], ['Labuan Bajo', -8.49, 119.89, 7], ['Bima', -8.46, 118.73, 7],
+  ['Kaimana', -3.65, 133.75, 7], ['Fakfak', -2.92, 132.3, 7], ['Biak', -1.18, 136.08, 7],
+  ['Nabire', -3.37, 135.5, 7], ['Luwuk', -0.95, 122.79, 7], ['Baubau', -5.47, 122.6, 7],
+  ['Saumlaki', -7.98, 131.3, 7], ['Dobo', -5.76, 134.22, 7], ['Ketapang', -1.85, 109.97, 7],
+  ['Sampit', -2.53, 112.95, 7], ['Kotabaru', -3.24, 116.21, 7], ['Indramayu', -6.33, 108.32, 7],
+  ['Rembang', -6.7, 111.34, 7], ['Tuban', -6.9, 112.05, 7], ['Muncar', -8.43, 114.33, 7],
+];
+map.createPane('placeLabels');
+map.getPane('placeLabels').style.zIndex = 450;
+map.getPane('placeLabels').style.pointerEvents = 'none';
+const placeLabels = [
+  ...SEA_LABELS.map(([name, lat, lon, minZoom]) => ({ minZoom, maxZoom: 10, marker: L.marker([lat, lon], {
+    pane:'placeLabels', interactive:false, keyboard:false,
+    icon: L.divIcon({ className:'', iconSize:[0,0], html:`<div class="map-label map-label-sea">${name}</div>` }),
+  }) })),
+  ...CITY_LABELS.map(([name, lat, lon, minZoom]) => ({ minZoom, maxZoom: 19, marker: L.marker([lat, lon], {
+    pane:'placeLabels', interactive:false, keyboard:false,
+    icon: L.divIcon({ className:'', iconSize:[0,0],
+      html:`<div class="map-label map-label-city ${minZoom <= 5 ? 'major' : minZoom === 6 ? 'mid' : ''}">${name}</div>` }),
+  }) })),
+];
+function updatePlaceLabels() {
+  const z = map.getZoom();
+  for (const l of placeLabels) {
+    const show = z >= l.minZoom && z <= l.maxZoom;
+    if (show && !map.hasLayer(l.marker)) l.marker.addTo(map);
+    else if (!show && map.hasLayer(l.marker)) map.removeLayer(l.marker);
+  }
+}
+map.on('zoomend', updatePlaceLabels);
+updatePlaceLabels();
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const ships          = {};
+let   gfwEvents      = [];
+let   gfwRangeLabel  = '—';
+const trajLayer        = L.layerGroup().addTo(map);
+const sidebarTrajLayer = L.layerGroup().addTo(map);
+const historyLayer     = L.layerGroup().addTo(map);
+const localKalmanLayer = L.layerGroup(); // ditambahkan ke peta hanya di tab AI Inference (syncLocalKalmanLayer)
+
+let mode               = 'gfw';
+let msgCount           = 0;
+// Data AIS live datang dari relay di server; API key AISStream tidak lagi disimpan di browser.
+try { localStorage.removeItem('ais_key'); } catch {}
+let aisStream          = null;
+let sidebarKey         = null;
+let trajActive         = false;
+let queryCatalogLoaded = false;
+let selectedVessel     = null;
+let localKalmanData    = null;
+let localKalmanVisible = true;
+let integrationRowsLoaded = false;
+let integrationLoadPromise = null;
+let integrationCandidates = [];
+let integrationKalmanRows = [];
+let integrationSummaryRows = [];
+let integrationTrajectoryRows = [];
+let integrationExampleRows = [];
+let sidebarFocusLatLng = null;
+
+const GFW_CACHE_KEY = 'gfw-events-cache-v11';
+const GFW_CACHE_TTL = 10 * 60 * 1000;
+const AIS_TRAIL_MAX = 120;
+// Area AIS (seluruh perairan Indonesia) diatur di server/ais-relay.mjs.
+
+const API_BASE =
+  location.hostname === '127.0.0.1' && location.port === '8000'
+    ? 'http://127.0.0.1:5173'
+    : '';
+function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
+
+const INTEGRATION_DATA_FILES = {
+  // Detail panel reads existing AIS-SAR/Kalman/candidate outputs only.
+  // It does not call FINAL_4_PIPELINE_MODELS.h5 or any other H5 model.
+  candidates: 'KAPAL YG TERDETEKSI/scene_candidates_godark_spoofing_transshipment.csv',
+  summary: 'KAPAL YG TERDETEKSI/scene_candidates_summary.csv',
+  trajectory: 'new/metadata/ais_trajectory_points_raw_vs_kalman.csv',
+  example25: 'Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/ais_kalman_25seq_per_mmsi.csv',
+  kalman: [
+    'new/metadata/metadata_with_vh_gfw_ais_identity_sog_cog_enriched_FINAL_kalman_estimated.csv',
+    'new/metadata/metadata_with_vv_vh_gfw_ais_identity_sog_cog_enriched_ais_position_enriched_ais_latlon_formula_filled_kalman_estimated.csv',
+  ],
+};
+
+// ── COLORS ────────────────────────────────────────────────────────────────────
+function aisColor(speed) {
+  if (speed == null) return '#545d68';
+  if (speed < 1)  return '#f85149';
+  if (speed < 5)  return '#e3901a';
+  if (speed < 12) return '#4493f8';
+  return '#3fb950';
+}
+// Warna ikon kapal AIS menurut jenis kapal (kode ship type AIS), bukan kecepatan.
+const AIS_TYPE_STYLE = {
+  fishing:   { color:'#3fb950', label:'Kapal ikan' },
+  cargo:     { color:'#4493f8', label:'Kargo' },
+  tanker:    { color:'#d29922', label:'Tanker' },
+  passenger: { color:'#a371f7', label:'Penumpang' },
+  service:   { color:'#e3901a', label:'Tunda & layanan' },
+  other:     { color:'#39c5cf', label:'Lainnya' },
+  unknown:   { color:'#8b949e', label:'Belum diketahui' },
+};
+function aisTypeGroup(shipType) {
+  const t = Number(shipType);
+  if (!Number.isFinite(t) || t <= 0) return 'unknown';
+  if (t === 30) return 'fishing';
+  if (t >= 70 && t <= 79) return 'cargo';
+  if (t >= 80 && t <= 89) return 'tanker';
+  if (t >= 60 && t <= 69) return 'passenger';
+  if (t === 31 || t === 32 || (t >= 50 && t <= 59)) return 'service';
+  return 'other';
+}
+function aisTypeColor(shipType) {
+  return AIS_TYPE_STYLE[aisTypeGroup(shipType)].color;
+}
+function gfwColor(type) {
+  switch ((type||'').toUpperCase()) {
+    case 'FISHING':   return '#3fb950';
+    case 'ENCOUNTER': return '#e3901a';
+    case 'LOITERING': return '#d29922';
+    default:          return '#545d68';
+  }
+}
+// Alat tangkap per kapal GFW (vesselId → { name, source, yearFrom, yearTo } | null), diisi loadGfwGear().
+const gfwGearById = {};
+// Gear type = 4 kelas model gear di FINAL_4_PIPELINE_MODELS.h5 (label_map):
+// drifting_longlines, fixed_gear, purse_seines, trawlers. Nama gear GFW dikelompokkan ke kelas itu
+// (set longline / set gillnet / pots & traps termasuk fixed gear); gear GFW lain → abu-abu.
+const GFW_GEAR_KEY = {
+  drifting_longlines:'drifting_longlines',
+  fixed_gear:'fixed_gear', set_longlines:'fixed_gear', set_gillnets:'fixed_gear', pots_and_traps:'fixed_gear',
+  purse_seines:'purse_seines', tuna_purse_seines:'purse_seines', other_purse_seines:'purse_seines',
+  trawlers:'trawlers',
+};
+function gfwGearKey(name) {
+  return GFW_GEAR_KEY[String(name || '').toLowerCase()] || 'unknown';
+}
+const GFW_GEAR_LEGEND = [
+  ['drifting_longlines', 'Drifting Longline'],
+  ['fixed_gear',         'Fixed Gear'],
+  ['purse_seines',       'Purse Seine'],
+  ['trawlers',           'Trawler'],
+  ['unknown',            'Lainnya / tidak pasti'],
+];
+function gfwGearLabel(vesselId) {
+  if (!(vesselId in gfwGearById)) return 'Memuat…';
+  const name = String(gfwGearById[vesselId]?.name || '').toLowerCase();
+  const key = gfwGearKey(name);
+  if (key !== 'unknown') return GFW_GEAR_LEGEND.find(([k]) => k === key)[1];
+  if (!name || name === 'inconclusive' || name === 'na') return 'Tidak pasti';
+  return `Lainnya (${name.replace(/_/g, ' ')})`;
+}
+
+// ── WILAYAH GFW ──────────────────────────────────────────────────────────────
+// Kode ZEE di event GFW (regions.eez) → nama negara; diisi loadGfwRegionNames() dari /api/gfw/regions.
+let gfwEezById = null;
+const COUNTRY_NAME_ID = {
+  IDN:'Indonesia', MYS:'Malaysia', SGP:'Singapura', BRN:'Brunei', AUS:'Australia', PHL:'Filipina',
+  TLS:'Timor Leste', PNG:'Papua Nugini', FSM:'Mikronesia', PLW:'Palau', THA:'Thailand', VNM:'Vietnam',
+  KHM:'Kamboja', MMR:'Myanmar', IND:'India', LKA:'Sri Lanka', CHN:'Tiongkok', TWN:'Taiwan', JPN:'Jepang',
+};
+const FAO_MAJOR_NAME = { 57:'Hindia timur', 71:'Pasifik barat-tengah' };
+
+function eezName(id) {
+  if (!gfwEezById) return '…';
+  const e = gfwEezById[id];
+  if (!e) return `#${id}`;
+  return COUNTRY_NAME_ID[e.iso3] || e.territory || e.label || `#${id}`;
+}
+function gfwEezText(d) {
+  if (d.eez?.length) return d.eez.map(id => `ZEE ${eezName(id)}`).join(' / ');
+  return d.highSeas ? 'Laut lepas' : 'Tidak diketahui';
+}
+function gfwRegionShort(d) {
+  return d.eez12?.length ? `${gfwEezText(d)} · ≤12 mil` : gfwEezText(d);
+}
+function gfwFaoText(d) {
+  if (!d.faoMajor) return '—';
+  const name = FAO_MAJOR_NAME[d.faoMajor];
+  const sub = d.fao && d.fao !== d.faoMajor ? ` (${d.fao})` : '';
+  return `${d.faoMajor}${name ? ` · ${name}` : ''}${sub}`;
+}
+function gfwRegionRowsHtml(d) {
+  const km = v => v == null ? '—' : `${Math.round(Number(v))} km`;
+  return `
+      <div class="sb-row"><span class="sb-key">ZEE</span><span class="sb-val">${esc(gfwEezText(d))}</span></div>
+      <div class="sb-row"><span class="sb-key">Laut teritorial (≤12 mil)</span><span class="sb-val">${d.eez12?.length ? 'Ya' : 'Tidak'}</span></div>
+      <div class="sb-row"><span class="sb-key">Jarak dari pantai</span><span class="sb-val">${km(d.shoreKm)}</span></div>
+      <div class="sb-row"><span class="sb-key">Jarak dari pelabuhan</span><span class="sb-val">${km(d.portKm)}</span></div>
+      <div class="sb-row"><span class="sb-key">Area FAO</span><span class="sb-val">${esc(gfwFaoText(d))}</span></div>`;
+}
+
+async function loadGfwRegionNames() {
+  if (gfwEezById) return;
+  try {
+    const r = await fetch(apiUrl('/api/gfw/regions'));
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || r.status);
+    gfwEezById = j.eez || {};
+  } catch (err) {
+    console.warn('[gfw regions] gagal:', err);
+    gfwEezById = {};
+  }
+  updateStats();
+  const el = document.getElementById('sb-gfw-region');
+  if (el && ships[sidebarKey]?.data?.source === 'gfw') el.innerHTML = gfwRegionRowsHtml(ships[sidebarKey].data);
+}
+
+// ── ICONS ─────────────────────────────────────────────────────────────────────
+// Bentuk ikon AIS menurut SOG: panah = bergerak (>= 0,5 kn), bulat = diam (< 0,5 kn),
+// bulat bertanda ? = SOG tidak tersedia. Warna menurut jenis kapal.
+const AIS_MOVING_KN = 0.5;
+function aisShapeHtml(speed, heading, c) {
+  if (speed == null) {
+    return `<div style="width:14px;height:14px;border-radius:50%;background:${c};border:1.5px solid #090c10;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;line-height:1;text-shadow:0 0 2px #090c10">?</div>`;
+  }
+  if (speed < AIS_MOVING_KN) {
+    return `<div style="width:10px;height:10px;border-radius:50%;background:${c};border:1.5px solid #090c10;filter:drop-shadow(0 0 3px ${c}99)"></div>`;
+  }
+  const r = (heading != null && heading < 360) ? heading : 0;
+  return `<div style="transform:rotate(${r}deg);filter:drop-shadow(0 0 3px ${c}99)">
+        <svg viewBox="0 0 20 20" width="16" height="16">
+          <path d="M10 1 L17 17 L10 13 L3 17 Z" fill="${c}" stroke="#090c10" stroke-width="1.5"/>
+        </svg>
+      </div>`;
+}
+function makeAisIcon(speed, heading, shipType) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center">
+      ${aisShapeHtml(speed, heading, aisTypeColor(shipType))}
+    </div>`,
+    iconSize:[28,28], iconAnchor:[14,14],
+  });
+}
+// Titik GFW: bentuk = jenis event (fishing bulat, loitering kotak, encounter segitiga),
+// warna = alat tangkap kapal menurut GFW (abu-abu selama belum dimuat / tidak pasti).
+function gfwShapeHtml(type, c, sz) {
+  const t = (type||'').toUpperCase();
+  if (t === 'LOITERING') {
+    return `<div style="width:${sz}px;height:${sz}px;border-radius:2px;background:${c};border:1.5px solid #090c10"></div>`;
+  }
+  if (t === 'ENCOUNTER') {
+    return `<svg viewBox="0 0 20 20" width="${sz + 4}" height="${sz + 4}"><path d="M10 2 L18 17 L2 17 Z" fill="${c}" stroke="#090c10" stroke-width="1.8"/></svg>`;
+  }
+  return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};border:1.5px solid #090c10"></div>`;
+}
+function makeGfwIcon(d, selected) {
+  const c  = gearColor(gfwGearKey(gfwGearById[d.vesselId]?.name));
+  const sz = selected ? 15 : 10;
+  const glow = selected ? `filter:drop-shadow(0 0 3px ${c}) drop-shadow(0 0 6px ${c}88);` : '';
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;${glow}transition:.12s">
+      ${gfwShapeHtml(d.type, c, sz)}
+    </div>`,
+    iconSize:[28,28], iconAnchor:[14,14],
+  });
+}
+// Belah ketupat berisi penuh untuk kandidat anomali (spoofing / go dark / transshipment).
+function makeCandidateIcon(c) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center">
+      <div style="width:11px;height:11px;border-radius:3px;background:${c};border:2px solid #090c10;box-shadow:0 0 5px ${c}77;transform:rotate(45deg)"></div>
+    </div>`,
+    iconSize:[22,22], iconAnchor:[11,11],
+  });
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(online, label) {
+  document.getElementById('dot').classList.toggle('on', online);
+  document.getElementById('conn-label').textContent = label;
+}
+function setLoading(show, label) {
+  document.getElementById('loading').style.display = show ? 'block' : 'none';
+  if (label) document.getElementById('loading-label').textContent = label;
+}
+function setProgress(pct, color) {
+  const bar  = document.getElementById('topbar-progress');
+  const fill = document.getElementById('topbar-progress-fill');
+  if (pct < 0) { bar.style.display = 'none'; fill.style.width = '0%'; }
+  else {
+    bar.style.display = 'block';
+    fill.style.width = pct + '%';
+    if (color) { fill.style.background = color; fill.style.boxShadow = `0 0 8px ${color}`; }
+  }
+}
+function setBadge(type, state, count) {
+  const el = document.getElementById('badge-' + type); if (!el) return;
+  const spin  = state === 'loading' ? '<span class="ds-spin"></span>' : '';
+  const prefix = state === 'done' ? '✓ ' : state === 'err' ? '✗ ' : '';
+  const label  = type.charAt(0).toUpperCase() + type.slice(1);
+  const num    = count != null ? ` ${count}` : '';
+  el.className = 'ds-badge ' + state;
+  el.innerHTML = spin + prefix + label + num;
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function updateStats() {
+  if (mode !== 'gfw') return;
+  const counts = { FISHING:0, ENCOUNTER:0, LOITERING:0, OTHER:0 };
+  gfwEvents.forEach(ev => {
+    const t = (ev.type||'').toUpperCase();
+    if (counts[t] !== undefined) counts[t]++;
+    else counts.OTHER++;
+  });
+  const total = gfwEvents.length;
+  document.getElementById('cnt-fishing').textContent   = counts.FISHING;
+  document.getElementById('cnt-encounter').textContent = counts.ENCOUNTER;
+  document.getElementById('cnt-loitering').textContent = counts.LOITERING;
+  document.getElementById('cnt-other').textContent     = counts.OTHER;
+  document.getElementById('stats-total').textContent   = total;
+  const pct = v => total ? Math.max(4, Math.round(v / total * 100)) : 0;
+  document.getElementById('bar-fishing').style.width   = pct(counts.FISHING)   + '%';
+  document.getElementById('bar-encounter').style.width = pct(counts.ENCOUNTER) + '%';
+  document.getElementById('bar-loitering').style.width = pct(counts.LOITERING) + '%';
+  document.getElementById('bar-other').style.width     = pct(counts.OTHER)     + '%';
+  renderRegionStats(total, pct);
+}
+
+// Ringkasan event per ZEE (ZEE pertama tiap event) + jumlah di laut teritorial (≤12 mil).
+function renderRegionStats(total, pct) {
+  const el = document.getElementById('stats-regions');
+  if (!el) return;
+  const byRegion = {};
+  let territorial = 0;
+  gfwEvents.forEach(ev => {
+    const label = ev.eez?.length ? eezName(ev.eez[0]) : (ev.highSeas ? 'Laut lepas' : 'Tidak diketahui');
+    byRegion[label] = (byRegion[label] || 0) + 1;
+    if (ev.eez12?.length) territorial++;
+  });
+  const rows = Object.entries(byRegion).sort((a, b) => b[1] - a[1]);
+  const shown = rows.slice(0, 3);
+  const rest = rows.slice(3).reduce((n, [, v]) => n + v, 0);
+  if (rest) shown.push(['Lainnya', rest]);
+  el.innerHTML = shown.map(([label, n]) => `
+      <div class="stat-row stat-row-sm"><span class="stat-type">${esc(label)}</span><div class="stat-bar-wrap"><div class="stat-bar" style="background:var(--blue);width:${pct(n)}%"></div></div><span class="stat-val">${n}</span></div>`).join('')
+    + `<div class="stats-note">${territorial} event di laut teritorial (≤12 mil dari pantai)</div>`;
+}
+
+function toggleLegend(forceOpen) {
+  const panel = document.getElementById('legend');
+  const btn = document.getElementById('legend-toggle');
+  if (!panel || !btn) return;
+  const open = typeof forceOpen === 'boolean' ? forceOpen : panel.hidden;
+  panel.hidden = !open;
+  btn.classList.toggle('active', open);
+  btn.setAttribute('aria-expanded', String(open));
+}
+
+function setStatsMode(m) {
+  const statsPanel = document.getElementById('stats-panel');
+  const body       = document.getElementById('stats-body');
+  document.getElementById('stats-mode-label').textContent = m === 'gfw' ? 'GFW EVENTS' : m === 'ai' ? 'AI INFERENCE' : 'AIS LIVE';
+  if (m === 'ai') {
+    statsPanel.classList.add('ai-mode');
+    // Tahap A: hasil analisis citra satelit + Kalman (data penelitian). Hasil H5 live menyusul (Tahap B).
+    body.innerHTML = `
+      <div class="stats-sub" style="margin-top:0;border-top:none">Analisis citra satelit + Kalman</div>
+      <div id="ai-sar-summary"><div class="stats-note">Memuat hasil analisis…</div></div>
+      <div id="ai-table" class="ai-table"></div>`;
+    document.getElementById('stats-footer').style.display = 'none';
+  } else {
+    statsPanel.classList.remove('ai-mode');
+  }
+  if (m === 'ais') {
+    body.innerHTML = `
+      <div class="ais-stat-row"><span class="ais-stat-label">Kapal Aktif</span><span class="ais-stat-val" id="ais-ship-val">0</span></div>
+      <div class="ais-stat-row"><span class="ais-stat-label">Pesan Diterima</span><span class="ais-stat-val" id="ais-msg-val">0</span></div>`;
+    document.getElementById('stats-footer').style.display = 'none';
+  } else if (m === 'gfw') {
+    body.innerHTML = `
+      <div class="stat-row"><span class="stat-type">Fishing</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-fishing" style="background:var(--green);width:0%"></div></div><span class="stat-val" id="cnt-fishing">0</span></div>
+      <div class="stat-row"><span class="stat-type">Encounter</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-encounter" style="background:var(--orange);width:0%"></div></div><span class="stat-val" id="cnt-encounter">0</span></div>
+      <div class="stat-row"><span class="stat-type">Loitering</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-loitering" style="background:var(--yellow);width:0%"></div></div><span class="stat-val" id="cnt-loitering">0</span></div>
+      <div class="stat-row"><span class="stat-type">Lainnya</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-other" style="background:var(--text-3);width:0%"></div></div><span class="stat-val" id="cnt-other">0</span></div>
+      <div class="stats-sub">Wilayah (ZEE)</div>
+      <div id="stats-regions"></div>`;
+    document.getElementById('stats-footer').style.display = 'flex';
+  }
+}
+
+// ── MODE SWITCH ───────────────────────────────────────────────────────────────
+function setMode(m) {
+  if (m === mode) return;
+  mode = m;
+  clearAllMarkers();
+  closeSidebar();
+  trajLayer.clearLayers(); sidebarTrajLayer.clearLayers(); historyLayer.clearLayers();
+
+  document.getElementById('btn-gfw').className = 'mode-btn' + (m === 'gfw' ? ' active-gfw' : '');
+  document.getElementById('btn-ais').className = 'mode-btn' + (m === 'ais' ? ' active-ais' : '');
+  document.getElementById('btn-ai').className  = 'mode-btn' + (m === 'ai'  ? ' active-ai'  : '');
+  document.getElementById('stats-range').textContent = '—';
+  setStatsMode(m);
+  updateLegend(m);
+  document.getElementById('stats-total').textContent = '0';
+  syncLocalKalmanLayer();
+  syncWindLayer();
+
+  if (m === 'ais') {
+    const badgeRow = document.getElementById('ds-badges-row');
+    if (badgeRow) badgeRow.style.display = 'none';
+    stopAis();
+    startAis();
+  } else if (m === 'ai') {
+    // Tab AI Inference hanya berisi hasil analisis (bukan data live GFW/AIS).
+    const badgeRow = document.getElementById('ds-badges-row');
+    if (badgeRow) badgeRow.style.display = 'none';
+    stopAis();
+    setStatus(true, 'Analisis satelit + Kalman');
+    aiSarFilter = null;
+    Object.assign(aiTable, { q: '', sort: null, selected: null });
+    loadLocalKalman({ fit: true });
+  } else {
+    stopAis();
+    if (gfwEvents.length) restoreGfwEvents();
+    else loadGfw();
+  }
+}
+
+function updateLegend(m) {
+  const el = document.getElementById('legend');
+  if (m === 'ai') {
+    el.innerHTML = localKalmanLegendHtml();
+  } else if (m === 'ais') {
+    const legendIcon = html => `<span style="width:14px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${html}</span>`;
+    const grey = AIS_TYPE_STYLE.unknown.color;
+    el.innerHTML = `
+      <span class="leg-title">Jenis Kapal</span>
+      ${Object.values(AIS_TYPE_STYLE).map(s =>
+        `<div class="leg-row"><span class="leg-dot" style="background:${s.color}"></span><span class="leg-label">${s.label}</span></div>`).join('')}
+      <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px"></div>
+      <span class="leg-title">Bentuk</span>
+      <div class="leg-row">${legendIcon(aisShapeHtml(AIS_MOVING_KN, 0, grey))}<span class="leg-label">Bergerak ≥0,5 kn</span></div>
+      <div class="leg-row">${legendIcon(aisShapeHtml(0, null, grey))}<span class="leg-label">Diam &lt;0,5 kn</span></div>
+      <div class="leg-row">${legendIcon(aisShapeHtml(null, null, grey))}<span class="leg-label">Kecepatan tidak tersedia</span></div>`;
+  } else {
+    const legendIcon = html => `<span style="width:14px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${html}</span>`;
+    const grey = gearColor('unknown');
+    el.innerHTML = `
+      <span class="leg-title">Gear Type (perkiraan GFW)</span>
+      ${GFW_GEAR_LEGEND.map(([key, label]) =>
+        `<div class="leg-row"><span class="leg-dot" style="background:${gearColor(key)}"></span><span class="leg-label">${label}</span></div>`).join('')}
+      <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px"></div>
+      <span class="leg-title">Jenis Event</span>
+      <div class="leg-row">${legendIcon(gfwShapeHtml('FISHING', grey, 11))}<span class="leg-label">Fishing</span></div>
+      <div class="leg-row">${legendIcon(gfwShapeHtml('LOITERING', grey, 11))}<span class="leg-label">Loitering</span></div>
+      <div class="leg-row">${legendIcon(gfwShapeHtml('ENCOUNTER', grey, 11))}<span class="leg-label">Encounter</span></div>`;
+  }
+}
+
+// Legenda hasil Kalman + citra satelit (hanya di tab AI Inference).
+function localKalmanLegendHtml() {
+  return `
+    <span class="leg-title">AIS + Kalman Lokal</span>
+    <div class="leg-row"><span style="width:26px;border-top:3px dashed #00b7ff;display:inline-block"></span><span class="leg-label">AIS raw</span></div>
+    <div class="leg-row"><span style="width:26px;border-top:3px solid #ffd21a;display:inline-block"></span><span class="leg-label">Kalman</span></div>
+    <div class="leg-row"><span class="leg-dot" style="background:transparent;border:2px solid #ff2d2d"></span><span class="leg-label">SAR target</span></div>
+    <div class="leg-row"><span class="leg-dot" style="background:#ffd21a;border:1.5px solid #111827"></span><span class="leg-label">Kapal dengan trajectory AIS + Kalman</span></div>
+    <div class="leg-row"><span class="leg-dot" style="background:#e3901a;border-radius:3px;transform:rotate(45deg)"></span><span class="leg-label">Go dark candidate</span></div>
+    <div class="leg-row"><span class="leg-dot" style="background:#f85149;border-radius:3px;transform:rotate(45deg)"></span><span class="leg-label">Spoofing candidate</span></div>
+    <div class="leg-row"><span class="leg-dot" style="background:#a371f7;border-radius:3px;transform:rotate(45deg)"></span><span class="leg-label">Transshipment candidate</span></div>`;
+}
+
+function validLatLon(p) {
+  return p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon)) &&
+    Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lon)) <= 180;
+}
+
+function localPopup(scene, vessel) {
+  const name = vessel.name || 'Unknown vessel';
+  const gear = vessel.gear || 'UNKNOWN_GEAR';
+  const event = vessel.event || 'scene target';
+  const prob = Number.isFinite(Number(vessel.probability)) ? `<br>p=${Number(vessel.probability).toFixed(2)}` : '';
+  return `<b>${esc(name)}</b><br>MMSI: ${esc(vessel.mmsi || '—')}<br>${esc(event)} · ${esc(gear)}${prob}<br><span style="font-size:11px;color:#9ca3af">${esc(scene)}</span>`;
+}
+
+function parseDashboardCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (quoted) {
+      if (ch === '"' && next === '"') { cell += '"'; i += 1; }
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n') {
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else if (ch !== '\r') cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  if (!rows.length) return [];
+  const headers = rows.shift().map(h => h.replace(/^\uFEFF/, '').trim());
+  return rows
+    .filter(r => r.some(v => String(v || '').trim() !== ''))
+    .map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ''])));
+}
+
+async function loadCsvRows(path) {
+  try {
+    const r = await fetch(encodeURI(path), { cache: 'no-store' });
+    if (!r.ok) throw new Error(`${r.status} ${path}`);
+    return parseDashboardCsv(await r.text());
+  } catch (err) {
+    console.warn('[dashboard integration] CSV tidak tersedia:', path, err);
+    return [];
+  }
+}
+
+async function ensureIntegrationRows() {
+  if (integrationRowsLoaded) return;
+  if (!integrationLoadPromise) {
+    integrationLoadPromise = (async () => {
+      const candidatePromise = loadCsvRows(INTEGRATION_DATA_FILES.candidates);
+      const summaryPromise = loadCsvRows(INTEGRATION_DATA_FILES.summary);
+      const trajectoryPromise = loadCsvRows(INTEGRATION_DATA_FILES.trajectory);
+      const examplePromise = loadCsvRows(INTEGRATION_DATA_FILES.example25);
+      const kalmanPromises = INTEGRATION_DATA_FILES.kalman.map(path => loadCsvRows(path));
+      const [candidates, summaryRows, trajectoryRows, exampleRows, ...kalmanSets] =
+        await Promise.all([candidatePromise, summaryPromise, trajectoryPromise, examplePromise, ...kalmanPromises]);
+      integrationCandidates = candidates || [];
+      integrationSummaryRows = summaryRows || [];
+      integrationTrajectoryRows = trajectoryRows || [];
+      integrationExampleRows = exampleRows || [];
+      integrationKalmanRows = kalmanSets.flat();
+      integrationRowsLoaded = true;
+    })();
+  }
+  await integrationLoadPromise;
+}
+
+function normId(v) {
+  const s = String(v ?? '').trim();
+  return s.replace(/\.0$/, '');
+}
+
+function sameScene(a, b) {
+  if (!a || !b) return false;
+  const x = String(a).trim();
+  const y = String(b).trim();
+  return x === y || x.includes(y) || y.includes(x);
+}
+
+function rowScore(row) {
+  const n = Number(row?.score);
+  return Number.isFinite(n) ? n : -1;
+}
+
+function pick(row, names, fallback = '') {
+  for (const name of names) {
+    const value = row?.[name];
+    if (value != null && String(value).trim() !== '') return value;
+  }
+  return fallback;
+}
+
+function pickCoord(row, names, fallback = '') {
+  const value = pick(row, names, fallback);
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(6) : (value || '');
+}
+
+function displayValue(value, suffix = '') {
+  if (value == null || String(value).trim() === '') return '-';
+  const s = String(value).trim();
+  return suffix ? `${esc(s)} ${suffix}` : esc(s);
+}
+
+// Baris kandidat untuk satu kapal di satu scene. Urutan pilihan: baris kapal itu sendiri dengan jenis yang diklik →
+// baris kapal itu sendiri (skor tertinggi) → baris kapal lain yang mencatatnya sebagai kapal terdekat (neighbor_mmsi).
+// Tanpa urutan ini, pasangan transshipment menampilkan data kapal pasangannya.
+function findCandidateRow(sceneName, mmsi, type = '') {
+  const id = normId(mmsi);
+  if (!id) return null;
+  const inScene = integrationCandidates.filter(row => (sceneName ? sameScene(row.scene, sceneName) : true));
+  const best = rows => rows.sort((a, b) => rowScore(b) - rowScore(a))[0] || null;
+  const own = inScene.filter(row => normId(row.MMSI) === id);
+  const want = String(type || '').toLowerCase();
+  return (want && best(own.filter(row => String(row.candidate_type || '').toLowerCase() === want)))
+    || best(own)
+    || best(inScene.filter(row => normId(row.neighbor_mmsi) === id));
+}
+
+function findKalmanRow(sceneName, mmsi) {
+  const id = normId(mmsi);
+  const matches = integrationKalmanRows.filter(row => {
+    const mmsiMatch = id && normId(row.MMSI) === id;
+    const sceneMatch = sceneName ? sameScene(row.scene, sceneName) : true;
+    return sceneMatch && mmsiMatch;
+  });
+  return matches[0] || null;
+}
+
+function findLocalTrack(sceneName, mmsi) {
+  const id = normId(mmsi);
+  for (const scene of localKalmanData?.scenes || []) {
+    if (sceneName && !sameScene(scene.scene, sceneName)) continue;
+    for (const track of scene.tracks || []) {
+      if (normId(track.mmsi) === id) return track;
+    }
+  }
+  for (const scene of localKalmanData?.scenes || []) {
+    for (const track of scene.tracks || []) {
+      if (normId(track.mmsi) === id) return track;
+    }
+  }
+  return null;
+}
+
+function integrationImageItems(candidate, sceneName) {
+  const items = [];
+  const seen = new Set();
+  const add = (label, src) => {
+    if (!src) return;
+    let clean = String(src).trim().replace(/\\/g, '/');
+    if (!clean || seen.has(clean)) return;
+    seen.add(clean);
+    items.push({ label, src: clean });
+  };
+  add('gallery figure', candidate?.figure_path);
+  const patchFields = [
+    'patch_rgb_vv_actual_file',
+    'patch_rgb_vh_actual_file',
+    'patch_uint8_vv_actual_file',
+    'patch_uint8_vh_actual_file',
+  ];
+  for (const field of patchFields) {
+    const value = candidate?.[field];
+    if (!value) continue;
+    const src = String(value).includes('/') || String(value).includes('\\')
+      ? value
+      : `new/Patch_RGB/${value}`;
+    add(field.replace(/_/g, ' '), src);
+  }
+  if (sceneName) {
+    add('scene map', `KAPAL YG TERDETEKSI/SENTINEL1_SCENE_MAPS/${sceneName}_vv_scene_map.png`);
+    add('detection kalman map', `KAPAL YG TERDETEKSI/SENTINEL1_SCENE_MAPS/${sceneName}_vv_detection_kalman.png`);
+  }
+  return items.slice(0, 3);
+}
+
+function renderImageItems(items) {
+  if (!items.length) return '<div class="sb-note">Patch SAR atau gambar scene tidak tersedia.</div>';
+  return items.map(item => `
+    <div class="sar-img-wrap">
+      <div class="sar-img-title">${esc(item.label)}</div>
+      <img class="sar-img" src="${esc(encodeURI(item.src))}" alt="${esc(item.label)}"
+        onerror="this.closest('.sar-img-wrap').style.display='none'">
+    </div>`).join('');
+}
+
+function rowHtml(label, value, mono = false) {
+  return `<div class="sb-row"><span class="sb-key">${esc(label)}</span><span class="sb-val${mono ? ' mono' : ''}">${value}</span></div>`;
+}
+
+function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
+  const mmsi = pick(candidate, ['MMSI'], pick(kalman, ['MMSI'], vessel?.mmsi || ''));
+  const title = pick(candidate, ['Name', 'gfw_name'], pick(kalman, ['Name', 'gfw_name'], vessel?.name || `MMSI: ${mmsi || '-'}`));
+  const shipType = pick(candidate, ['Ship_Type', 'gfw_shiptype'], pick(kalman, ['Ship_Type', 'gfw_shiptype'], vessel?.category || vessel?.gear || ''));
+  const sceneTime = pick(candidate, ['scene_time_utc'], pick(kalman, ['kalman_scene_timestamp_utc', 'sog_cog_scene_timestamp_utc', 'AIS_update_datetime'], ''));
+  const candidateType = pick(candidate, ['candidate_type'], '');
+  const badge = candidateType || 'integrasi';
+
+  const aisLat = pickCoord(candidate, ['AIS_Latitude'], pickCoord(kalman, ['AIS_Latitude'], vessel?.ais?.lat));
+  const aisLon = pickCoord(candidate, ['AIS_Longitude'], pickCoord(kalman, ['AIS_Longitude'], vessel?.ais?.lon));
+  const sarLat = pickCoord(candidate, ['Center_latitude'], pickCoord(kalman, ['Center_latitude'], vessel?.sar?.lat));
+  const sarLon = pickCoord(candidate, ['Center_longitude'], pickCoord(kalman, ['Center_longitude'], vessel?.sar?.lon));
+  const kalLat = pickCoord(kalman, ['kalman_est_lat'], pickCoord(candidate, ['kalman_est_lat'], vessel?.kalman?.lat));
+  const kalLon = pickCoord(kalman, ['kalman_est_lon'], pickCoord(candidate, ['kalman_est_lon'], vessel?.kalman?.lon));
+  const focusLat = Number(sarLat || kalLat || aisLat);
+  const focusLon = Number(sarLon || kalLon || aisLon);
+  sidebarFocusLatLng = Number.isFinite(focusLat) && Number.isFinite(focusLon) ? [focusLat, focusLon] : null;
+
+  document.getElementById('sidebar-title').textContent = title || 'Detail Kapal';
+  document.getElementById('sidebar-sub').textContent = sceneName ? `Scene: ${sceneName}` : 'Integrasi AIS-SAR';
+
+  // Panel ini menampilkan hasil integrasi AIS-SAR: identitas kapal, posisi AIS,
+  // target kapal SAR, estimasi Kalman, kandidat aktivitas, patch SAR, dan trajectory.
+  document.getElementById('sidebar-body').innerHTML = `
+    <div class="sb-section">
+      <div class="sb-section-title">
+        INTEGRASI AIS-SAR
+        <span class="sb-section-badge" style="background:#4493f822;color:#4493f8;border:1px solid #4493f844">${esc(badge)}</span>
+      </div>
+      ${rowHtml('MMSI', displayValue(mmsi), true)}
+      ${rowHtml('Jenis kapal', displayValue(shipType))}
+      ${rowHtml('Waktu pengamatan', displayValue(sceneTime))}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">POSISI AIS DAN SAR</div>
+      ${rowHtml('Latitude AIS', displayValue(aisLat), true)}
+      ${rowHtml('Longitude AIS', displayValue(aisLon), true)}
+      ${rowHtml('Latitude SAR', displayValue(sarLat), true)}
+      ${rowHtml('Longitude SAR', displayValue(sarLon), true)}
+      ${rowHtml('Latitude Kalman', displayValue(kalLat), true)}
+      ${rowHtml('Longitude Kalman', displayValue(kalLon), true)}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">GERAK DAN MATCHING</div>
+      ${rowHtml('SOG', displayValue(pick(candidate, ['Sog'], pick(kalman, ['Sog', 'kalman_est_sog'], '')), 'kn'))}
+      ${rowHtml('COG', displayValue(pick(candidate, ['Cog'], pick(kalman, ['Cog', 'kalman_est_cog'], '')), 'deg'))}
+      ${rowHtml('Jarak SAR-AIS', displayValue(pick(candidate, ['sar_ais_distance_km'], ''), 'km'))}
+      ${rowHtml('Jarak SAR-Kalman', displayValue(pick(candidate, ['sar_kalman_est_distance_km'], ''), 'km'))}
+      ${rowHtml('Selisih waktu AIS-SAR', displayValue(pick(candidate, ['AIS_update_time_gap_hours', 'ais_position_time_gap_hours'], pick(kalman, ['AIS_update_time_gap_hours', 'ais_position_time_gap_hours'], '')), 'jam'))}
+      ${rowHtml('Residual Kalman', displayValue(pick(candidate, ['kalman_pred_residual_m'], pick(kalman, ['kalman_pred_residual_m'], '')), 'm'))}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">KANDIDAT AKTIVITAS</div>
+      ${rowHtml('candidate_type', displayValue(candidateType))}
+      ${rowHtml('score', displayValue(pick(candidate, ['score'], '')))}
+      ${rowHtml('rule', displayValue(pick(candidate, ['rule'], '')))}
+      ${rowHtml('evidence', displayValue(pick(candidate, ['evidence'], '')))}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">PATCH / SCENE SAR</div>
+      ${renderImageItems(integrationImageItems(candidate, sceneName))}
+    </div>`;
+}
+
+function plotIntegratedTrajectory(sceneName, mmsi, fit = true) {
+  sidebarTrajLayer.clearLayers();
+  const info = document.getElementById('sb-traj-info');
+  const track = findLocalTrack(sceneName, mmsi);
+  if (!track) {
+    info.textContent = 'Trajectory AIS/Kalman tidak tersedia.';
+    return;
+  }
+  const raw = (track.raw || []).filter(validLatLon).map(p => [Number(p.lat), Number(p.lon)]);
+  const kalman = (track.kalman || []).filter(validLatLon).map(p => [Number(p.lat), Number(p.lon)]);
+  drawRawKalmanTrack(raw, kalman, fit, `sar|${sceneName}|${mmsi}`);
+}
+
+// Garis AIS mentah (biru putus-putus) dan Kalman (kuning) beserta titik awal/akhir; raw/kalman = [[lat, lon], ...].
+// Zoom otomatis maks. 10: di laut lepas peta dasar Esri Ocean tidak punya gambar untuk zoom lebih dekat.
+// frontKey = kunci aiTipTargets dari titik kapal yang harus tetap di atas garisnya (supaya tetap bisa diklik).
+let trajLines = null;                        // lintasan yang sedang digambar: { raw, kalman, frontKey }
+const trajShow = { raw:true, kalman:true };  // tombol nyala/mati di panel kanan
+
+function drawRawKalmanTrack(raw, kalman, fit = true, frontKey = null) {
+  trajLines = { raw, kalman, frontKey };
+  trajShow.raw = trajShow.kalman = true;
+  renderRawKalmanTrack(fit);
+}
+
+function toggleTrajLine(kind) {
+  if (!trajLines) return;
+  trajShow[kind] = !trajShow[kind];
+  renderRawKalmanTrack(false);
+}
+
+function renderRawKalmanTrack(fit) {
+  sidebarTrajLayer.clearLayers();
+  const { raw, kalman, frontKey } = trajLines;
+  const info = document.getElementById('sb-traj-info');
+  const all = [...raw, ...kalman];
+
+  // Kalman digambar dulu dan lebih tebal, AIS mentah di atasnya. Keduanya hampir berhimpit (selisih rata-rata
+  // ±17 m), jadi kalau Kalman yang di atas, garis AIS mentah tertutup seluruhnya.
+  // interactive:false → garis tidak menangkap klik, jadi titik kapal di bawahnya tetap bisa diklik.
+  if (trajShow.kalman && kalman.length >= 2) L.polyline(kalman, { color:'#ffd21a', weight:5, opacity:.95, interactive:false }).addTo(sidebarTrajLayer);
+  if (trajShow.raw && raw.length >= 2) L.polyline(raw, { color:'#00b7ff', weight:2, opacity:1, dashArray:'6 7', interactive:false }).addTo(sidebarTrajLayer);
+  if (trajShow.raw && raw.length === 1) L.circleMarker(raw[0], { radius:5, color:'#00b7ff', fillColor:'#00b7ff', fillOpacity:.9 }).bindPopup('AIS raw').addTo(sidebarTrajLayer);
+  if (trajShow.kalman && kalman.length === 1) L.circleMarker(kalman[0], { radius:5, color:'#ffd21a', fillColor:'#ffd21a', fillOpacity:.9 }).bindPopup('Kalman').addTo(sidebarTrajLayer);
+
+  const addEnds = (points, color, label) => {
+    if (!points.length) return;
+    L.circleMarker(points[0], { radius:4, color, fillColor:color, fillOpacity:1 }).bindPopup(`${label} start`).addTo(sidebarTrajLayer);
+    if (points.length > 1) L.circleMarker(points[points.length - 1], { radius:4, color, fillColor:color, fillOpacity:1 }).bindPopup(`${label} end`).addTo(sidebarTrajLayer);
+  };
+  if (trajShow.raw) addEnds(raw, '#00b7ff', 'AIS raw');
+  if (trajShow.kalman) addEnds(kalman, '#ffd21a', 'Kalman');
+  const front = frontKey && aiTipTargets.get(frontKey);
+  if (front) { front.layer.bringToFront(); front.hit?.bringToFront(); }
+
+  const chip = (kind, label, color, style, n) =>
+    `<button class="traj-toggle${trajShow[kind] ? '' : ' off'}" onclick="toggleTrajLine('${kind}')" title="${n} titik — klik untuk ${trajShow[kind] ? 'menyembunyikan' : 'menampilkan'}"><i style="border-top:3px ${style} ${color}"></i>${label} ${n}</button>`;
+  info.innerHTML = chip('raw', 'AIS mentah', '#00b7ff', 'dashed', raw.length) + chip('kalman', 'Kalman', '#ffd21a', 'solid', kalman.length);
+  if (fit && all.length) map.fitBounds(L.latLngBounds(all), { padding:[60, 60], maxZoom:10 });
+}
+
+function candidateColor(type) {
+  switch (String(type || '').toLowerCase()) {
+    case 'godark': return '#e3901a';
+    case 'spoofing': return '#f85149';
+    case 'transshipment': return '#a371f7';
+    case 'yolo_sar': return '#39c5cf';
+    case 'yolo': return '#39c5cf';
+    default: return '#8b949e';
+  }
+}
+
+function renderIntegrationCandidateMarkers() {
+  if (!integrationRowsLoaded || !integrationCandidates.length) return;
+  const seen = new Set();
+  for (const row of integrationCandidates) {
+    const lat = Number(row.Center_latitude);
+    const lon = Number(row.Center_longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const key = `${row.scene}|${row.MMSI}|${row.candidate_type}|${lat.toFixed(5)}|${lon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const c = candidateColor(row.candidate_type);
+    const vessel = {
+      mmsi: row.MMSI,
+      name: row.Name,
+      category: row.Ship_Type || row.gfw_shiptype,
+      candidateType: row.candidate_type,
+      sar: { lat, lon },
+      ais: { lat: row.AIS_Latitude, lon: row.AIS_Longitude },
+    };
+    const marker = L.marker([lat, lon], { icon: makeCandidateIcon(c) })
+      .on('click', () => { if (showAiTip(`cand|${key}`, true)) { aiTableSelect(key); openIntegratedSarDetail(row.scene, vessel); } else resetAiView(); })
+      .addTo(localKalmanLayer);
+    aiTipTargets.set(`cand|${key}`, {
+      layer: marker,
+      html: aiTipHtml({ mmsi: row.MMSI, sub: titleCase(vessel.category), alert: row.candidate_type }),
+    });
+  }
+}
+
+async function openIntegratedSarDetail(sceneName, vessel = {}) {
+  closeToolPanel();
+  sidebarKey = null;
+  trajActive = false;
+  sidebarTrajLayer.clearLayers();
+  historyLayer.clearLayers();
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-title').textContent = vessel.name || `MMSI: ${vessel.mmsi || '-'}`;
+  document.getElementById('sidebar-sub').textContent = 'Memuat integrasi AIS-SAR...';
+  document.getElementById('sidebar-body').innerHTML = '<div class="sb-loading"><span class="mini-spin"></span> Memuat data kandidat dan Kalman...</div>';
+  document.getElementById('sb-traj-info').textContent = '';
+
+  await ensureIntegrationRows();
+  const candidate = findCandidateRow(sceneName, vessel.mmsi, vessel.candidateType);
+  const kalman = findKalmanRow(sceneName, vessel.mmsi);
+  renderIntegrationPanel(sceneName, vessel, candidate, kalman);
+
+  const btn = document.getElementById('sb-traj-btn');
+  btn.className = 'sb-btn';
+  btn.textContent = 'Tampilkan Trajectory';
+  btn.onclick = () => plotIntegratedTrajectory(sceneName, vessel.mmsi, true);
+  plotIntegratedTrajectory(sceneName, vessel.mmsi, false);
+}
+
+async function loadLocalKalman(opts = {}) {
+  try {
+    if (!localKalmanData) {
+      const r = await fetch('data/local_kalman_trajectories.json', { cache: 'no-store' });
+      if (!r.ok) throw new Error(`local kalman ${r.status}`);
+      localKalmanData = await r.json();
+    }
+    if (!aiTrajNames) {
+      // Nama kapal untuk trajectory AIS + Kalman (file trajectory-nya sendiri tidak menyimpan nama).
+      aiTrajNames = await fetch('data/trajectory_vessel_names.json', { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : {}).then(j => j.names || {}).catch(() => ({}));
+    }
+    if (localKalmanVisible) renderLocalKalman(opts);
+    ensureIntegrationRows().then(() => {
+      if (localKalmanVisible) renderLocalKalman({ fit: false });
+      renderAiSarPanel();
+    });
+  } catch (err) {
+    console.warn('[local kalman] gagal:', err);
+  }
+}
+
+function toggleLocalKalman() {
+  localKalmanVisible = !localKalmanVisible;
+  document.getElementById('btn-local-kalman')?.classList.toggle('active', localKalmanVisible);
+  localKalmanLayer.clearLayers();
+  syncLocalKalmanLayer();
+  updateLegend(mode);
+  if (localKalmanVisible) loadLocalKalman({ fit: true });
+}
+
+// Hasil Kalman + citra satelit (data penelitian Feb–Mar) hanya tampil di tab AI Inference,
+// supaya tidak tercampur dengan data live di tab GFW Events dan AIS Live.
+function syncLocalKalmanLayer() {
+  const show = mode === 'ai' && localKalmanVisible;
+  if (show && !map.hasLayer(localKalmanLayer)) localKalmanLayer.addTo(map);
+  if (!show && map.hasLayer(localKalmanLayer)) map.removeLayer(localKalmanLayer);
+  const btn = document.getElementById('btn-local-kalman');
+  if (btn) btn.style.display = mode === 'ai' ? '' : 'none';
+}
+
+// ── ANGIN (TAB AIS LIVE) ─────────────────────────────────────────────────────
+// Animasi partikel angin (leaflet-velocity) dari /api/wind (NOAA GFS, seluruh dunia). Hanya di tab AIS Live, karena ini angin saat ini:
+// GFW Events telat ±3 hari dan AI Inference berisi data Feb–Mar, jadi angin sekarang tidak cocok di sana.
+// Awalnya mati; dinyalakan lewat tombol "Angin" di bar atas.
+const WIND_ATTR = 'Angin: <a href="https://www.ncei.noaa.gov/products/weather-climate-models/global-forecast" target="_blank" rel="noopener">NOAA GFS</a>';
+const WIND_MAX_AGE_MS = 60 * 60 * 1000;   // ambil ulang tiap jam (GFS: prakiraan tiap 3 jam, run baru tiap 6 jam)
+let windOn = false;
+let windData = null;    // respons /api/wind
+let windLayer = null;
+let windSlot = null;    // jam (ISO) yang sedang digambar
+let windTimer = null;
+const WIND_COLORS = ['#1d6fb8', '#1f9a8a', '#3fa84a', '#c9a400', '#e3701a', '#d7263d']; // pelan → kencang
+const WIND_MAX_MS = 15;                    // batas atas skala warna (15 m/s ≈ 29 knot)
+const WIND_DIRS = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
+const MS_TO_KNOT = 1.94384;
+
+// Angin di satu titik dari jam yang sedang digambar (interpolasi bilinear antar titik grid); null di luar area data.
+// Grid dunia: bujur menyambung dari kolom terakhir kembali ke kolom pertama.
+function windAt(lat, lon) {
+  const slot = windData?.hours.find(h => h.time === windSlot);
+  if (!slot) return null;
+  const g = windData.grid;
+  const wraps = g.nx * g.dx >= 360;
+  const x = (wraps ? (((lon - g.lo1) % 360) + 360) % 360 : lon - g.lo1) / g.dx, y = (g.la1 - lat) / g.dy;
+  if (x < 0 || y < 0 || y > g.ny - 1 || (!wraps && x > g.nx - 1)) return null;
+  const i = Math.min(Math.floor(x), wraps ? g.nx - 1 : g.nx - 2), j = Math.min(Math.floor(y), g.ny - 2);
+  const i2 = (i + 1) % g.nx, fx = x - i, fy = y - j;
+  const mix = a => a[j * g.nx + i] * (1 - fx) * (1 - fy) + a[j * g.nx + i2] * fx * (1 - fy)
+    + a[(j + 1) * g.nx + i] * (1 - fx) * fy + a[(j + 1) * g.nx + i2] * fx * fy;
+  const u = mix(slot.u), v = mix(slot.v);
+  return { knots: Math.hypot(u, v) * MS_TO_KNOT, from: (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360 }; // from = arah datangnya angin
+}
+
+// Kotak di sebelah tombol Legend: kecepatan + arah angin di posisi kursor, skala warna, dan jam datanya.
+function updateWindReadout(e) {
+  const el = document.getElementById('wind-readout');
+  if (!el) return;
+  const w = e?.latlng ? windAt(e.latlng.lat, e.latlng.lng) : null;
+  const text = w ? `<b>${w.knots.toFixed(0)} knot</b> dari ${WIND_DIRS[Math.round(w.from / 45) % 8]} (${Math.round(w.from)}°)`
+    : e?.latlng ? 'di luar area data' : 'arahkan kursor ke laut';
+  const jam = windSlot ? new Date(windSlot).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '—';
+  const maxKn = Math.round(WIND_MAX_MS * MS_TO_KNOT);
+  el.innerHTML = `<span>Angin: ${text}</span>` +
+    `<span class="wind-scale" style="background:linear-gradient(90deg, ${WIND_COLORS.join(',')})"></span>` +
+    `<span class="wind-dim">0 – ${maxKn}+ knot · prakiraan pukul ${jam}</span>`;
+}
+
+// Jam terakhir yang sudah lewat; kalau semua jam masih di depan (prakiraan terdekat), pakai yang pertama.
+function windCurrentSlot() {
+  const now = Date.now();
+  const past = windData.hours.filter(h => Date.parse(h.time) <= now);
+  return past.length ? past[past.length - 1] : windData.hours[0];
+}
+
+function windRecords(slot) {
+  const g = windData.grid;
+  const header = n => ({
+    parameterCategory: 2, parameterNumber: n, parameterUnit: 'm.s-1', refTime: slot.time, forecastTime: 0,
+    lo1: g.lo1, la1: g.la1, lo2: g.lo1 + (g.nx - 1) * g.dx, la2: g.la1 - (g.ny - 1) * g.dy,
+    dx: g.dx, dy: g.dy, nx: g.nx, ny: g.ny,
+  });
+  return [{ header: header(2), data: slot.u }, { header: header(3), data: slot.v }];
+}
+
+async function loadWind() {
+  if (windData && Date.now() - windData.fetchedAt < WIND_MAX_AGE_MS) return;
+  const r = await fetch(apiUrl('/api/wind'), { cache: 'no-cache' }); // no-cache: selalu cek ke server, jangan pakai simpanan lama di browser
+  if (!r.ok) throw new Error(`wind ${r.status}`);
+  const j = await r.json();
+  if (!j.hours?.length) throw new Error('data angin kosong');
+  windData = j;
+}
+
+function removeWindLayer() {
+  clearInterval(windTimer);
+  windTimer = null;
+  if (windLayer) { map.removeLayer(windLayer); windLayer = null; }
+  windSlot = null;
+  map.attributionControl.removeAttribution(WIND_ATTR);
+  map.off('mousemove click', updateWindReadout);
+  const readout = document.getElementById('wind-readout');
+  if (readout) readout.hidden = true;
+}
+
+function toggleWind() {
+  windOn = !windOn;
+  syncWindLayer();
+}
+
+async function syncWindLayer() {
+  const btn = document.getElementById('btn-wind');
+  const show = mode === 'ais' && windOn;
+  if (btn) {
+    btn.style.display = mode === 'ais' ? '' : 'none';
+    btn.classList.toggle('active', windOn);
+    btn.textContent = 'Angin';
+  }
+  if (!show) { removeWindLayer(); return; }
+  if (windLayer) return;
+
+  try {
+    if (!L.velocityLayer) throw new Error('plugin angin tidak termuat');
+    if (btn) btn.textContent = 'Angin…';
+    await loadWind();
+    if (!(mode === 'ais' && windOn) || windLayer) return; // sudah dimatikan / pindah tab selagi memuat
+    const slot = windCurrentSlot();
+    windSlot = slot.time;
+    windLayer = L.velocityLayer({
+      data: windRecords(slot),
+      displayValues: false,                      // keterangan bawaan plugin salah menamai mata angin → pakai updateWindReadout
+      minVelocity: 0, maxVelocity: WIND_MAX_MS,  // m/s, untuk skala warna
+      velocityScale: 0.01, particleAge: 90, lineWidth: 2, particleMultiplier: 1 / 150, frameRate: 15,  // jumlah, panjang dan kecepatan garis
+      colorScale: WIND_COLORS,
+      opacity: 0.97,                             // makin dekat 1, ekor garis makin panjang
+    }).addTo(map);
+    map.attributionControl.addAttribution(WIND_ATTR);
+    map.on('mousemove click', updateWindReadout);
+    document.getElementById('wind-readout').hidden = false;
+    updateWindReadout();
+    // Ambil ulang data tiap jam; kalau jam prakiraannya sudah berganti, gambar ulang dengan data baru.
+    windTimer = setInterval(async () => {
+      try {
+        await loadWind();
+        const s = windCurrentSlot();
+        if (windLayer && s.time !== windSlot) { windSlot = s.time; windLayer.setData(windRecords(s)); updateWindReadout(); }
+      } catch (err) { console.warn('[angin] gagal memperbarui:', err); }
+    }, 5 * 60 * 1000);
+  } catch (err) {
+    console.warn('[angin] gagal:', err);
+    windOn = false;
+    removeWindLayer();
+    if (btn) {
+      btn.classList.remove('active');
+      btn.textContent = 'Angin (gagal dimuat)';
+      setTimeout(() => { if (!windOn) btn.textContent = 'Angin'; }, 5000);
+    }
+  } finally {
+    if (btn && windOn) btn.textContent = 'Angin';
+  }
+}
+
+// ── LABEL TITIK DI TAB AI INFERENCE ──────────────────────────────────────────
+// Kotak gelap seperti tampilan AI Inference lama (.ai-map-tip): MMSI, alat tangkap berwarna, tanda ⚠.
+// Muncul saat titik diklik atau dipilih dari daftar; klik titik yang sama lagi untuk kembali ke tampilan awal.
+const AI_TIP_ALERTS = {
+  spoofing: ['⚠ Spoofing', '#f85149'],
+  godark: ['⚠ Go Dark', '#e3901a'],
+  go_dark: ['⚠ Go Dark', '#e3901a'],
+  transshipment: ['⚠ Transshipment', '#a371f7'],
+};
+const aiTipTargets = new Map(); // kunci → { layer, html, hit? }
+
+function aiTipHtml({ mmsi, gearKey, gearText, sub, alert }) {
+  let html = `<div style="font-weight:700;color:#cdd9e5;margin-bottom:2px">MMSI ${esc(mmsi || '-')}</div>`;
+  if (gearText) html += `<div style="color:${gearColor(gearKey)};font-weight:700">${gearText}</div>`;
+  if (sub) html += `<div style="color:var(--text-3)">${esc(sub)}</div>`;
+  const a = AI_TIP_ALERTS[String(alert || '').toLowerCase()];
+  if (a) html += `<div style="color:${a[1]};font-weight:700;margin-top:1px">${a[0]}</div>`;
+  return html;
+}
+
+// Mengembalikan true kalau label sedang tampil setelah dipanggil.
+function showAiTip(key, toggle = false) {
+  const t = aiTipTargets.get(key);
+  if (!t) return false;
+  if (toggle && t.layer.getTooltip() && t.layer.isTooltipOpen()) { t.layer.unbindTooltip(); return false; }
+  t.layer.unbindTooltip();
+  t.layer.bindTooltip(t.html, { permanent:true, direction:'right', offset:[10, 0], className:'ai-map-tip' }).openTooltip();
+  return true;
+}
+
+// Kembali ke tampilan awal tab AI Inference (dipanggil saat titik yang sama diklik lagi): semua label,
+// garis lintasan dan panel detail ditutup, lalu peta kembali ke posisi saat tab pertama dibuka.
+let aiHomeBounds = null;
+function resetAiView() {
+  aiTipTargets.forEach(t => t.layer.unbindTooltip());
+  aiTableSelect(null);
+  closeSidebar();
+  if (aiHomeBounds) map.fitBounds(aiHomeBounds, { padding: [60, 60], maxZoom: 8 });
+}
+
+// Tombol ✕ panel kanan: di tab AI Inference kembali ke tampilan awal; di tab AIS Live semua label kapal ikut
+// ditutup (peta tidak pindah); di tab GFW Events hanya menutup panel.
+function closeSidebarFromButton() {
+  if (mode === 'ai') return resetAiView();
+  if (mode === 'ais') clearAisTips();
+  closeSidebar();
+}
+
+const titleCase = s => String(s || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+// ── AI INFERENCE: HASIL SATELIT + KALMAN ─────────────────────────────────────
+// Kandidat dari citra Sentinel-1 yang dicocokkan dengan AIS + Kalman lewat aturan (kolom rule/evidence),
+// bukan prediksi model H5 dan bukan data live.
+const AI_SAR_TYPES = [['spoofing', 'Spoofing'], ['godark', 'Go dark'], ['transshipment', 'Transshipment']];
+let aiSarFilter = null;
+
+// Sama dengan renderIntegrationCandidateMarkers: satu kandidat per scene + MMSI + jenis + posisi.
+function aiSarCandidates() {
+  const seen = new Set();
+  const out = [];
+  for (const row of integrationCandidates) {
+    const lat = Number(row.Center_latitude), lon = Number(row.Center_longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const key = `${row.scene}|${row.MMSI}|${row.candidate_type}|${lat.toFixed(5)}|${lon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ key, row, lat, lon, type: String(row.candidate_type || '').toLowerCase(), score: Number(row.score), time: Date.parse(row.scene_time_utc) });
+  }
+  return out;
+}
+
+function renderAiSarPanel() {
+  const sumEl = document.getElementById('ai-sar-summary');
+  if (mode !== 'ai' || !sumEl || !integrationRowsLoaded) return;
+  const all = aiSarCandidates();
+  const times = all.map(c => c.time).filter(Number.isFinite).sort((a, b) => a - b);
+  const fmtDay = t => new Date(t).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+  if (times.length) document.getElementById('stats-range').textContent = `${fmtDay(times[0])} – ${fmtDay(times[times.length - 1])}`;
+  const sarTargets = (localKalmanData?.scenes || []).reduce((n, s) => n + (s.vessels || []).filter(v => validLatLon(v.sar)).length, 0);
+  const icon = style => `<span class="leg-dot" style="width:10px;height:10px;${style}"></span>`;
+  sumEl.innerHTML = `
+    ${AI_SAR_TYPES.map(([key, label]) => `
+      <div class="stat-row stat-row-sm ai-sar-filter${aiSarFilter === key ? ' active' : ''}" onclick="setAiSarFilter('${key}')">
+        <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon(`background:${candidateColor(key)};border-radius:2px;transform:rotate(45deg)`)}${label}</span>
+        <span class="stat-val" style="margin-left:auto">${all.filter(c => c.type === key).length}</span>
+      </div>`).join('')}
+    <div class="stat-row stat-row-sm">
+      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:transparent;border:2px solid #ff2d2d')}SAR target</span>
+      <span class="stat-val" style="margin-left:auto">${sarTargets}</span>
+    </div>
+    <div class="stat-row stat-row-sm ai-sar-filter${aiSarFilter === 'trajectory' ? ' active' : ''}" onclick="setAiSarFilter('trajectory')">
+      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:#ffd21a;border:1.5px solid #111827')}Trajectory AIS + Kalman</span>
+      <span class="stat-val" style="margin-left:auto">${trajectoryVessels().length}</span>
+    </div>
+    <div class="stats-note" style="padding-bottom:6px">Data penelitian, bukan data live dan bukan prediksi model H5. Kandidat perlu verifikasi.</div>`;
+  renderAiTable();
+}
+
+function setAiSarFilter(key) {
+  aiSarFilter = aiSarFilter === key ? null : key;
+  renderAiSarPanel();
+}
+
+// ── AI INFERENCE: TABEL KAPAL ────────────────────────────────────────────────
+// Daftar kapal di panel kiri: kandidat (spoofing / go dark / transshipment) dan kapal trajectory dalam satu tabel,
+// dengan pencarian nama/MMSI, filter jenis (aiSarFilter, sama dengan baris angka di atasnya) dan urut per kolom.
+// Klik baris = memilih kapal itu di peta.
+// Skor aturan (0,55–1,00 dari scripts/find-scene-candidates.py) sengaja tidak dijadikan kolom: bukan peluang dan
+// mudah disalahartikan. Nilainya tetap ada di panel detail kanan dan dipakai untuk mengurutkan tanggal yang sama.
+const AI_TABLE_TYPES = [...AI_SAR_TYPES, ['trajectory', 'Trajectory AIS + Kalman']];
+const AI_TABLE_COLS = [['name', 'Nama kapal'], ['type', 'Jenis'], ['time', 'Tanggal']];
+// sort null = urutan awal: kandidat anomali dulu (terbaru di atas), kapal trajectory di akhir.
+const aiTable = { q:'', sort:null, dir:1, selected:null, view:[] };
+
+function aiTableRows() {
+  const cand = aiSarCandidates().map(c => ({ kind:'cand', key:c.key, name:c.row.Name || '', mmsi:String(c.row.MMSI || ''), type:c.type, time:c.time, score:c.score, c }));
+  const traj = trajectoryVessels().map(v => ({ kind:'traj', key:`traj|${v.mmsi}`, name:v.name || '', mmsi:String(v.mmsi), type:'trajectory', time:v.end, score:null }));
+  return [...cand, ...traj];
+}
+
+function renderAiTable() {
+  const host = document.getElementById('ai-table');
+  if (!host) return;
+  if (!host.firstElementChild) {
+    host.innerHTML = `
+      <div class="ai-table-bar">
+        <span class="ai-table-title">Daftar kapal</span>
+        <span class="ai-table-count" id="ai-table-count"></span>
+        <button class="ai-table-btn" id="ai-table-reset" onclick="resetAiTable()" title="Kembalikan tabel ke awal: tanpa filter, kandidat terbaru di atas">Reset</button>
+        <input id="ai-table-q" type="search" placeholder="Cari nama kapal atau MMSI" value="${esc(aiTable.q)}" oninput="aiTable.q = this.value; renderAiTableBody()">
+        <select id="ai-table-type" onchange="aiSarFilter = this.value || null; renderAiSarPanel()"></select>
+      </div>
+      <div class="ai-table-scroll">
+        <table>
+          <thead><tr id="ai-table-head"></tr></thead>
+          <tbody id="ai-table-body"></tbody>
+        </table>
+      </div>`;
+  }
+  renderAiTableBody();
+}
+
+function renderAiTableBody() {
+  const body = document.getElementById('ai-table-body');
+  if (!body) return;
+  const all = aiTableRows();
+  const q = aiTable.q.trim().toLowerCase();
+  const rows = all.filter(r => (!aiSarFilter || r.type === aiSarFilter) && (!q || r.name.toLowerCase().includes(q) || r.mmsi.includes(q)));
+  // Nama kosong selalu di urutan paling akhir. Nilai yang sama: tanggal terbaru dulu, lalu skor aturan tertinggi.
+  const val = r => aiTable.sort === 'name' ? r.name.toLowerCase() : aiTable.sort === 'type' ? r.type : (r.time || 0);
+  const blank = v => v === '' || v == null;
+  const tie = (a, b) => (b.time || 0) - (a.time || 0) || (b.score ?? -1) - (a.score ?? -1);
+  rows.sort((a, b) => {
+    if (!aiTable.sort) return (a.kind === 'traj') - (b.kind === 'traj') || tie(a, b);
+    const x = val(a), y = val(b);
+    if (blank(x) || blank(y)) return blank(x) - blank(y) || tie(a, b);
+    return (x < y ? -1 : x > y ? 1 : 0) * aiTable.dir || tie(a, b);
+  });
+  aiTable.view = rows;
+
+  document.getElementById('ai-table-head').innerHTML = AI_TABLE_COLS.map(([key, label]) =>
+    `<th class="col-${key}" onclick="sortAiTable('${key}')">${label}<span class="ai-table-sort">${aiTable.sort === key ? (aiTable.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('');
+
+  // Tanggal tanpa tahun: rentang tahunnya sudah tertulis di judul panel.
+  const fmtDay = t => Number.isFinite(t) ? new Date(t).toLocaleDateString('id-ID', { day:'numeric', month:'short' }) : '—';
+  body.innerHTML = rows.length ? rows.map((r, i) => {
+    const color = r.type === 'trajectory' ? '#ffd21a' : candidateColor(r.type);
+    const label = r.type === 'trajectory' ? 'Trajectory' : (AI_SAR_TYPES.find(([k]) => k === r.type)?.[1] || r.type);
+    const ico = r.type === 'trajectory' ? `background:${color};border:1.5px solid #111827;border-radius:50%` : `background:${color};border-radius:2px;transform:rotate(45deg)`;
+    const name = r.name || (r.mmsi ? `MMSI ${r.mmsi}` : '—');
+    return `<tr class="${r.key === aiTable.selected ? 'selected' : ''}" onclick="focusAiTableRow(${i})" title="${esc(r.name ? `${r.name} · MMSI ${r.mmsi || '-'}` : name)}">
+      <td class="col-name"><div class="ai-table-name"><span class="ai-table-ico" style="${ico}"></span><span>${esc(name)}</span></div></td>
+      <td class="col-type"><span class="ai-badge" style="background:${color}22;color:${color};border:1px solid ${color}66">${esc(label)}</span></td>
+      <td class="col-time">${fmtDay(r.time)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="${AI_TABLE_COLS.length}" class="ai-table-empty">Tidak ada kapal yang cocok dengan filter.</td></tr>`;
+
+  body.closest('.ai-table-scroll').scrollTop = 0; // daftar baru selalu mulai dari atas
+
+  const filtered = !!(aiSarFilter || q);
+  document.getElementById('ai-table-count').textContent = filtered ? `${rows.length} dari ${all.length} kapal` : `${all.length} kapal`;
+  // Tombol Reset hanya muncul kalau ada yang berbeda dari keadaan awal (filter, pencarian, atau urutan).
+  document.getElementById('ai-table-reset').style.display = filtered || aiTable.sort ? '' : 'none';
+  document.getElementById('ai-table-type').innerHTML = `<option value="">Semua jenis (${all.length})</option>` + AI_TABLE_TYPES.map(([k, label]) =>
+    `<option value="${k}"${aiSarFilter === k ? ' selected' : ''}>${label} (${all.filter(r => r.type === k).length})</option>`).join('');
+}
+
+function sortAiTable(key) {
+  // Klik kolom yang sama membalik urutan; kolom baru mulai dari terbaru→terlama untuk tanggal, A→Z untuk teks.
+  aiTable.dir = aiTable.sort === key ? -aiTable.dir : (key === 'time' ? -1 : 1);
+  aiTable.sort = key;
+  renderAiTableBody();
+}
+
+// Tombol Reset: kembali ke keadaan awal tabel (tanpa cari, tanpa filter jenis, urutan awal).
+function resetAiTable() {
+  aiTable.q = '';
+  aiTable.sort = null;
+  aiSarFilter = null;
+  const input = document.getElementById('ai-table-q');
+  if (input) input.value = '';
+  renderAiSarPanel();
+}
+
+// Menandai baris kapal yang sedang dipilih (dari tabel maupun dari klik titik di peta).
+function aiTableSelect(key) {
+  aiTable.selected = key;
+  document.querySelectorAll('#ai-table-body tr').forEach((tr, i) => tr.classList.toggle('selected', !!key && aiTable.view[i]?.key === key));
+  document.querySelector('#ai-table-body tr.selected')?.scrollIntoView({ block:'nearest' });
+}
+
+function focusAiTableRow(i) {
+  const r = aiTable.view[i];
+  if (!r) return;
+  aiTableSelect(r.key);
+  if (r.kind === 'traj') return showTrajectoryVessel(r.mmsi);
+  const c = r.c;
+  map.setView([c.lat, c.lon], Math.max(map.getZoom(), 9), { animate:true });
+  showAiTip(`cand|${c.key}`);
+  openIntegratedSarDetail(c.row.scene, {
+    mmsi: c.row.MMSI,
+    name: c.row.Name,
+    category: c.row.Ship_Type || c.row.gfw_shiptype,
+    candidateType: c.type,
+    sar: { lat: c.lat, lon: c.lon },
+    ais: { lat: c.row.AIS_Latitude, lon: c.row.AIS_Longitude },
+  });
+}
+
+// ── AI INFERENCE: KAPAL DENGAN TRAJECTORY AIS MENTAH + KALMAN ───────────────
+// Dari dataset penelitian (INTEGRATION_DATA_FILES.example25, ais_kalman_25seq_per_mmsi.csv): tiap baris punya
+// posisi AIS mentah (raw_lat/raw_lon) dan hasil Kalman (kalman_lat/kalman_lon) untuk kapal yang sama.
+let aiTrajVessels = null;
+let aiTrajNames = null; // data/trajectory_vessel_names.json (dari kolom vessel_name dataset penelitian)
+const validPair = ([lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
+
+function trajectoryVessels() {
+  if (aiTrajVessels || !integrationRowsLoaded) return aiTrajVessels || [];
+  const names = { ...(aiTrajNames || {}) };
+  for (const r of integrationCandidates) if (r.Name) names[normId(r.MMSI)] ??= r.Name;
+  for (const r of integrationTrajectoryRows) if (r.Name) names[normId(r.MMSI)] ??= r.Name;
+  for (const s of localKalmanData?.scenes || []) for (const v of s.vessels || []) if (v.name) names[normId(v.mmsi)] ??= v.name;
+  const byMmsi = new Map();
+  for (const r of integrationExampleRows) {
+    const mmsi = normId(r.mmsi);
+    if (!mmsi) continue;
+    if (!byMmsi.has(mmsi)) byMmsi.set(mmsi, []);
+    byMmsi.get(mmsi).push(r);
+  }
+  aiTrajVessels = [...byMmsi.entries()].map(([mmsi, rows]) => {
+    rows.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+    const corrections = rows.map(r => Number(r.kalman_correction_m)).filter(Number.isFinite);
+    return {
+      mmsi,
+      name: names[mmsi] || '',
+      gear: String(rows[0].gear_label || rows[0].gear || '').toLowerCase(),
+      raw: rows.map(r => [Number(r.raw_lat), Number(r.raw_lon)]).filter(validPair),
+      kalman: rows.map(r => [Number(r.kalman_lat), Number(r.kalman_lon)]).filter(validPair),
+      start: Number(rows[0].timestamp) * 1000,
+      end: Number(rows[rows.length - 1].timestamp) * 1000,
+      meanCorrection: corrections.length ? corrections.reduce((a, b) => a + b, 0) / corrections.length : null,
+    };
+  }).filter(v => v.raw.length >= 2 && v.kalman.length >= 2)
+    .sort((a, b) => b.kalman.length - a.kalman.length);
+  return aiTrajVessels;
+}
+
+// Label alat tangkap dari dataset (purse_seine, fixed_gear, ...) memakai nama kelas H5 yang sama dengan legenda GFW.
+function trajGearLabel(gear) {
+  const key = gfwGearKey(gear === 'purse_seine' ? 'purse_seines' : gear);
+  return { key, label: GFW_GEAR_LEGEND.find(([k]) => k === key)?.[1] || (gear || '—') };
+}
+
+// Titik kapal (posisi Kalman terakhir) di peta; klik untuk menggambar trajectory-nya.
+function renderTrajectoryVesselMarkers() {
+  for (const v of trajectoryVessels()) {
+    const tipKey = `traj|${v.mmsi}`;
+    const gear = trajGearLabel(v.gear);
+    const marker = L.circleMarker(v.kalman[v.kalman.length - 1], { radius:6, color:'#111827', weight:1.5, fillColor:'#ffd21a', fillOpacity:1 })
+      .on('click', () => { if (showAiTip(tipKey, true)) { aiTableSelect(tipKey); showTrajectoryVessel(v.mmsi, false); } else resetAiView(); })
+      .addTo(localKalmanLayer);
+    aiTipTargets.set(tipKey, { layer: marker, html: aiTipHtml({ mmsi: v.mmsi, gearKey: gear.key, gearText: esc(gear.label) }) });
+  }
+}
+
+// withTip = false saat dipanggil dari klik titik (label sudah diatur di sana).
+function showTrajectoryVessel(mmsi, withTip = true) {
+  const v = trajectoryVessels().find(x => x.mmsi === normId(mmsi));
+  if (!v) return;
+  if (withTip) showAiTip(`traj|${v.mmsi}`);
+  closeToolPanel();
+  sidebarKey = null;
+  trajActive = false;
+  historyLayer.clearLayers();
+  const fmtDay = t => new Date(t).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+  const gear = trajGearLabel(v.gear);
+  const row = (k, val) => `<div class="sb-row"><span class="sb-key">${k}</span><span class="sb-val">${val}</span></div>`;
+  document.getElementById('sidebar-title').textContent = v.name || `MMSI ${v.mmsi}`;
+  document.getElementById('sidebar-sub').textContent = `MMSI ${v.mmsi}`;
+  document.getElementById('sidebar-body').innerHTML = `
+    <div class="sb-section">
+      <div class="sb-section-title">TRAJECTORY AIS + KALMAN</div>
+      ${row('Alat tangkap (dataset)', `<span style="color:${gearColor(gear.key)}">${esc(gear.label)}</span>`)}
+      ${row('Periode', `${fmtDay(v.start)} – ${fmtDay(v.end)}`)}
+      ${row('Titik AIS mentah', v.raw.length)}
+      ${row('Titik Kalman', v.kalman.length)}
+      ${row('Koreksi Kalman rata-rata', v.meanCorrection == null ? '—' : `${Math.round(v.meanCorrection)} m`)}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">GARIS DI PETA</div>
+      ${row('<span style="width:26px;border-top:3px dashed #00b7ff;display:inline-block"></span>', 'AIS mentah')}
+      ${row('<span style="width:26px;border-top:3px solid #ffd21a;display:inline-block"></span>', 'Kalman')}
+    </div>`;
+  const btn = document.getElementById('sb-traj-btn');
+  btn.className = 'sb-btn';
+  btn.textContent = 'Tampilkan Trajectory';
+  // Titik kapal dinaikkan ke atas titik "Kalman end" (posisinya sama) supaya tetap bisa diklik.
+  const draw = () => drawRawKalmanTrack(v.raw, v.kalman, true, `traj|${v.mmsi}`);
+  btn.onclick = draw;
+  sidebarFocusLatLng = v.kalman[v.kalman.length - 1];
+  document.getElementById('sidebar').classList.add('open');
+  draw();
+}
+
+function renderLocalKalman(opts = {}) {
+  if (!localKalmanData?.scenes) return;
+  localKalmanLayer.clearLayers();
+  aiTipTargets.clear();
+  const bounds = [];
+
+  for (const scene of localKalmanData.scenes) {
+    // Garis AIS raw / Kalman tidak digambar di sini: baru muncul saat titik kapal diklik
+    // (openIntegratedSarDetail → plotIntegratedTrajectory).
+    for (const track of scene.tracks || []) {
+      [...(track.raw || []), ...(track.kalman || [])].filter(validLatLon)
+        .forEach(p => bounds.push([Number(p.lat), Number(p.lon)]));
+    }
+
+    for (const vessel of scene.vessels || []) {
+      if (!validLatLon(vessel.sar)) continue;
+      const ll = [Number(vessel.sar.lat), Number(vessel.sar.lon)];
+      bounds.push(ll);
+      const sarMarker = L.circleMarker(ll, {
+        radius: 6,
+        color: '#ff2d2d',
+        weight: 2,
+        fillColor: '#ff2d2d',
+        fillOpacity: 0.18,
+      }).addTo(localKalmanLayer);
+      const tipKey = `sar|${scene.scene}|${vessel.mmsi}`;
+      const prob = Number(vessel.probability);
+      aiTipTargets.set(tipKey, {
+        layer: sarMarker,
+        html: aiTipHtml({
+          mmsi: vessel.mmsi,
+          gearKey: vessel.gear,
+          gearText: vessel.gear ? `${esc(gearShortLabel(vessel.gear))}${Number.isFinite(prob) ? ` <span style="color:var(--text-3);font-weight:400">${Math.round(prob * (prob <= 1 ? 100 : 1))}%</span>` : ''}` : '',
+          sub: titleCase(vessel.category),
+          alert: vessel.event,
+        }),
+      });
+      // Lingkaran tak terlihat yang menangkap klik; disimpan supaya bisa dinaikkan ke atas garis lintasannya.
+      aiTipTargets.get(tipKey).hit = L.circleMarker(ll, {
+        radius: 12,
+        color: 'transparent',
+        weight: 0,
+        fillColor: '#ffffff',
+        fillOpacity: 0,
+      })
+        .on('click', () => { if (showAiTip(tipKey, true)) openIntegratedSarDetail(scene.scene, vessel); else resetAiView(); })
+        .addTo(localKalmanLayer);
+    }
+  }
+  renderIntegrationCandidateMarkers();
+  renderTrajectoryVesselMarkers();
+
+  aiHomeBounds = bounds.length ? L.latLngBounds(bounds) : null;
+  if (opts.fit && bounds.length) {
+    try { map.fitBounds(L.latLngBounds(bounds), { padding: [60, 60], maxZoom: 8 }); } catch {}
+  }
+}
+
+// ── AIS ───────────────────────────────────────────────────────────────────────
+// Posisi kapal live dikirim relay AIS di server (server/ais-relay.mjs) lewat Server-Sent Events.
+// AIS punya dua mode:
+// - relay  : server sendiri (npm run dev / npm run start) menyalurkan data lewat /api/ais/stream;
+// - direct : versi online di Vercel (tanpa server relay), browser tersambung langsung ke AISStream
+//            dengan key dari /api/ais/config (endpoint itu hanya aktif di Vercel).
+function startAis() {
+  if (aisStream) return;
+  setStatus(false, 'Menghubungkan AIS…');
+  setProgress(15, 'var(--blue)');
+  const pending = { close() {} };
+  aisStream = pending;
+  detectAisMode().then(m => {
+    if (aisStream !== pending) return; // stopAis dipanggil selama pengecekan
+    aisStream = null;
+    if (m.type === 'direct') startAisDirect(m.key);
+    else startAisRelay();
+  });
+}
+
+let aisMode = null;
+async function detectAisMode() {
+  if (aisMode) return aisMode;
+  try {
+    const r = await fetch(apiUrl('/api/ais/status'), { cache:'no-store' });
+    if (r.ok && (r.headers.get('content-type') || '').includes('application/json')) return (aisMode = { type:'relay' });
+  } catch {}
+  try {
+    const r = await fetch(apiUrl('/api/ais/config'), { cache:'no-store' });
+    const j = r.ok ? await r.json() : null;
+    if (j?.key) return (aisMode = { type:'direct', key:j.key });
+  } catch {}
+  return { type:'relay' }; // relay maupun key tidak tersedia: status akan "AIS Terputus"
+}
+
+function startAisRelay() {
+  const stream = new EventSource(apiUrl('/api/ais/stream'));
+  aisStream = stream;
+  stream.addEventListener('status', e => {
+    const st = parseAisEvent(e);
+    if (!st || stream !== aisStream) return;
+    if (st.state === 'online') setStatus(true, 'AIS Online');
+    else if (st.state === 'no-key') setStatus(false, 'AIS belum dikonfigurasi');
+    else if (st.state === 'error') setStatus(false, 'AIS gagal: ' + (st.error || 'tidak diketahui'));
+    else setStatus(false, 'Menghubungkan AIS…');
+  });
+  stream.addEventListener('snapshot', e => {
+    const data = parseAisEvent(e);
+    if (!data || stream !== aisStream) return;
+    const now = Date.now();
+    (data.ships || []).forEach(({ trail, ageMs, ...ship }) => {
+      processMarker(ship, { countMessage:false });
+      const s = ships[ship.key];
+      if (!s) return;
+      s.lastSeen = now - (ageMs || 0);
+      if (Array.isArray(trail) && trail.length) s.trail = trail.map(([lat, lon, t]) => ({ lat, lon, t }));
+    });
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString('id-ID');
+    setProgress(100, 'var(--blue)');
+    setTimeout(() => setProgress(-1), 600);
+  });
+  stream.addEventListener('ships', e => {
+    const list = parseAisEvent(e);
+    if (!Array.isArray(list) || stream !== aisStream) return;
+    list.forEach(ship => processMarker(ship));
+  });
+  // EventSource menyambung ulang sendiri; di sini cukup tampilkan statusnya.
+  stream.onerror = () => {
+    if (stream === aisStream) setStatus(false, 'AIS Terputus');
+  };
+}
+
+// Mode direct: pesan AISStream diolah di browser dengan aturan yang sama seperti server/ais-relay.mjs.
+const AIS_DIRECT_URL = 'wss://stream.aisstream.io/v0/stream';
+const AIS_DIRECT_TYPES = ['PositionReport', 'StandardClassBPositionReport', 'ExtendedClassBPositionReport', 'ShipStaticData', 'StaticDataReport'];
+const AIS_POSITION_TYPES = new Set(AIS_DIRECT_TYPES.slice(0, 3));
+const AIS_CLASS_B_TYPES = new Set(['StandardClassBPositionReport', 'ExtendedClassBPositionReport', 'StaticDataReport']);
+const aisDirectShips = {};
+
+function startAisDirect(key) {
+  let ws = null, timer = null, closed = false, delay = 2000;
+  const conn = { close() { closed = true; clearTimeout(timer); try { ws?.close(); } catch {} } };
+  aisStream = conn;
+  const connect = () => {
+    if (closed) return;
+    let receiving = false;
+    ws = new WebSocket(AIS_DIRECT_URL);
+    // AISStream mewajibkan pesan langganan dikirim dalam 3 detik setelah tersambung.
+    ws.onopen = () => ws.send(JSON.stringify({ APIKey:key, BoundingBoxes:[[[-11, 95], [6, 141]]], FilterMessageTypes:AIS_DIRECT_TYPES }));
+    ws.onmessage = async e => {
+      let msg;
+      // AISStream mengirim pesan biner (Blob di browser), jadi harus didekode dulu.
+      try { msg = JSON.parse(typeof e.data === 'string' ? e.data : await e.data.text()); } catch { return; }
+      if (closed || aisStream !== conn) return;
+      if (msg?.error) { setStatus(false, 'AIS gagal: ' + msg.error); return; }
+      if (!receiving) {
+        receiving = true;
+        delay = 2000;
+        setStatus(true, 'AIS Online');
+        setProgress(100, 'var(--blue)');
+        setTimeout(() => setProgress(-1), 600);
+      }
+      const ship = aisDirectMessage(msg);
+      if (ship) processMarker(ship);
+    };
+    ws.onclose = () => {
+      if (closed || aisStream !== conn) return;
+      setStatus(false, 'AIS Terputus');
+      timer = setTimeout(connect, delay);
+      delay = Math.min(delay * 2, 60_000);
+    };
+  };
+  connect();
+}
+
+const aisNum   = v => (v === null || v === undefined || v === '') ? null : (Number.isFinite(Number(v)) ? Number(v) : null);
+// Nilai "tidak tersedia" menurut standar AIS: SOG 102.3, COG 360, heading 511.
+const aisSpeed = v => { const n = aisNum(v); return n === null || n < 0 || n >= 102.3 ? null : n; };
+const aisAngle = v => { const n = aisNum(v); return n === null || n < 0 || n >= 360 ? null : n; };
+// AIS memakai '@' sebagai karakter pengisi pada teks.
+const aisText  = v => String(v ?? '').replace(/@/g, ' ').replace(/\s+/g, ' ').trim();
+
+function aisDirectMessage(msg) {
+  const type = msg?.MessageType;
+  const meta = msg?.MetaData || {};
+  const body = msg?.Message?.[type] || {};
+  const mmsi = Number(meta.MMSI);
+  if (!type || !Number.isFinite(mmsi) || mmsi <= 0) return null;
+  const key = String(mmsi);
+  const s = aisDirectShips[key] ??= { source:'ais', key, mmsi, name:'', lat:null, lon:null, waktu:null, speed:null,
+    course:null, heading:null, navStatus:null, destination:null, shipType:null, classB:false };
+
+  const name = aisText(meta.ShipName) || aisText(body.Name) || (body.ReportA?.Valid ? aisText(body.ReportA.Name) : '');
+  if (name) s.name = name;
+  if (AIS_CLASS_B_TYPES.has(type)) s.classB = true;
+  if (type === 'ShipStaticData') {
+    const destination = aisText(body.Destination);
+    if (destination) s.destination = destination;
+    if (Number(body.Type) > 0) s.shipType = Number(body.Type);
+  } else if (type === 'StaticDataReport') {
+    if (body.ReportB?.Valid && Number(body.ReportB.ShipType) > 0) s.shipType = Number(body.ReportB.ShipType);
+  } else if (type === 'ExtendedClassBPositionReport') {
+    if (Number(body.Type) > 0) s.shipType = Number(body.Type);
+  }
+
+  if (AIS_POSITION_TYPES.has(type)) {
+    const lat = Number(meta.latitude), lon = Number(meta.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0)) {
+      s.lat = Math.round(lat * 1e6) / 1e6;
+      s.lon = Math.round(lon * 1e6) / 1e6;
+      s.speed = aisSpeed(body.Sog);
+      s.course = aisAngle(body.Cog);
+      s.heading = aisAngle(body.TrueHeading);
+      if (type === 'PositionReport') s.navStatus = aisNum(body.NavigationalStatus);
+      s.waktu = meta.time_utc || s.waktu;
+    }
+  }
+  return s.lat === null ? null : { ...s };
+}
+function stopAis() {
+  if (aisStream) { aisStream.close(); aisStream = null; }
+}
+function parseAisEvent(e) {
+  try { return JSON.parse(e.data); } catch { return null; }
+}
+
+// ── GFW ───────────────────────────────────────────────────────────────────────
+function gfwDateRange() {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - 30);
+  return { start:start.toISOString().slice(0,10), end:end.toISOString().slice(0,10) };
+}
+
+function clearGfwMarkers(preserveEvents = false) {
+  for (const [k, s] of Object.entries(ships)) {
+    if (s.data.source === 'gfw') { map.removeLayer(s.marker); delete ships[k]; }
+  }
+  if (!preserveEvents) gfwEvents = [];
+}
+
+function restoreGfwEvents() {
+  gfwEvents.forEach(ev => processMarker(ev));
+  loadGfwGear(gfwEvents);
+  setStatus(true, `GFW · ${gfwEvents.length} events`);
+  updateStats();
+  document.getElementById('stats-range').textContent = gfwRangeLabel;
+}
+
+async function loadGfw(forceRefresh) {
+  const isAiMode = mode === 'ai';
+  const requestMode = mode;
+
+  // Cache hanya dipakai di GFW mode (bukan AI mode)
+  if (!forceRefresh && !isAiMode) {
+    try {
+      const raw = localStorage.getItem(GFW_CACHE_KEY);
+      if (raw) {
+        const c = JSON.parse(raw);
+        if (c?.t && Date.now()-c.t < GFW_CACHE_TTL && Array.isArray(c.events) && c.events.length > 0) {
+          gfwEvents = c.events;
+          gfwRangeLabel = c.range || gfwRangeLabel;
+          c.events.forEach(ev => processMarker(ev));
+          loadGfwGear(c.events);
+          setStatus(true, `GFW · ${c.events.length} events`);
+          updateStats();
+          if (c.range) document.getElementById('stats-range').textContent = c.range;
+          return;
+        }
+      }
+    } catch {}
+  }
+
+  // Hapus hanya marker GFW (bukan AIS) saat di AI mode
+  if (isAiMode) {
+    clearGfwMarkers(true);
+    updateAiCounters();
+  } else {
+    clearAllMarkers();
+  }
+
+  const { start, end } = gfwDateRange();
+  const rangeStr = `${fmtDateShort(start)} – ${fmtDateShort(end)}`;
+  if (!isAiMode) {
+    setStatus(false, 'Memuat GFW…');
+    document.getElementById('stats-range').textContent = rangeStr;
+  }
+
+  // Animasikan progress bar selama nunggu GFW API (~60-90 detik normal)
+  const badgeRow = document.getElementById('ds-badges-row');
+  if (badgeRow) {
+    badgeRow.style.display = 'flex';
+    setBadge('fishing', 'loading');
+    setBadge('encounter', 'loading');
+    setBadge('loitering', 'loading');
+  }
+  setProgress(5, 'var(--green)');
+  const t0gfw = Date.now();
+  let fakePct = 5;
+  const progressTimer = setInterval(() => {
+    if (mode !== requestMode) return; // tab sudah dipindah, jangan ganggu tampilan tab lain
+    fakePct = Math.min(fakePct + 1, 90);
+    setProgress(fakePct, 'var(--green)');
+    const elapsed = ((Date.now() - t0gfw) / 1000).toFixed(0);
+    if (!isAiMode) setStatus(false, `Memuat GFW… ${elapsed}s`);
+  }, 900);
+
+  try {
+    // Tanpa tanggal: server memakai rentang 30 hari yang sama, dan alamat yang tetap membuat cache CDN
+    // tidak hangus setiap ganti hari (start/end di atas hanya untuk label).
+    const r = await fetch(apiUrl('/api/gfw/events'));
+    const j = await r.json();
+    if (!r.ok || j.error) console.warn('[gfw] server error:', j.error || j);
+    const evs = (j.events || []).map(normalizeGfw).filter(Boolean);
+    gfwEvents = isAiMode ? [...gfwEvents.filter(e=>e.source!=='gfw'), ...evs] : evs;
+    gfwRangeLabel = rangeStr;
+
+    // Tab dipindah selama menunggu GFW: simpan datanya, tapi jangan digambar di tab lain.
+    if (mode !== requestMode) {
+      clearInterval(progressTimer);
+      setProgress(-1);
+      if (badgeRow) badgeRow.style.display = 'none';
+      if (!isAiMode) { try { localStorage.setItem(GFW_CACHE_KEY, JSON.stringify({ t:Date.now(), events:evs, range:rangeStr })); } catch {} }
+      return;
+    }
+
+    evs.forEach(ev => processMarker(ev));
+    loadGfwGear(evs);
+
+    clearInterval(progressTimer);
+    setProgress(100);
+    setTimeout(() => {
+      setProgress(-1);
+      if (badgeRow) {
+        setBadge('fishing',   'done', evs.filter(e=>(e.type||'').toUpperCase()==='FISHING').length);
+        setBadge('encounter', 'done', evs.filter(e=>(e.type||'').toUpperCase()==='ENCOUNTER').length);
+        setBadge('loitering', 'done', evs.filter(e=>(e.type||'').toUpperCase()==='LOITERING').length);
+        setTimeout(() => { badgeRow.style.display = 'none'; }, 2000);
+      }
+    }, 600);
+
+    const elapsedGfw = ((Date.now() - t0gfw) / 1000).toFixed(1);
+    if (!isAiMode) {
+      setStatus(true, `GFW · ${evs.length} events · ${elapsedGfw}s`);
+      updateStats();
+      document.getElementById('stats-range').textContent = rangeStr;
+      try { localStorage.setItem(GFW_CACHE_KEY, JSON.stringify({ t:Date.now(), events:evs, range:rangeStr })); } catch {}
+    } else {
+      setStatus(true, `GFW ${evs.length} + AIS live · ${elapsedGfw}s`);
+      updateAiCounters();
+    }
+  } catch (err) {
+    clearInterval(progressTimer);
+    setProgress(-1);
+    if (badgeRow) { setBadge('fishing','err'); setBadge('encounter','err'); setBadge('loitering','err'); }
+    console.error('[gfw] fetch error:', err);
+    if (!isAiMode && mode === requestMode) setStatus(false, 'GFW gagal: ' + err.message);
+  }
+}
+
+
+function normalizeGfw(ev) {
+  const lat = ev.position?.lat, lon = ev.position?.lon;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const durationHours = (ev.start && ev.end)
+    ? (new Date(ev.end) - new Date(ev.start)) / 3_600_000 : null;
+  const regions = ev.regions || {};
+  return { source:'gfw', key:ev.id, id:ev.id, type:ev.type, lat, lon,
+    mmsi:ev.vessel?.ssvid, name:ev.vessel?.name||'Unknown',
+    flag:ev.vessel?.flag, vesselId:ev.vessel?.id,
+    start:ev.start, end:ev.end, durationHours,
+    eez:(regions.eez||[]).map(String), eez12:(regions.eez12Nm||[]).map(String),
+    highSeas:(regions.highSeas||[]).length > 0,
+    faoMajor:regions.majorFao?.[0] ?? null,
+    fao:[...(regions.fao||[])].sort((a, b) => String(b).length - String(a).length)[0] ?? null,
+    shoreKm:ev.distances?.startDistanceFromShoreKm ?? null,
+    portKm:ev.distances?.startDistanceFromPortKm ?? null };
+}
+
+// Ambil alat tangkap (perkiraan GFW) untuk kapal yang belum diketahui, lalu warnai ulang titik GFW.
+async function loadGfwGear(evs) {
+  const ids = [...new Set(evs.map(e => e.vesselId).filter(id => id && !(id in gfwGearById)))];
+  if (!ids.length) return;
+  try {
+    for (let i = 0; i < ids.length; i += 500) {
+      const r = await fetch(apiUrl('/api/gfw/gear'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ids.slice(i, i + 500) }),
+      });
+      const j = await r.json();
+      if (!r.ok || j.error || j.warning) console.warn('[gfw gear]', j.error || j.warning || r.status);
+      Object.assign(gfwGearById, j.gear || {});
+    }
+  } catch (err) {
+    console.warn('[gfw gear] gagal:', err);
+    return;
+  }
+  for (const [key, s] of Object.entries(ships)) {
+    if (s.data.source === 'gfw') s.marker.setIcon(makeGfwIcon(s.data, key === sidebarKey));
+  }
+  const gearEl = document.getElementById('sb-gfw-gear');
+  if (gearEl && ships[sidebarKey]?.data?.source === 'gfw') gearEl.textContent = gfwGearLabel(ships[sidebarKey].data.vesselId);
+}
+
+// ── MARKERS ───────────────────────────────────────────────────────────────────
+function processMarker(d, opts = {}) {
+  if (!d.key) return;
+  const existing = ships[d.key];
+  // Gabung dengan data lama dulu, supaya ikon tetap memakai kecepatan & arah terakhir yang diketahui.
+  const data = existing ? { ...existing.data, ...d } : d;
+  const icon = data.source === 'gfw' ? makeGfwIcon(data, d.key === sidebarKey) : makeAisIcon(data.speed, aisIconHeading(data), data.shipType);
+  if (existing) {
+    existing.marker.setLatLng([data.lat,data.lon]).setIcon(icon);
+    existing.data = data;
+    existing.lastSeen = Date.now();
+    if (data.source === 'ais') {
+      const last = existing.trail[existing.trail.length - 1];
+      if (!last || last.lat !== data.lat || last.lon !== data.lon) {
+        existing.trail.push({lat:data.lat,lon:data.lon,t:Date.now()});
+        if (existing.trail.length > AIS_TRAIL_MAX) existing.trail.shift();
+      }
+    }
+    if (sidebarKey === d.key) renderSidebarBody(existing.data);
+    if (data.source === 'ais' && existing.marker.getTooltip()) existing.marker.setTooltipContent(aisTipHtml(data));
+  } else {
+    const marker = L.marker([data.lat,data.lon], { icon }).addTo(map);
+    marker.on('click', () => data.source === 'gfw' ? openGfwDetail(d.key) : clickAisVessel(d.key));
+    ships[d.key] = { marker, data, lastSeen:Date.now(), trail:data.source==='ais'?[{lat:data.lat,lon:data.lon,t:Date.now()}]:[] };
+  }
+  if (data.source === 'ais') {
+    if (opts.countMessage !== false) {
+      msgCount++;
+      document.getElementById('msg-count').textContent = msgCount;
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('id-ID');
+      const mv = document.getElementById('ais-msg-val');  if (mv) mv.textContent = msgCount;
+    }
+    const sv = document.getElementById('ais-ship-val'); if (sv) sv.textContent = Object.keys(ships).length;
+    updateAiCounters();
+  }
+  document.getElementById('ship-count').textContent = Object.keys(ships).length;
+}
+
+// ── LABEL KAPAL DI TAB AIS LIVE ──────────────────────────────────────────────
+// Kotak gelap yang sama dengan tab AI Inference (.ai-map-tip): MMSI + jenis kapal berwarna (warna ikon AIS).
+function aisTipHtml(d) {
+  const type = AIS_TYPE_STYLE[aisTypeGroup(d.shipType)];
+  return `<div style="font-weight:700;color:#cdd9e5;margin-bottom:2px">MMSI ${esc(d.mmsi || '-')}</div>`
+    + `<div style="color:${type.color};font-weight:700">${type.label}</div>`;
+}
+
+// Klik kapal AIS: label muncul di peta dan panel kanan terbuka. Hanya satu label sekaligus: label kapal yang
+// diklik sebelumnya ditutup. Klik kapal yang sama lagi: label dan panelnya ditutup.
+function clickAisVessel(key) {
+  const s = ships[key]; if (!s) return;
+  const wasOpen = !!s.marker.getTooltip();
+  clearAisTips();
+  if (wasOpen) {
+    if (sidebarKey === key) closeSidebar();
+    return;
+  }
+  s.marker.bindTooltip(aisTipHtml(s.data), { permanent:true, direction:'right', offset:[10, 0], className:'ai-map-tip' }).openTooltip();
+  openSidebar(key);
+}
+
+function clearAisTips() {
+  Object.values(ships).forEach(s => s.marker.unbindTooltip());
+}
+
+function aisIconHeading(d) {
+  if (d.heading != null && d.heading >= 0 && d.heading < 360) return d.heading;
+  if (d.course != null && d.course >= 0 && d.course < 360) return d.course;
+  return null;
+}
+
+function clearAllMarkers() {
+  Object.values(ships).forEach(s => map.removeLayer(s.marker));
+  for (const k in ships) delete ships[k];
+  msgCount = 0;
+  document.getElementById('ship-count').textContent = '0';
+  document.getElementById('msg-count').textContent  = '0';
+}
+
+// ── GFW DETAIL ───────────────────────────────────────────────────────────────
+function openGfwDetail(key) {
+  const s = ships[key]; if (!s) return;
+  closeToolPanel();
+  sidebarFocusLatLng = null;
+  document.getElementById('sb-traj-btn').onclick = toggleTraj;
+  const d = s.data;
+  if (sidebarKey && ships[sidebarKey]?.data?.source === 'gfw')
+    ships[sidebarKey].marker.setIcon(makeGfwIcon(ships[sidebarKey].data, false));
+  s.marker.setIcon(makeGfwIcon(d, true));
+  sidebarKey = key; trajActive = false;
+  sidebarTrajLayer.clearLayers(); historyLayer.clearLayers();
+  showGfwPopup(d, s.marker);
+  renderSidebarGfw(d);
+  document.getElementById('sidebar').classList.add('open');
+  showHistoryMarkers(d);
+  if (d.mmsi || d.vesselId) fetchVesselIdentity(d.mmsi, d.vesselId);
+  const btn = document.getElementById('sb-traj-btn');
+  btn.className = 'sb-btn';
+  btn.textContent = d.vesselId ? 'Tampilkan Trajectory' : 'Trajectory (N/A)';
+  document.getElementById('sb-traj-info').textContent = '';
+}
+
+function showGfwPopup(d, marker) {
+  const c = gfwColor(d.type);
+  marker.bindPopup(`
+    <div class="popup-name">${esc(d.name||'Unknown')}</div>
+    <span class="popup-badge" style="background:${c}22;color:${c};border:1px solid ${c}44">${esc(d.type||'—')}</span>
+    <div style="margin-top:6px">
+      ${d.mmsi ? `<div class="popup-row"><span>MMSI</span><b>${esc(String(d.mmsi))}</b></div>` : ''}
+      ${d.flag ? `<div class="popup-row"><span>Bendera</span><b>${esc(d.flag)}</b></div>` : ''}
+      <div class="popup-row"><span>Alat tangkap (GFW)</span><b>${esc(gfwGearLabel(d.vesselId))}</b></div>
+      <div class="popup-row"><span>Wilayah</span><b>${esc(gfwRegionShort(d))}</b></div>
+      <div class="popup-row"><span>Durasi</span><b>${fmtDur(d.durationHours)}</b></div>
+    </div>
+    <div class="popup-coord">${d.lat.toFixed(4)}°, ${d.lon.toFixed(4)}° &nbsp;·&nbsp; ${fmtD(d.start)}</div>
+  `, { maxWidth:230, autoPanPadding:[20,80] }).openPopup();
+}
+
+function showHistoryMarkers(d) {
+  const same = gfwEvents.filter(ev =>
+    ev.key !== d.key && ((d.vesselId && ev.vesselId === d.vesselId) || (d.mmsi && ev.mmsi && String(ev.mmsi)===String(d.mmsi)))
+  );
+  same.forEach(ev => {
+    L.marker([ev.lat,ev.lon], { icon: makeGfwIcon(ev, false), opacity: 0.7 })
+      .bindPopup(`<b>${esc(ev.type)}</b><br>${fmtD(ev.start)}`)
+      .addTo(historyLayer);
+  });
+}
+
+async function fetchVesselIdentity(mmsi, vesselId) {
+  const el = document.getElementById('sb-identity'); if (!el) return;
+  const query = mmsi ? String(mmsi) : vesselId; if (!query) return;
+  try {
+    const r = await fetch(apiUrl(`/api/gfw/vessels/search?query=${encodeURIComponent(query)}&limit=1`));
+    const d = await r.json();
+    const v = d.entries?.[0];
+    if (!v) { el.innerHTML = '<div class="sb-section-title">IDENTITAS GFW</div><div style="padding:8px 16px;font-size:12px;color:var(--text-3)">Tidak ditemukan di database GFW.</div>'; return; }
+    el.innerHTML = `
+      <div class="sb-section-title">IDENTITAS GFW</div>
+      ${v.ship_name ? `<div class="sb-row"><span class="sb-key">Nama Resmi</span><span class="sb-val">${esc(v.ship_name)}</span></div>` : ''}
+      ${v.imo       ? `<div class="sb-row"><span class="sb-key">IMO</span><span class="sb-val mono">${esc(String(v.imo))}</span></div>` : ''}
+      ${v.callsign  ? `<div class="sb-row"><span class="sb-key">Callsign</span><span class="sb-val mono">${esc(v.callsign)}</span></div>` : ''}
+      ${v.flag      ? `<div class="sb-row"><span class="sb-key">Bendera</span><span class="sb-val">${esc(v.flag)}</span></div>` : ''}`;
+  } catch {
+    if (el) el.innerHTML = '<div class="sb-section-title">IDENTITAS GFW</div><div style="padding:8px 16px;font-size:12px;color:var(--text-3)">Gagal memuat.</div>';
+  }
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function openSidebar(key) {
+  const s = ships[key]; if (!s) return;
+  closeToolPanel();
+  sidebarFocusLatLng = null;
+  document.getElementById('sb-traj-btn').onclick = toggleTraj;
+  sidebarKey = key; trajActive = false;
+  sidebarTrajLayer.clearLayers(); historyLayer.clearLayers();
+  document.getElementById('sb-traj-btn').className = 'sb-btn';
+  document.getElementById('sb-traj-btn').textContent = 'Aktifkan Trajectory';
+  document.getElementById('sb-traj-info').textContent = '';
+  renderSidebarBody(s.data);
+  document.getElementById('sidebar').classList.add('open');
+}
+
+function closeSidebar() {
+  if (sidebarKey && ships[sidebarKey]?.data?.source === 'gfw')
+    ships[sidebarKey].marker.setIcon(makeGfwIcon(ships[sidebarKey].data, false));
+  if (trajActive) showAllMarkers();
+  sidebarKey = null; trajActive = false; sidebarFocusLatLng = null;
+  sidebarTrajLayer.clearLayers(); historyLayer.clearLayers();
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function zoomTo() {
+  if (sidebarFocusLatLng) {
+    map.setView(sidebarFocusLatLng, 12, { animate:true });
+    return;
+  }
+  if (!sidebarKey || !ships[sidebarKey]) return;
+  const d = ships[sidebarKey].data;
+  map.setView([d.lat, d.lon], 12, { animate:true });
+}
+
+const fmt    = v => v != null ? String(v) : '—';
+const fmtD   = v => v ? new Date(v).toLocaleString('id-ID') : '—';
+const fmtDur = h => { if (!h) return '—'; const hh=Math.floor(h), mm=Math.round((h-hh)*60); return `${hh}j ${mm}m`; };
+const fmtDateShort = s => { const d=new Date(s); return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}); };
+
+function renderSidebarGfw(d) {
+  const c = gfwColor(d.type);
+  document.getElementById('sidebar-title').textContent = d.name || 'Unknown';
+  document.getElementById('sidebar-sub').textContent   = d.flag ? `Bendera: ${d.flag}` : '';
+
+  const same = gfwEvents.filter(ev =>
+    ev.key !== d.key && ((d.vesselId && ev.vesselId === d.vesselId) || (d.mmsi && ev.mmsi && String(ev.mmsi)===String(d.mmsi)))
+  ).sort((a,b) => new Date(b.start)-new Date(a.start));
+
+  const histHtml = same.length
+    ? same.map(ev => { const ec=gfwColor(ev.type); return `
+        <div class="hist-item" onclick="focusHistEvent(${ev.lat},${ev.lon})">
+          <span class="hist-date">${fmtD(ev.start)}</span>
+          <span class="hist-badge" style="background:${ec}22;color:${ec};border:1px solid ${ec}33">${esc(ev.type)}</span>
+        </div>`; }).join('')
+    : '<div style="padding:8px 16px;font-size:11px;color:var(--text-3)">Tidak ada event lain dalam 30 hari.</div>';
+
+  document.getElementById('sidebar-body').innerHTML = `
+    <div class="sb-section">
+      <div class="sb-section-title">
+        EVENT
+        <span class="sb-section-badge" style="background:${c}22;color:${c};border:1px solid ${c}44">${esc(d.type||'—')}</span>
+      </div>
+      <div class="sb-row"><span class="sb-key">Alat tangkap (perkiraan GFW)</span><span class="sb-val" id="sb-gfw-gear">${esc(gfwGearLabel(d.vesselId))}</span></div>
+      <div class="sb-row"><span class="sb-key">Durasi</span><span class="sb-val">${fmtDur(d.durationHours)}</span></div>
+      <div class="sb-row"><span class="sb-key">Mulai</span><span class="sb-val">${fmtD(d.start)}</span></div>
+      <div class="sb-row"><span class="sb-key">Selesai</span><span class="sb-val">${fmtD(d.end)}</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">POSISI</div>
+      <div class="sb-row"><span class="sb-key">Lintang</span><span class="sb-val mono">${d.lat.toFixed(6)}°</span></div>
+      <div class="sb-row"><span class="sb-key">Bujur</span><span class="sb-val mono">${d.lon.toFixed(6)}°</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">WILAYAH</div>
+      <div id="sb-gfw-region">${gfwRegionRowsHtml(d)}</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">DATA AIS</div>
+      <div class="sb-row"><span class="sb-key">MMSI</span><span class="sb-val mono">${fmt(d.mmsi)}</span></div>
+      <div class="sb-row"><span class="sb-key">Event ID</span><span class="sb-val mono dim" style="font-size:10px">${fmt(d.id)}</span></div>
+    </div>
+    <div class="sb-section" id="sb-identity">
+      <div class="sb-section-title">IDENTITAS GFW</div>
+      <div class="sb-loading"><span class="mini-spin"></span> Memuat dari GFW…</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">HISTORY POSISI <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">${same.length} event lain</span></div>
+      ${histHtml}
+    </div>`;
+}
+
+function renderSidebarBody(d) {
+  if (d.source === 'gfw') { renderSidebarGfw(d); return; }
+  const c = aisColor(d.speed);
+  document.getElementById('sidebar-title').textContent = d.name || 'Unknown';
+  document.getElementById('sidebar-sub').textContent   = d.mmsi ? `MMSI: ${d.mmsi}` : '';
+  document.getElementById('sidebar-body').innerHTML = `
+    <div class="sb-section">
+      <div class="sb-section-title">IDENTITAS</div>
+      <div class="sb-row"><span class="sb-key">MMSI</span><span class="sb-val mono">${fmt(d.mmsi)}</span></div>
+      <div class="sb-row"><span class="sb-key">Tujuan</span><span class="sb-val">${fmt(d.destination)||'—'}</span></div>
+      <div class="sb-row"><span class="sb-key">Status Nav</span><span class="sb-val">${fmt(d.navStatus)}</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">POSISI & GERAK</div>
+      <div class="sb-row"><span class="sb-key">Lintang</span><span class="sb-val mono">${d.lat.toFixed(6)}°</span></div>
+      <div class="sb-row"><span class="sb-key">Bujur</span><span class="sb-val mono">${d.lon.toFixed(6)}°</span></div>
+      <div class="sb-row"><span class="sb-key">Kecepatan</span>
+        <span class="sb-val"><span style="background:${c}22;color:${c};border:1px solid ${c}33;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">${d.speed != null ? `${fmt(d.speed)} kn` : '—'}</span></span>
+      </div>
+      <div class="sb-row"><span class="sb-key">Course</span><span class="sb-val mono">${fmt(d.course)}°</span></div>
+      <div class="sb-row"><span class="sb-key">Heading</span><span class="sb-val mono">${fmt(d.heading)}°</span></div>
+      <div class="sb-row"><span class="sb-key">Update</span><span class="sb-val dim" style="font-size:11px">${fmt(d.waktu)}</span></div>
+      <div class="sb-row"><span class="sb-key">Trail AIS</span><span class="sb-val">${(ships[sidebarKey]?.trail?.length||0)} titik</span></div>
+    </div>`;
+}
+
+function focusHistEvent(lat, lon) { map.setView([lat, lon], 10, { animate:true }); }
+
+// ── SIDEBAR TRACK HISTORY ─────────────────────────────────────────────────────
+function renderSidebarTrack(track) {
+  // Hapus section lama jika ada
+  const old = document.getElementById('sb-track-section');
+  if (old) old.remove();
+
+  if (!track.length) return;
+
+  // Urutkan ascending (terlama → terbaru) untuk tampilan kronologis
+  const sorted = [...track].sort((a, b) => {
+    if (!a.timestamp) return 1;
+    if (!b.timestamp) return -1;
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  });
+
+  const rows = sorted.map((p, i) => {
+    const ts  = p.timestamp ? new Date(p.timestamp).toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    const spd = p.speed != null ? `${Number(p.speed).toFixed(1)} kn` : '—';
+    const c   = aisColor(p.speed != null ? Number(p.speed) : null);
+    const isFirst = i === 0;
+    const isLast  = i === sorted.length - 1;
+    const label   = isFirst ? 'Start' : isLast ? 'End' : null;
+    return `<div class="track-row" onclick="map.setView([${p.lat},${p.lon}],13,{animate:true})">
+      <div class="track-row-left">
+        <span class="track-dot" style="background:${isFirst?'#3fb950':isLast?'#f85149':c}"></span>
+        <div>
+          <div class="track-time">${ts}${label?` <span class="track-label">${label}</span>`:''}</div>
+          <div class="track-coord">${p.lat.toFixed(5)}°, ${p.lon.toFixed(5)}°</div>
+        </div>
+      </div>
+      <span class="track-speed" style="color:${c}">${spd}</span>
+    </div>`;
+  }).join('');
+
+  const section = document.createElement('div');
+  section.id = 'sb-track-section';
+  section.className = 'sb-section';
+  section.innerHTML = `
+    <div class="sb-section-title">
+      RIWAYAT POSISI
+      <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">${sorted.length} titik</span>
+    </div>
+    <div class="track-list">${rows}</div>`;
+  document.getElementById('sidebar-body').appendChild(section);
+
+  // Scroll ke bawah agar section baru terlihat
+  const body = document.getElementById('sidebar-body');
+  setTimeout(() => body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }), 80);
+}
+
+// ── MARKER VISIBILITY ─────────────────────────────────────────────────────────
+function hideOtherMarkers() {
+  for (const [k,s] of Object.entries(ships)) { if (k !== sidebarKey) map.removeLayer(s.marker); }
+  historyLayer.clearLayers();
+}
+function showAllMarkers() {
+  for (const s of Object.values(ships)) { if (!map.hasLayer(s.marker)) s.marker.addTo(map); }
+  if (sidebarKey && ships[sidebarKey]) showHistoryMarkers(ships[sidebarKey].data);
+}
+
+// ── TRAJECTORY ────────────────────────────────────────────────────────────────
+async function toggleTraj() {
+  if (!sidebarKey || !ships[sidebarKey]) return;
+  const btn  = document.getElementById('sb-traj-btn');
+  const info = document.getElementById('sb-traj-info');
+  const s    = ships[sidebarKey];
+
+  if (trajActive) {
+    sidebarTrajLayer.clearLayers(); trajActive = false;
+    showAllMarkers();
+    btn.className = 'sb-btn'; btn.textContent = 'Tampilkan Trajectory';
+    info.textContent = '';
+    const ts = document.getElementById('sb-track-section'); if (ts) ts.remove();
+    return;
+  }
+  if (s.data.source === 'ais') {
+    const trail = s.trail || [];
+    if (trail.length < 2) { info.textContent = 'Trail belum cukup (min 2 titik).'; return; }
+    hideOtherMarkers(); plotSidebarTrail(trail);
+    trajActive = true; btn.className = 'sb-btn traj-on'; btn.textContent = 'Sembunyikan Trajectory';
+    info.textContent = `Trail AIS · ${trail.length} titik`; return;
+  }
+  if (!s.data.vesselId) { info.textContent = 'vessel_id tidak tersedia.'; return; }
+  btn.className = 'sb-btn loading'; btn.textContent = 'Mengambil…'; info.textContent = '';
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const r = await fetch(apiUrl(`/api/gfw/track?vessel_id=${encodeURIComponent(s.data.vesselId)}&start_date=2012-01-01&end_date=${today}`));
+    const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    const track = j.track || [];
+    if (track.length >= 2) {
+      hideOtherMarkers(); plotSidebarTrail(track.map(p=>[p.lat,p.lon]), track);
+      trajActive = true; btn.className = 'sb-btn traj-on'; btn.textContent = 'Sembunyikan Trajectory';
+      info.textContent = `${j.count} titik · ${j.source === 'events' ? 'dari event history' : 'raw track'}`;
+      renderSidebarTrack(track);
+    } else {
+      btn.className = 'sb-btn'; btn.textContent = 'Tampilkan Trajectory';
+      info.textContent = 'Tidak ada data trajectory.';
+    }
+  } catch {
+    btn.className = 'sb-btn'; btn.textContent = 'Tampilkan Trajectory';
+    info.textContent = 'Trajectory tidak tersedia.';
+  }
+}
+
+function plotSidebarTrail(latlngs, trackData = []) {
+  sidebarTrajLayer.clearLayers(); if (!latlngs.length) return;
+  if (latlngs.length >= 2)
+    L.polyline(latlngs, { color:'#f85149', weight:2, opacity:.85 }).addTo(sidebarTrajLayer);
+  L.circleMarker(latlngs[0], { radius:5, color:'#3fb950', fillColor:'#3fb950', fillOpacity:1 }).bindPopup('Start').addTo(sidebarTrajLayer);
+  L.circleMarker(latlngs[latlngs.length-1], { radius:5, color:'#f85149', fillColor:'#f85149', fillOpacity:1 }).bindPopup('End').addTo(sidebarTrajLayer);
+  const step = Math.max(1, Math.ceil(latlngs.length / 60));
+  latlngs.forEach((ll,i) => {
+    if (i%step!==0 || i===0 || i===latlngs.length-1) return;
+    const p = trackData[i]||{};
+    L.circleMarker(ll, { radius:2.5, color:'#d29922', fillColor:'#d29922', fillOpacity:.8 })
+      .bindPopup(`${p.timestamp||''}<br>Speed: ${p.speed??'—'} kn`).addTo(sidebarTrajLayer);
+  });
+  try { map.fitBounds(L.polyline(latlngs).getBounds(), { padding:[40,80] }); } catch {}
+}
+
+// ── MENU HALAMAN (TOMBOL TIGA GARIS) ─────────────────────────────────────────
+// Klik tombol = buka/tutup. Menu juga menutup kalau klik di luar atau tekan Esc.
+function toggleNavMenu(force) {
+  const menu = document.getElementById('nav-menu');
+  const btn = document.getElementById('btn-nav-menu');
+  const open = force ?? !menu.classList.contains('open');
+  menu.classList.toggle('open', open);
+  btn.classList.toggle('open', open);
+  btn.setAttribute('aria-expanded', String(open));
+}
+document.addEventListener('click', e => { if (!e.target.closest('#nav-menu, #btn-nav-menu')) toggleNavMenu(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleNavMenu(false); });
+
+// ── TOOL PANEL ────────────────────────────────────────────────────────────────
+function togglePanel() {
+  const p = document.getElementById('tool-panel');
+  const show = getComputedStyle(p).display !== 'block';
+  p.style.display = show ? 'block' : 'none';
+  document.getElementById('btn-tools').classList.toggle('active', show);
+  if (show && !queryCatalogLoaded) loadQueryCatalog();
+}
+function closeToolPanel() {
+  const p = document.getElementById('tool-panel');
+  if (p) p.style.display = 'none';
+  document.getElementById('btn-tools')?.classList.remove('active');
+}
+function switchTab(tab) {
+  document.getElementById('queries-view').style.display = tab==='queries'?'block':'none';
+  document.getElementById('track-view').style.display   = tab==='track'?'block':'none';
+  document.getElementById('tab-queries').classList.toggle('active', tab==='queries');
+  document.getElementById('tab-track').classList.toggle('active',   tab==='track');
+  if (tab==='queries' && !queryCatalogLoaded) loadQueryCatalog();
+}
+async function loadQueryCatalog() {
+  const list = document.getElementById('query-list');
+  list.textContent = 'Memuat…';
+  try {
+    const r = await fetch(apiUrl('/api/gfwr/queries'));
+    const d = await r.json();
+    queryCatalogLoaded = true;
+    list.innerHTML = (d.queries||[]).map(q => `
+      <div class="query-item">
+        <div class="query-item-name">${esc(q.name)}</div>
+        <div class="query-item-meta">${esc(q.category)} · ${esc(q.endpoint)}<br>
+        Dataset: ${esc((q.datasets||[]).join(', ')||'—')}<br>
+        ${q.description ? esc(q.description) : ''}</div>
+      </div>`).join('');
+  } catch (err) { list.textContent = 'Gagal memuat: ' + err.message; }
+}
+function setDefaultDates() {
+  const end=new Date(), start=new Date(end);
+  start.setDate(start.getDate()-30);
+  document.getElementById('track-start').value = start.toISOString().slice(0,10);
+  document.getElementById('track-end').value   = end.toISOString().slice(0,10);
+}
+async function searchVessel() {
+  const q=document.getElementById('vessel-query').value.trim(), el=document.getElementById('vessel-results');
+  if (!q) return;
+  selectedVessel=null; document.getElementById('load-track').disabled=true;
+  el.innerHTML='<div style="color:var(--text-2);font-size:12px">Mencari…</div>';
+  try {
+    const r=await fetch(apiUrl(`/api/gfw/vessels/search?query=${encodeURIComponent(q)}&limit=8`));
+    const d=await r.json(); if (d.error) throw new Error(d.error);
+    if (!d.entries?.length) { el.innerHTML='<div style="color:var(--text-2);font-size:12px">Tidak ada hasil.</div>'; return; }
+    window.__vr=d.entries;
+    el.innerHTML=d.entries.map((v,i)=>`
+      <button class="vessel-item" onclick="selectVessel(${i})">
+        <div class="vessel-item-name">${esc(v.ship_name||'Unknown')}</div>
+        <div class="vessel-item-meta">MMSI: ${esc(v.mmsi||'—')} · IMO: ${esc(v.imo||'—')} · ${esc(v.flag||'—')}</div>
+      </button>`).join('');
+  } catch (err) { el.innerHTML=`<div style="color:var(--text-2);font-size:12px">${esc(err.message)}</div>`; }
+}
+function selectVessel(i) {
+  selectedVessel=(window.__vr||[])[i];
+  document.querySelectorAll('.vessel-item').forEach((el,j)=>el.classList.toggle('active',i===j));
+  document.getElementById('load-track').disabled=!selectedVessel?.vessel_id;
+  document.getElementById('track-summary').textContent=selectedVessel?.vessel_id?`Dipilih: ${selectedVessel.ship_name||'Unknown'}`:'vessel_id tidak tersedia';
+}
+async function loadTrack() {
+  if (!selectedVessel?.vessel_id) return;
+  const start=document.getElementById('track-start').value, end=document.getElementById('track-end').value;
+  const sum=document.getElementById('track-summary');
+  sum.textContent='Mengambil trajectory…';
+  try {
+    const r=await fetch(apiUrl(`/api/gfw/track?vessel_id=${encodeURIComponent(selectedVessel.vessel_id)}&start_date=${start}&end_date=${end}`));
+    const d=await r.json(); if (d.error) throw new Error(d.error);
+    plotTraj(d.track||[]);
+    sum.textContent=`${d.count} titik · ${d.source} · ${start} → ${end}`;
+  } catch (err) { sum.textContent='Error: '+err.message; }
+}
+function plotTraj(track) {
+  trajLayer.clearLayers(); if (!track.length) return;
+  const ll=track.map(p=>[p.lat,p.lon]);
+  const line=L.polyline(ll,{color:'#f85149',weight:2.5,opacity:.9}).addTo(trajLayer);
+  L.circleMarker(ll[0],{radius:5,color:'#3fb950',fillColor:'#3fb950',fillOpacity:1}).bindPopup('Start').addTo(trajLayer);
+  L.circleMarker(ll[ll.length-1],{radius:5,color:'#f85149',fillColor:'#f85149',fillOpacity:1}).bindPopup('End').addTo(trajLayer);
+  const step=Math.max(1,Math.ceil(track.length/80));
+  track.forEach((p,i)=>{ if(i%step!==0) return; L.circleMarker([p.lat,p.lon],{radius:2,color:'#d29922',fillColor:'#d29922',fillOpacity:.7}).bindPopup(`${p.timestamp||''}<br>Speed: ${p.speed??'—'} kn`).addTo(trajLayer); });
+  map.fitBounds(line.getBounds(),{padding:[30,30]});
+}
+function clearTraj() { trajLayer.clearLayers(); document.getElementById('track-summary').textContent=''; }
+
+// ── AIS KEY MODAL ─────────────────────────────────────────────────────────────
+
+// ── UTILS ──────────────────────────────────────────────────────────────────────
+function esc(v) { return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Auto-prune AIS: buang kapal yang tidak memberi kabar lebih dari 10 menit (marker GFW tidak ikut dibuang)
+setInterval(()=>{
+  if (mode!=='ais' && mode!=='ai') return;
+  const cut=Date.now()-10*60_000;
+  for (const [k,s] of Object.entries(ships)) { if (s.data.source==='ais' && s.lastSeen<cut) { map.removeLayer(s.marker); delete ships[k]; } }
+  document.getElementById('ship-count').textContent=Object.keys(ships).length;
+  const sv=document.getElementById('ais-ship-val'); if (sv) sv.textContent=Object.keys(ships).length;
+  updateAiCounters();
+},60_000);
+
+// ── AI INFERENCE (LAMA) ───────────────────────────────────────────────────────
+// Tampilan hasil server inference Hugging Face yang sudah tidak aktif; tidak lagi dipanggil.
+// Akan diganti hasil H5 live dari server/h5-worker.py (Tahap B).
+let aiResults  = [];
+let aiRawTrack = [];
+const aiLayer      = L.layerGroup().addTo(map);
+const aiTrackLayer = L.layerGroup().addTo(map);
+
+function gearShortLabel(label) {
+  const m = {
+    'drifting_longlines': 'Drift Longline',
+    'set_longlines':      'Set Longline',
+    'set_gillnets':       'Gillnet',
+    'trawlers':           'Trawler',
+    'trollers':           'Troller',
+    'purse_seines':       'Purse Seine',
+    'pots_and_traps':     'Pots & Traps',
+    'squid_jig':          'Squid Jig',
+    'other_fishing':      'Other Fishing',
+    'fishing':            'Fishing',
+  };
+  return m[(label||'').toLowerCase()] || (label || '?');
+}
+
+function gearColor(label) {
+  const m = {
+    'drifting_longlines': '#4493f8',
+    'set_longlines':      '#d29922',
+    'set_gillnets':       '#a371f7',
+    'trawlers':           '#e3901a',
+    'trollers':           '#3fb950',
+    'purse_seines':       '#39c5cf',
+    'fixed_gear':         '#a371f7',
+    'pots_and_traps':     '#f85149',
+    'squid_jig':          '#f7c948',
+    'other_fishing':      '#8b949e',
+    'fishing':            '#3fb950',
+  };
+  return m[(label||'').toLowerCase()] || '#8b949e';
+}
+function spoofColor(label) { return (label||'').toLowerCase().includes('spoof') ? '#f85149' : '#3fb950'; }
+function darkColor(label)  { return (label||'').toLowerCase().includes('dark')  ? '#e3901a' : '#3fb950'; }
+
+function makeAiIcon(vessel, selected) {
+  const gear  = vessel.tasks?.gear;
+  const spoof = vessel.tasks?.spoofing;
+  const dark  = vessel.tasks?.godark;
+  const alert = (spoof?.pred_label||'').toLowerCase().includes('spoof') ||
+                (dark?.pred_label||'').toLowerCase().includes('dark');
+  const c  = gear ? gearColor(gear.pred_label) : '#8b949e';
+  const sz = selected ? 18 : 13;
+  const ring = alert
+    ? `border:2px solid #f85149;box-shadow:0 0 8px #f8514988;`
+    : `border:2px solid #090c10;`;
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center">
+      <div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};${ring}transition:.12s"></div>
+    </div>`,
+    iconSize:[30,30], iconAnchor:[15,15],
+  });
+}
+
+let _aiCounterTimer = null;
+function updateAiCounters() {
+  if (mode !== 'ai') return;
+  if (_aiCounterTimer) return;
+  _aiCounterTimer = setTimeout(() => {
+    _aiCounterTimer = null;
+    const gfwEl = document.getElementById('ai-cnt-gfw');
+    const aisEl = document.getElementById('ai-cnt-ais');
+    if (gfwEl) gfwEl.textContent = gfwEvents.length || '0';
+    if (aisEl) {
+      const n = Object.values(ships).filter(s => s.data.source === 'ais').length;
+      aisEl.textContent = n || '0';
+    }
+  }, 500);
+}
+
+
+const INFERENCE_LOOP_DELAY_MS = 30_000;
+const AI_CACHE_KEY = 'ai-inference-cache-v2';
+let inferenceLoopStarted = false;
+let inferenceLoopTimer = null;
+let inferenceInFlight = false;
+let aiInferenceMessage = 'Memuat cache inference...';
+
+async function checkInferenceServer() {
+  try {
+    const r = await fetch(apiUrl('/api/inference/health'), { signal: AbortSignal.timeout(8000) });
+    return r.ok;
+  } catch { return false; }
+}
+
+function setInferenceMessage(message) {
+  aiInferenceMessage = message;
+  document.querySelectorAll('#ai-status').forEach(el => {
+    el.textContent = message;
+  });
+}
+
+function saveInferenceCache() {
+  try {
+    localStorage.setItem(AI_CACHE_KEY, JSON.stringify({
+      t: Date.now(),
+      message: aiInferenceMessage,
+      results: aiResults,
+      rawTrack: aiRawTrack,
+    }));
+  } catch {}
+}
+
+function loadInferenceCache() {
+  try {
+    const raw = localStorage.getItem(AI_CACHE_KEY);
+    if (!raw) return;
+    const cached = JSON.parse(raw);
+    if (!Array.isArray(cached.results)) return;
+    aiResults = cached.results;
+    aiRawTrack = Array.isArray(cached.rawTrack) ? cached.rawTrack : [];
+    aiInferenceMessage = cached.message || `${aiResults.length} kapal dari cache lokal.`;
+  } catch {}
+}
+
+function renderInferenceState() {
+  setInferenceMessage(aiInferenceMessage);
+  const resultEls = [...document.querySelectorAll('#ai-results')];
+  if (!resultEls.length) return;
+
+  if (!aiResults.length) {
+    const emptyHtml = '<div style="color:var(--text-3);font-size:12px">Inference background sedang berjalan. Hasil akan muncul otomatis.</div>';
+    resultEls.forEach(el => { el.innerHTML = emptyHtml; });
+    return;
+  }
+
+  renderAiResults(aiResults);
+  plotAiMarkers(aiResults);
+}
+
+function mergeInferenceData(data) {
+  const byMmsi = new Map(aiResults.map(v => [String(v.mmsi), v]));
+  (data.vessels || []).forEach(v => {
+    if (v?.mmsi != null) byMmsi.set(String(v.mmsi), v);
+  });
+  aiResults = [...byMmsi.values()];
+
+  const trackByKey = new Map(aiRawTrack.map(p => [`${p.mmsi}|${p.timestamp}|${p.lat}|${p.lon}`, p]));
+  (data.raw_track || []).forEach(p => {
+    if (p?.mmsi == null || p?.timestamp == null) return;
+    trackByKey.set(`${p.mmsi}|${p.timestamp}|${p.lat}|${p.lon}`, p);
+  });
+  aiRawTrack = [...trackByKey.values()];
+}
+
+async function runInference() {
+  if (inferenceInFlight) return;
+  inferenceInFlight = true;
+
+  setInferenceMessage('Memeriksa server inference…');
+  const serverOk = await checkInferenceServer();
+  if (!serverOk) {
+    setInferenceMessage('Server inference tidak berjalan atau sedang cold start.');
+    inferenceInFlight = false;
+    return;
+  }
+
+  try {
+    const { start, end } = gfwDateRange();
+    const params = new URLSearchParams({
+      start_date: start,
+      end_date: end,
+      max_vessels: '0',
+      task: 'all',
+    });
+
+    setInferenceMessage('Menghubungi server inference…');
+    const r = await fetch(apiUrl(`/api/inference/gfw/stream?${params}`));
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: `HTTP ${r.status}` }));
+      throw new Error(err.detail || JSON.stringify(err));
+    }
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let nTotal = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // simpan baris terakhir yang mungkin belum lengkap
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (data.type === 'discovered') {
+          nTotal = data.n_total;
+          setInferenceMessage(`Ditemukan ${nTotal} kapal, memulai fetch & inference…`);
+
+        } else if (data.type === 'vessel' && data.vessel) {
+          mergeInferenceData({ vessels: [data.vessel], raw_track: data.raw_track || [] });
+          renderInferenceState();
+          setInferenceMessage(`Inference ${data.vessel_index}/${nTotal} — ${data.vessel.mmsi} selesai. Total ${aiResults.length} kapal.`);
+
+        } else if (data.type === 'vessel_skip') {
+          setInferenceMessage(`Inference ${data.vessel_index}/${nTotal} — ${data.mmsi} tidak ada data.`);
+
+        } else if (data.type === 'done') {
+          setInferenceMessage(`Selesai ${data.elapsed_s}s — ${data.n_vessels} kapal diproses. Total ${aiResults.length} kapal.`);
+
+        } else if (data.type === 'error') {
+          throw new Error(data.error);
+        }
+      }
+    }
+  } catch (err) {
+    setInferenceMessage('Error: ' + err.message);
+    console.error('[inference]', err);
+  } finally {
+    inferenceInFlight = false;
+  }
+}
+
+async function syncInferenceResults() {
+  if (inferenceInFlight) return;
+  inferenceInFlight = true;
+
+  try {
+    if (!aiResults.length) setInferenceMessage('Mengambil hasil inference terbaru dari backend...');
+    const r = await fetch(apiUrl('/api/inference/batch/latest'));
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: `HTTP ${r.status}` }));
+      throw new Error(err.detail || JSON.stringify(err));
+    }
+
+    const data = await r.json();
+    mergeInferenceData(data);
+    saveInferenceCache();
+    renderInferenceState();
+    setInferenceMessage(`${data.vessels?.length || 0} kapal dari backend - total tampil ${aiResults.length} kapal.`);
+    saveInferenceCache();
+  } catch (err) {
+    setInferenceMessage('Error: ' + err.message);
+    console.error('[inference-sync]', err);
+  } finally {
+    inferenceInFlight = false;
+  }
+}
+
+function startInferenceLoop() {
+  if (inferenceLoopStarted) return;
+  inferenceLoopStarted = true;
+
+  const tick = async () => {
+    await syncInferenceResults();
+    inferenceLoopTimer = setTimeout(tick, INFERENCE_LOOP_DELAY_MS);
+  };
+
+  tick();
+}
+
+function renderAiResults(vessels) {
+  const els = [...document.querySelectorAll('#ai-results')];
+  if (!els.length) return;
+  if (!vessels.length) {
+    const emptyHtml = '<div style="color:var(--text-3);font-size:12px">Tidak ada hasil. Coba perluas rentang tanggal.</div>';
+    els.forEach(el => { el.innerHTML = emptyHtml; });
+    return;
+  }
+  const html = vessels.map((v, i) => {
+    const gear  = v.tasks?.gear;
+    const spoof = v.tasks?.spoofing;
+    const dark  = v.tasks?.godark;
+    const gc    = gear ? gearColor(gear.pred_label) : '#8b949e';
+
+    const gearHtml = gear ? `
+      <div class="ai-task-row">
+        <span class="ai-task-label">Gear</span>
+        <span class="ai-task-pred" style="color:${gc}">${esc(gear.pred_label)}</span>
+      </div>
+      <div class="ai-conf-bar"><div class="ai-conf-fill" style="width:${Math.round(gear.confidence*100)}%;background:${gc}"></div></div>` : '';
+
+    const spoofAlert = (spoof?.pred_label||'').toLowerCase().includes('spoof');
+    const darkAlert  = (dark?.pred_label||'').toLowerCase().includes('dark');
+
+    const alertHtml = (spoofAlert || darkAlert) ? `
+      <div class="ai-alert-bar" style="background:#f8514922;color:#f85149;border:1px solid #f8514944">
+        <span>⚠</span>
+        <span>${spoofAlert ? 'Spoofing terdeteksi' : ''}${spoofAlert && darkAlert ? ' · ' : ''}${darkAlert ? 'Go Dark terdeteksi' : ''}</span>
+      </div>` : '';
+
+    const spoofHtml = spoof && !spoofAlert ? `
+      <div class="ai-task-row" style="margin-top:3px">
+        <span class="ai-task-label">Spoofing</span>
+        <span class="ai-badge" style="background:#3fb95022;color:#3fb950;border:1px solid #3fb95044">${esc(spoof.pred_label)}</span>
+      </div>` : '';
+
+    const darkHtml = dark && !darkAlert ? `
+      <div class="ai-task-row">
+        <span class="ai-task-label">Go Dark</span>
+        <span class="ai-badge" style="background:#3fb95022;color:#3fb950;border:1px solid #3fb95044">${esc(dark.pred_label)}</span>
+      </div>` : '';
+
+    const posText = v.last_lat != null ? `${v.last_lat.toFixed(4)}°, ${v.last_lon.toFixed(4)}°` : 'Posisi tidak tersedia';
+
+    return `<div class="ai-vessel-card" onclick="focusAiVessel(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+        <span class="ai-vessel-name">MMSI: ${esc(v.mmsi)}</span>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button onclick="event.stopPropagation();plotAiTrajectory('${esc(v.mmsi)}')"
+            style="font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid var(--border-2);
+                   background:var(--surface-2);color:var(--blue);cursor:pointer"
+            title="Tampilkan trajectory">Track</button>
+          <span style="font-size:10px;color:var(--text-3)">${i+1}/${vessels.length}</span>
+        </div>
+      </div>
+      <div class="ai-vessel-mmsi">${posText}</div>
+      ${gearHtml}${spoofHtml}${darkHtml}${alertHtml}
+    </div>`;
+  }).join('');
+  els.forEach(el => { el.innerHTML = html; });
+}
+
+function plotAiMarkers(vessels) {
+  aiLayer.clearLayers();
+  vessels.forEach((v, i) => {
+    if (v.last_lat == null || v.last_lon == null) return;
+    const icon   = makeAiIcon(v, false);
+    const marker = L.marker([v.last_lat, v.last_lon], { icon }).addTo(aiLayer);
+
+    const gear  = v.tasks?.gear;
+    const spoof = v.tasks?.spoofing;
+    const dark  = v.tasks?.godark;
+    const spoofAlert = (spoof?.pred_label||'').toLowerCase().includes('spoof');
+    const darkAlert  = (dark?.pred_label||'').toLowerCase().includes('dark');
+    const gc = gear ? gearColor(gear.pred_label) : '#8b949e';
+
+    // ── Permanent label di peta ───────────────────────────────────────
+    let tipHtml = `<div style="font-weight:700;color:#cdd9e5;margin-bottom:2px">MMSI ${esc(v.mmsi)}</div>`;
+    if (gear) {
+      const pct = Math.round(gear.confidence * 100);
+      tipHtml += `<div style="color:${gc};font-weight:700">${esc(gearShortLabel(gear.pred_label))} <span style="color:var(--text-3);font-weight:400">${pct}%</span></div>`;
+    }
+    if (spoofAlert) tipHtml += `<div style="color:#f85149;font-weight:700;margin-top:1px">⚠ Spoofing</div>`;
+    if (darkAlert)  tipHtml += `<div style="color:#e3901a;font-weight:700;margin-top:1px">⚠ Go Dark</div>`;
+
+    marker.bindTooltip(tipHtml, {
+      permanent: true,
+      direction: 'right',
+      offset: [8, 0],
+      className: 'ai-map-tip',
+    });
+
+    // ── Popup detail saat diklik ──────────────────────────────────────
+    let popup = `<div class="popup-name">MMSI: ${esc(v.mmsi)}</div>`;
+    if (gear)  popup += `<div class="popup-row"><span>Gear</span><b style="color:${gc}">${esc(gear.pred_label)}</b></div>`;
+    if (spoof) popup += `<div class="popup-row"><span>Spoofing</span><b style="color:${spoofColor(spoof.pred_label)}">${esc(spoof.pred_label)}</b></div>`;
+    if (dark)  popup += `<div class="popup-row"><span>Go Dark</span><b style="color:${darkColor(dark.pred_label)}">${esc(dark.pred_label)}</b></div>`;
+    popup += `<div class="popup-coord">${v.last_lat.toFixed(4)}°, ${v.last_lon.toFixed(4)}°</div>`;
+    marker.bindPopup(popup, { maxWidth:220 });
+    // Dashboard final memakai marker bersih tanpa label MMSI permanen di peta.
+    marker.unbindTooltip();
+
+    marker.on('click', () => focusAiVessel(i));
+  });
+}
+
+function focusAiVessel(i) {
+  const v = aiResults[i];
+  if (!v || v.last_lat == null) return;
+  map.setView([v.last_lat, v.last_lon], 10, { animate:true });
+  openIntegratedSarDetail(null, {
+    mmsi: v.mmsi,
+    name: v.name,
+    ais: { lat: v.last_lat, lon: v.last_lon },
+  });
+  plotAiTrajectory(v.mmsi);
+}
+
+function openAiDetail(i) {
+  const v = aiResults[i];
+  if (!v) return;
+  closeToolPanel();
+  sidebarKey = null;
+  trajActive = false;
+
+  const gear  = v.tasks?.gear;
+  const spoof = v.tasks?.spoofing;
+  const dark  = v.tasks?.godark;
+  const gc    = gear ? gearColor(gear.pred_label) : '#8b949e';
+  const spoofAlert = (spoof?.pred_label||'').toLowerCase().includes('spoof');
+  const darkAlert  = (dark?.pred_label||'').toLowerCase().includes('dark');
+  const trackCount = aiRawTrack.filter(r => String(r.mmsi) === String(v.mmsi)).length;
+
+  document.getElementById('sidebar-title').textContent = v.name || `MMSI: ${v.mmsi}`;
+  document.getElementById('sidebar-sub').textContent = 'AI Inference';
+  document.getElementById('sidebar-body').innerHTML = `
+    <div class="sb-section">
+      <div class="sb-section-title">
+        AI PREDICTION
+        <span class="sb-section-badge" style="background:${gc}22;color:${gc};border:1px solid ${gc}44">${gear ? esc(gearShortLabel(gear.pred_label)) : 'N/A'}</span>
+      </div>
+      ${gear ? `<div class="sb-row"><span class="sb-key">Gear</span><span class="sb-val" style="color:${gc}">${esc(gear.pred_label)} (${Math.round(gear.confidence*100)}%)</span></div>` : ''}
+      ${spoof ? `<div class="sb-row"><span class="sb-key">Spoofing</span><span class="sb-val" style="color:${spoofColor(spoof.pred_label)}">${esc(spoof.pred_label)}${spoof.confidence != null ? ` (${Math.round(spoof.confidence*100)}%)` : ''}</span></div>` : ''}
+      ${dark ? `<div class="sb-row"><span class="sb-key">Go Dark</span><span class="sb-val" style="color:${darkColor(dark.pred_label)}">${esc(dark.pred_label)}${dark.confidence != null ? ` (${Math.round(dark.confidence*100)}%)` : ''}</span></div>` : ''}
+      ${(spoofAlert || darkAlert) ? `<div style="margin:10px 16px;padding:8px 10px;border-radius:4px;background:#f8514922;color:#f85149;border:1px solid #f8514944;font-size:12px;font-weight:700">⚠ ${spoofAlert ? 'Spoofing terdeteksi' : ''}${spoofAlert && darkAlert ? ' · ' : ''}${darkAlert ? 'Go Dark terdeteksi' : ''}</div>` : ''}
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">POSISI TERAKHIR</div>
+      <div class="sb-row"><span class="sb-key">Lintang</span><span class="sb-val mono">${v.last_lat != null ? Number(v.last_lat).toFixed(6) + '°' : '—'}</span></div>
+      <div class="sb-row"><span class="sb-key">Bujur</span><span class="sb-val mono">${v.last_lon != null ? Number(v.last_lon).toFixed(6) + '°' : '—'}</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-section-title">DATA AIS</div>
+      <div class="sb-row"><span class="sb-key">MMSI</span><span class="sb-val mono">${esc(String(v.mmsi || '—'))}</span></div>
+      <div class="sb-row"><span class="sb-key">Titik Trajectory</span><span class="sb-val">${trackCount} titik</span></div>
+    </div>`;
+
+  const btn = document.getElementById('sb-traj-btn');
+  btn.className = 'sb-btn';
+  btn.textContent = trackCount >= 2 ? 'Tampilkan Trajectory' : 'Trajectory (N/A)';
+  btn.onclick = () => plotAiTrajectory(v.mmsi);
+  document.getElementById('sb-traj-info').textContent = trackCount >= 2 ? '' : 'Trajectory inference belum tersedia.';
+  document.getElementById('sidebar').classList.add('open');
+}
+
+function openAiDetailByMmsi(mmsi) {
+  const i = aiResults.findIndex(v => String(v.mmsi) === String(mmsi));
+  if (i >= 0) focusAiVessel(i);
+}
+
+function aiTrackTimeMs(ts) {
+  if (ts == null || ts === '') return 0;
+  if (typeof ts === 'number') return ts * 1000;
+  const n = Number(ts);
+  if (Number.isFinite(n)) return n * 1000;
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+function formatAiTrackTime(ts) {
+  const t = aiTrackTimeMs(ts);
+  return t ? new Date(t).toLocaleString('id-ID') : '';
+}
+
+function plotAiTrajectory(mmsi) {
+  aiTrackLayer.clearLayers();
+  const pts = aiRawTrack
+    .filter(r => String(r.mmsi) === String(mmsi))
+    .filter(r => Number.isFinite(Number(r.lat)) && Number.isFinite(Number(r.lon)))
+    .sort((a, b) => aiTrackTimeMs(a.timestamp) - aiTrackTimeMs(b.timestamp));
+  if (pts.length < 2) {
+    setInferenceMessage(`Trajectory inference belum tersedia untuk MMSI ${mmsi}.`);
+    return;
+  }
+
+  const latlngs = pts.map(p => [Number(p.lat), Number(p.lon)]);
+  const gear = aiResults.find(v => String(v.mmsi) === String(mmsi))?.tasks?.gear;
+  const color = gear ? gearColor(gear.pred_label) : '#4493f8';
+
+  L.polyline(latlngs, { color, weight: 2.5, opacity: 0.85 }).addTo(aiTrackLayer);
+
+  L.circleMarker(latlngs[0], { radius:5, color:'#3fb950', fillColor:'#3fb950', fillOpacity:1, weight:1.5 })
+    .bindPopup(`<b>Start</b><br>MMSI: ${mmsi}<br>${formatAiTrackTime(pts[0].timestamp)}`)
+    .on('click', () => openAiDetailByMmsi(mmsi))
+    .addTo(aiTrackLayer);
+
+  L.circleMarker(latlngs[latlngs.length-1], { radius:5, color:'#f85149', fillColor:'#f85149', fillOpacity:1, weight:1.5 })
+    .bindPopup(`<b>End</b><br>MMSI: ${mmsi}<br>${formatAiTrackTime(pts[pts.length-1].timestamp)}`)
+    .on('click', () => openAiDetailByMmsi(mmsi))
+    .addTo(aiTrackLayer);
+
+  setInferenceMessage(`${pts.length} titik trajectory inference untuk MMSI ${mmsi}.`);
+  map.fitBounds(L.latLngBounds(latlngs), { padding:[60,60], maxZoom:12 });
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+// Server inference lama (Hugging Face) sudah tidak aktif, jadi tidak lagi dihubungi.
+// Data Kalman + citra satelit baru dimuat saat tab AI Inference dibuka.
+setDefaultDates();
+setStatsMode('gfw');
+updateLegend(mode);
+syncLocalKalmanLayer();
+syncWindLayer();
+loadGfwRegionNames();
+loadGfw();
+</script>
+</body>
+</html>

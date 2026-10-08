@@ -59,7 +59,7 @@ a {
   text-decoration: none;
 }
 
-.onx-brand svg {
+.onx-brand img {
   width: 38px;
   height: 38px;
   flex: 0 0 auto;
@@ -90,8 +90,8 @@ a {
 .onx-partners {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 20px;
+  gap: 10px;
+  padding-left: 16px;
   border-left: 1px solid rgba(190, 231, 255, 0.24);
 }
 
@@ -100,6 +100,12 @@ a {
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
+}
+
+/* Ukuran sama dengan logo mitra di halaman pertama (index.html .partner-logo) */
+.onx-partner-logo.is-kemdik {
+  max-width: 36px;
+  height: 34px;
 }
 
 .onx-partner-logo.is-len {
@@ -266,7 +272,7 @@ a {
 }
 
 .onx-filter-panel.is-reports {
-  grid-template-columns: minmax(330px, 1.35fr) minmax(180px, 0.85fr) minmax(160px, 0.75fr) minmax(180px, 0.85fr) minmax(260px, 1.1fr) max-content max-content;
+  grid-template-columns: minmax(262px, 1.35fr) minmax(110px, 0.85fr) minmax(104px, 0.75fr) minmax(110px, 0.85fr) minmax(140px, 1.1fr) max-content max-content;
   align-items: end;
 }
 
@@ -285,7 +291,7 @@ a {
 
 .onx-range {
   display: grid;
-  grid-template-columns: repeat(2, minmax(132px, 1fr));
+  grid-template-columns: repeat(2, minmax(126px, 1fr));
   gap: 8px;
 }
 
@@ -854,6 +860,12 @@ a {
   margin-top: 14px;
 }
 
+@media (max-width: 1360px) {
+  .onx-filter-panel.is-reports {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+}
+
 @media (max-width: 1160px) {
   .onx-shell {
     grid-template-columns: 224px minmax(0, 1fr);
@@ -932,5 +944,256 @@ a {
   .onx-modal-actions .onx-button,
   .onx-pagination .onx-button {
     width: 100%;
+  }
+}
+
+/* ── TEMA TERANG (putih + biru) ──────────────────────────────────────────────
+   Dipakai halaman Anomaly Alert dan Data Reports lewat <body class="onx-body onx-light">, supaya senada dengan
+   panel putih di halaman login. Bar atas tetap biru tua karena logo-logonya berwarna putih.
+   Menghapus kelas "onx-light" dari <body> mengembalikan tema gelap di atas. */
+body.onx-light {
+  color: #0b2f4a;
+  background: #f3f7fb;
+}
+
+.onx-light .onx-shell {
+  background: #f3f7fb;
+}
+
+.onx-light .onx-topbar {
+  border-bottom: 1px solid #0a3a5c;
+  color: #f7fbff;
+  background: #062944;
+  backdrop-filter: none;
+}
+
+.onx-light .onx-sidebar {
+  border-right: 1px solid #d9e4ee;
+  background: #ffffff;
+}
+
+.onx-light .onx-sidebar a {
+  color: #294f68;
+}
+
+.onx-light .onx-sidebar a:hover,
+.onx-light .onx-sidebar a.is-active {
+  border-color: #9cc4e0;
+  color: #045b91;
+  background: #e8f2fa;
+}
+
+.onx-light .onx-kicker,
+.onx-light .onx-section-label {
+  color: #075f92;
+}
+
+.onx-light .onx-page-head h1 {
+  color: #062944;
+}
+
+.onx-light .onx-page-head p {
+  color: #3d5d73;
+}
+
+.onx-light .onx-muted,
+.onx-light .onx-stat span,
+.onx-light .onx-field label,
+.onx-light .onx-checkbox span,
+.onx-light .onx-panel-head p,
+.onx-light .onx-detail-title p,
+.onx-light .onx-preview-title p,
+.onx-light .onx-table th,
+.onx-light .onx-table .onx-empty,
+.onx-light .onx-vessel-name span,
+.onx-light .onx-key span,
+.onx-light .onx-detail-list dt,
+.onx-light .onx-pagination span {
+  color: #5b778a;
+}
+
+.onx-light .onx-stat,
+.onx-light .onx-panel {
+  border: 1px solid #d9e4ee;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(6, 41, 68, 0.07);
+  backdrop-filter: none;
+}
+
+.onx-light .onx-stat strong,
+.onx-light .onx-vessel-name strong,
+.onx-light .onx-key strong,
+.onx-light .onx-detail-list dd,
+.onx-light .onx-panel-head h2,
+.onx-light .onx-detail-title h2,
+.onx-light .onx-preview-title h2 {
+  color: #062944;
+}
+
+.onx-light .onx-field input,
+.onx-light .onx-field select {
+  border: 1px solid #c5d6e4;
+  color: #0b2f4a;
+  background: #ffffff;
+}
+
+.onx-light .onx-field input::placeholder {
+  color: #8aa1b1;
+}
+
+.onx-light .onx-field input:focus,
+.onx-light .onx-field select:focus {
+  border-color: #075f92;
+  box-shadow: 0 0 0 3px rgba(7, 95, 146, 0.15);
+}
+
+.onx-light .onx-tabs {
+  border: 1px solid #d9e4ee;
+  background: #eaf1f7;
+}
+
+.onx-light .onx-tabs button,
+.onx-light .onx-button {
+  border: 1px solid #c5d6e4;
+  color: #0b3d5e;
+  background: #ffffff;
+}
+
+.onx-light .onx-tabs button:hover,
+.onx-light .onx-button:hover {
+  border-color: #075f92;
+  background: #e3f0f9;
+}
+
+.onx-light .onx-tabs button.is-active {
+  border-color: #075f92;
+  color: #ffffff;
+  background: #075f92;
+}
+
+.onx-light .onx-button.is-primary {
+  border-color: #034e7d;
+  color: #ffffff;
+  background: linear-gradient(180deg, #075f92, #034e7d);
+}
+
+.onx-light .onx-button.is-primary:hover {
+  border-color: #034e7d;
+  background: linear-gradient(180deg, #0a6da7, #045b91);
+}
+
+.onx-light .onx-button.is-danger {
+  border-color: #d98a92;
+  color: #a32633;
+  background: #fdecee;
+}
+
+.onx-light .onx-panel-head,
+.onx-light .onx-modal-head {
+  border-bottom: 1px solid #e3ebf2;
+}
+
+.onx-light .onx-table th,
+.onx-light .onx-table td {
+  border-bottom: 1px solid #e6edf3;
+}
+
+.onx-light .onx-table th {
+  background: #f3f7fb;
+}
+
+.onx-light .onx-table tbody tr:hover,
+.onx-light .onx-table tbody tr.is-selected {
+  background: #eaf3fa;
+}
+
+.onx-light .onx-status-new {
+  color: #b3261e;
+  background: #fdecea;
+}
+
+.onx-light .onx-status-reviewed {
+  color: #075f92;
+  background: #e3f0f9;
+}
+
+.onx-light .onx-status-sent {
+  color: #1b7a45;
+  background: #e4f5ea;
+}
+
+.onx-light .onx-key,
+.onx-light .onx-mini-map {
+  border: 1px solid #d9e4ee;
+  background: #f6f9fc;
+}
+
+.onx-light .onx-map-toolbar {
+  border: 1px solid #c5d6e4;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.onx-light .onx-map-toolbar span {
+  color: #294f68;
+}
+
+.onx-light .onx-map-toolbar a {
+  color: #045b91;
+}
+
+.onx-light .onx-modal {
+  background: rgba(6, 41, 68, 0.45);
+}
+
+.onx-light .onx-modal-card {
+  border: 1px solid #c5d6e4;
+  color: #0b2f4a;
+  background: #ffffff;
+  box-shadow: 0 28px 90px rgba(6, 41, 68, 0.28);
+}
+
+.onx-light .onx-close {
+  border: 1px solid #c5d6e4;
+  color: #294f68;
+  background: #ffffff;
+}
+
+.onx-light .onx-alert-preview {
+  margin: 16px 20px;
+  border: 1px solid #d9e4ee;
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: #173b52;
+  background: #f6f9fc;
+}
+
+.onx-light .onx-checkbox label {
+  color: #294f68;
+}
+
+.onx-light .onx-checkbox input,
+.onx-light .onx-record-checkbox {
+  accent-color: #075f92;
+}
+
+.onx-light .onx-toast {
+  border: 1px solid #1b7a45;
+  color: #ffffff;
+  background: #1b7a45;
+  box-shadow: 0 18px 50px rgba(6, 41, 68, 0.22);
+}
+
+.onx-light .onx-pagination {
+  border-top: 1px solid #e3ebf2;
+}
+
+.onx-light .onx-report-card {
+  border: 1px solid #d9e4ee;
+  background: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .onx-light .onx-sidebar {
+    border-bottom: 1px solid #d9e4ee;
   }
 }

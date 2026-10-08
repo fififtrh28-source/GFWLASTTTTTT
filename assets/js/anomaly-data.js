@@ -1,188 +1,22 @@
 (function () {
-  const STORAGE_KEY = "ocean-nexus-anomalies-v1";
-  const HISTORY_KEY = "ocean-nexus-alert-history-v1";
+  // Sumber data halaman Anomaly Alert Center dan Data & Reports.
+  // Isinya SAMA dengan temuan di tab AI Inference pada dashboard peta: file kandidat yang dibaca dashboard.html
+  // (INTEGRATION_DATA_FILES.candidates), ditambah bendera dan IMO kapal dari file metadata penelitian.
+  // Tidak ada data contoh di sini. Yang disimpan di browser hanya status tiap temuan (New / Reviewed / Sent)
+  // dan riwayat alert; data kapalnya selalu dibaca ulang dari file.
+  const CANDIDATES_URL = "KAPAL YG TERDETEKSI/scene_candidates_godark_spoofing_transshipment.csv";
+  const METADATA_URL = "new/metadata/metadata_with_vh_gfw_ais_identity_sog_cog_enriched_FINAL_kalman_estimated.csv";
+  const STATUS_KEY = "ocean-nexus-anomaly-status-v2";
+  const HISTORY_KEY = "ocean-nexus-alert-history-v2";
+  // Kunci lama berisi data contoh; dibuang supaya tidak pernah tampil lagi.
+  const OLD_KEYS = ["ocean-nexus-anomalies-v1", "ocean-nexus-alert-history-v1"];
 
-  const baselineAnomalies = [
-    {
-      id: "hy9",
-      vesselName: "HAI YANG 9",
-      mmsi: "412345678",
-      imo: "9876543",
-      flag: "China",
-      anomalyType: "Dark Vessel",
-      dateISO: "2026-03-12T08:14:00+07:00",
-      dateLabel: "12 Mar 2026 08:14",
-      detectionTime: "12 Mar 2026, 08:14 WIB",
-      location: "5.21\u00b0 S, 112.43\u00b0 E",
-      lat: -5.21,
-      lon: 112.43,
-      confidence: 92,
-      status: "New",
-      region: "Java Sea",
-      lastKnownPort: "Unknown",
-      behavior: "No AIS signal for extended period, but SAR detection indicates active vessel.",
-      remarks: "Potential IUU Fishing",
-    },
-    {
-      id: "fyy886",
-      vesselName: "FU YUAN YU 886",
-      mmsi: "413987654",
-      imo: "9764211",
-      flag: "China",
-      anomalyType: "AIS-SAR Mismatch",
-      dateISO: "2026-03-12T07:56:00+07:00",
-      dateLabel: "12 Mar 2026 07:56",
-      detectionTime: "12 Mar 2026, 07:56 WIB",
-      location: "4.98\u00b0 S, 111.86\u00b0 E",
-      lat: -4.98,
-      lon: 111.86,
-      confidence: 88,
-      status: "New",
-      region: "Java Sea",
-      lastKnownPort: "Ningbo",
-      behavior: "AIS broadcast position differs from SAR vessel detection by more than expected tolerance.",
-      remarks: "Requires operator verification",
-    },
-    {
-      id: "zt6",
-      vesselName: "ZHONG TAI 6",
-      mmsi: "412780114",
-      imo: "9643025",
-      flag: "China",
-      anomalyType: "Unauthorized Area",
-      dateISO: "2026-03-12T07:34:00+07:00",
-      dateLabel: "12 Mar 2026 07:34",
-      detectionTime: "12 Mar 2026, 07:34 WIB",
-      location: "6.14\u00b0 S, 113.02\u00b0 E",
-      lat: -6.14,
-      lon: 113.02,
-      confidence: 85,
-      status: "New",
-      region: "Java Sea",
-      lastKnownPort: "Unknown",
-      behavior: "Vessel movement enters restricted monitoring polygon without prior clearance metadata.",
-      remarks: "Potential unauthorized fishing activity",
-    },
-    {
-      id: "th12",
-      vesselName: "TAI HONG 12",
-      mmsi: "413550902",
-      imo: "9821104",
-      flag: "China",
-      anomalyType: "Fishing Behavior",
-      dateISO: "2026-03-11T22:40:00+07:00",
-      dateLabel: "11 Mar 2026 22:40",
-      detectionTime: "11 Mar 2026, 22:40 WIB",
-      location: "5.74\u00b0 S, 110.65\u00b0 E",
-      lat: -5.74,
-      lon: 110.65,
-      confidence: 81,
-      status: "Reviewed",
-      region: "Karimata Strait",
-      lastKnownPort: "Unknown",
-      behavior: "Low-speed repeated turns are consistent with fishing activity inside monitoring area.",
-      remarks: "Reviewed by operator",
-    },
-    {
-      id: "lx3",
-      vesselName: "LONG XING 3",
-      mmsi: "412909771",
-      imo: "9712308",
-      flag: "China",
-      anomalyType: "AIS Gap",
-      dateISO: "2026-03-11T19:18:00+07:00",
-      dateLabel: "11 Mar 2026 19:18",
-      detectionTime: "11 Mar 2026, 19:18 WIB",
-      location: "3.86\u00b0 S, 108.72\u00b0 E",
-      lat: -3.86,
-      lon: 108.72,
-      confidence: 79,
-      status: "Reviewed",
-      region: "Karimata Strait",
-      lastKnownPort: "Singapore",
-      behavior: "AIS transmission gap detected near high-risk fishing corridor.",
-      remarks: "Monitor for repeated gaps",
-    },
-    {
-      id: "sd8",
-      vesselName: "SHUN DA 8",
-      mmsi: "413771005",
-      imo: "9638707",
-      flag: "China",
-      anomalyType: "Dark Vessel",
-      dateISO: "2026-03-10T16:25:00+07:00",
-      dateLabel: "10 Mar 2026 16:25",
-      detectionTime: "10 Mar 2026, 16:25 WIB",
-      location: "6.48\u00b0 S, 112.08\u00b0 E",
-      lat: -6.48,
-      lon: 112.08,
-      confidence: 93,
-      status: "Sent",
-      region: "Java Sea",
-      lastKnownPort: "Unknown",
-      behavior: "SAR detection confirms vessel-like object while AIS is inactive.",
-      remarks: "Telegram alert sent",
-    },
-    {
-      id: "nl77",
-      vesselName: "NAN LING 77",
-      mmsi: "412660431",
-      imo: "9786650",
-      flag: "China",
-      anomalyType: "Unauthorized Area",
-      dateISO: "2026-03-10T13:08:00+07:00",
-      dateLabel: "10 Mar 2026 13:08",
-      detectionTime: "10 Mar 2026, 13:08 WIB",
-      location: "2.92\u00b0 S, 109.30\u00b0 E",
-      lat: -2.92,
-      lon: 109.30,
-      confidence: 84,
-      status: "New",
-      region: "Natuna Sea",
-      lastKnownPort: "Unknown",
-      behavior: "Vessel crossed operational boundary and remained inside the monitored area.",
-      remarks: "Potential compliance issue",
-    },
-    {
-      id: "by15",
-      vesselName: "BEI YUAN 15",
-      mmsi: "412440872",
-      imo: "9728046",
-      flag: "China",
-      anomalyType: "AIS-SAR Mismatch",
-      dateISO: "2026-03-09T21:46:00+07:00",
-      dateLabel: "09 Mar 2026 21:46",
-      detectionTime: "09 Mar 2026, 21:46 WIB",
-      location: "7.02\u00b0 S, 114.15\u00b0 E",
-      lat: -7.02,
-      lon: 114.15,
-      confidence: 86,
-      status: "Sent",
-      region: "Bali Sea",
-      lastKnownPort: "Unknown",
-      behavior: "AIS broadcast suggests transit path while SAR detection indicates a different vessel position.",
-      remarks: "Alert delivered for follow-up",
-    },
-  ];
+  const TYPE_LABEL = { spoofing: "Spoofing", godark: "Go Dark", transshipment: "Transshipment" };
+  const REMARKS = "Rule-based candidate; requires verification.";
 
-  const defaultHistory = [
-    {
-      id: "hist-sd8",
-      sentAt: "10 Mar 2026 16:42 WIB",
-      vesselName: "SHUN DA 8",
-      mmsi: "413771005",
-      anomalyType: "Dark Vessel",
-      sentTo: "Telegram",
-    },
-    {
-      id: "hist-by15",
-      sentAt: "09 Mar 2026 22:02 WIB",
-      vesselName: "BEI YUAN 15",
-      mmsi: "412440872",
-      anomalyType: "AIS-SAR Mismatch",
-      sentTo: "Telegram",
-    },
-  ];
+  let baseline = [];
+  let sourceNote = "";
+  let loadError = "";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -205,31 +39,189 @@
     }
   }
 
-  function mergeWithBaseline(savedRecords) {
-    const savedById = new Map((Array.isArray(savedRecords) ? savedRecords : []).map((record) => [record.id, record]));
-    return baselineAnomalies.map((record) => ({ ...record, ...(savedById.get(record.id) || {}) }));
+  // CSV dengan tanda kutip (RFC 4180) → daftar objek, kunci dari baris judul.
+  function parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let cell = "";
+    let quoted = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i += 1; }
+        else if (ch === '"') quoted = false;
+        else cell += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ",") { row.push(cell); cell = ""; }
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i += 1;
+        row.push(cell); cell = "";
+        if (row.length > 1 || row[0] !== "") rows.push(row);
+        row = [];
+      } else cell += ch;
+    }
+    if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+    const header = (rows.shift() || []).map((name) => name.replace(/^﻿/, "").trim());
+    return rows.map((values) => Object.fromEntries(header.map((name, index) => [name, values[index] ?? ""])));
+  }
+
+  const normId = (value) => String(value ?? "").trim().replace(/\.0$/, "");
+  const hasValue = (value) => value !== "" && value !== null && value !== undefined && String(value).toLowerCase() !== "nan";
+
+  // Waktu citra satelit (UTC) → bagian tanggal dalam WIB.
+  function wibParts(utc) {
+    const date = new Date(utc);
+    if (Number.isNaN(date.getTime())) return null;
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(date).map((part) => [part.type, part.value]));
+    const month = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", month: "short" }).format(date);
+    const hour = parts.hour === "24" ? "00" : parts.hour;
+    return {
+      iso: `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:00+07:00`,
+      day: `${parts.day} ${month} ${parts.year}`,
+      time: `${hour}:${parts.minute}`,
+    };
+  }
+
+  function formatLocation(lat, lon) {
+    return `${Math.abs(lat).toFixed(2)}° ${lat < 0 ? "S" : "N"}, ${Math.abs(lon).toFixed(2)}° ${lon < 0 ? "W" : "E"}`;
+  }
+
+  // Ringkasan singkat dasar temuan untuk kolom tabel, diambil dari angka yang ada di datanya (bukan skor).
+  function shortBasis(row, type) {
+    const num = (value, digits) => (hasValue(value) && Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : null);
+    if (type === "godark") {
+      const gap = num(row.AIS_update_time_gap_hours, 0);
+      return gap ? `AIS gap ${Number(gap).toLocaleString("en-US")} h` : "AIS gap";
+    }
+    if (type === "transshipment") {
+      const dist = num(row.neighbor_distance_km, 2);
+      return dist ? `${dist} km to MMSI ${normId(row.neighbor_mmsi)}` : "Nearby vessel";
+    }
+    const dist = num(row.sar_ais_distance_km, 1);
+    if (/SAR-AIS distance/.test(row.evidence || "") && dist) return `SAR-AIS ${dist} km`;
+    const residual = num(row.kalman_pred_residual_m, 0);
+    if (residual) return `Kalman miss ${(Number(residual) / 1000).toFixed(1)} km`;
+    return dist ? `SAR-AIS ${dist} km` : "Position mismatch";
+  }
+
+  async function fetchText(url) {
+    const response = await fetch(encodeURI(url));
+    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+    const text = await response.text();
+    // Situs yang tayang mengembalikan halaman depan untuk alamat yang tidak ada; itu bukan CSV.
+    if (/^\s*<!doctype html|^\s*<html/i.test(text)) throw new Error(`${url}: file not found`);
+    return text;
+  }
+
+  async function load() {
+    OLD_KEYS.forEach((key) => { try { localStorage.removeItem(key); } catch (error) { /* abaikan */ } });
+    try {
+      const [candidateText, metadataText] = await Promise.all([
+        fetchText(CANDIDATES_URL),
+        fetchText(METADATA_URL).catch(() => ""), // bendera/IMO hanya pelengkap; tanpa file ini tetap jalan
+      ]);
+
+      const identity = new Map();
+      for (const row of metadataText ? parseCsv(metadataText) : []) {
+        const mmsi = normId(row.MMSI);
+        if (!mmsi) continue;
+        const known = identity.get(mmsi) || {};
+        identity.set(mmsi, {
+          flag: known.flag || (hasValue(row.gfw_flag) ? row.gfw_flag : ""),
+          imo: known.imo || (hasValue(row.gfw_imo) ? normId(row.gfw_imo) : ""),
+        });
+      }
+
+      const seen = new Set();
+      const records = [];
+      for (const row of parseCsv(candidateText)) {
+        const lat = Number(row.Center_latitude);
+        const lon = Number(row.Center_longitude);
+        const type = String(row.candidate_type || "").toLowerCase();
+        const when = wibParts(row.scene_time_utc);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon) || !when) continue;
+        // Kunci yang sama dengan dashboard peta, supaya jumlah temuannya persis sama.
+        const mmsi = normId(row.MMSI);
+        const id = `${row.scene}|${row.MMSI}|${row.candidate_type}|${lat.toFixed(5)}|${lon.toFixed(5)}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const who = identity.get(mmsi) || {};
+        const aisLat = Number(row.AIS_Latitude);
+        const aisLon = Number(row.AIS_Longitude);
+        records.push({
+          id,
+          vesselName: hasValue(row.Name) ? row.Name : `MMSI ${mmsi}`,
+          mmsi,
+          imo: who.imo || "-",
+          flag: who.flag || "-",
+          shipType: hasValue(row.Ship_Type) ? row.Ship_Type : (hasValue(row.gfw_shiptype) ? row.gfw_shiptype : "-"),
+          anomalyType: TYPE_LABEL[type] || row.candidate_type,
+          dateISO: when.iso,
+          dateLabel: `${when.day} ${when.time}`,
+          detectionTime: `${when.day}, ${when.time} WIB`,
+          location: formatLocation(lat, lon),
+          lat,
+          lon,
+          aisLocation: Number.isFinite(aisLat) && Number.isFinite(aisLon) ? formatLocation(aisLat, aisLon) : "-",
+          basis: shortBasis(row, type),
+          rule: row.rule || "-",
+          evidence: row.evidence || "-",
+          scene: row.scene || "-",
+          status: "New",
+          remarks: REMARKS,
+        });
+      }
+
+      records.sort((a, b) => b.dateISO.localeCompare(a.dateISO) || a.vesselName.localeCompare(b.vesselName));
+      baseline = records;
+      if (records.length) {
+        const first = records[records.length - 1].dateLabel.replace(/\s\d{2}:\d{2}$/, "");
+        const last = records[0].dateLabel.replace(/\s\d{2}:\d{2}$/, "");
+        sourceNote = `Source: ${records.length} findings from the AI Inference tab of the map dashboard (${first} - ${last}). `
+          + "Rule-based candidates from satellite and AIS data; each one requires verification.";
+      } else {
+        sourceNote = "No findings were found in the dashboard data.";
+      }
+    } catch (error) {
+      baseline = [];
+      loadError = error?.message || "data could not be loaded";
+      sourceNote = `Data could not be loaded (${loadError}).`;
+    }
+  }
+
+  function readStatuses() {
+    const saved = read(STATUS_KEY, {});
+    return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
   }
 
   function getAnomalies() {
-    return clone(mergeWithBaseline(read(STORAGE_KEY, baselineAnomalies)));
+    const statuses = readStatuses();
+    return clone(baseline.map((record) => ({ ...record, ...(statuses[record.id] || {}) })));
   }
 
+  // Hanya status dan catatan yang disimpan; data kapalnya tetap dari file.
   function saveAnomalies(records) {
-    write(STORAGE_KEY, records);
+    const statuses = {};
+    (Array.isArray(records) ? records : []).forEach((record) => {
+      if (record.status && record.status !== "New") statuses[record.id] = { status: record.status, remarks: record.remarks };
+    });
+    write(STATUS_KEY, statuses);
   }
 
   function updateAnomaly(id, patch) {
-    const records = getAnomalies();
-    const index = records.findIndex((record) => record.id === id);
-    if (index === -1) return null;
-    records[index] = { ...records[index], ...patch };
-    saveAnomalies(records);
-    return clone(records[index]);
+    const record = baseline.find((item) => item.id === id);
+    if (!record) return null;
+    const statuses = readStatuses();
+    statuses[id] = { ...(statuses[id] || {}), ...patch };
+    write(STATUS_KEY, statuses);
+    return clone({ ...record, ...statuses[id] });
   }
 
   function getAlertHistory() {
-    const history = read(HISTORY_KEY, defaultHistory);
-    return clone(Array.isArray(history) ? history : defaultHistory);
+    const history = read(HISTORY_KEY, []);
+    return clone(Array.isArray(history) ? history : []);
   }
 
   function addAlertHistory(entry) {
@@ -257,13 +249,11 @@
     const newCount = source.filter((record) => record.status === "New").length;
     const reviewed = source.filter((record) => record.status === "Reviewed").length;
     const sent = source.filter((record) => record.status === "Sent").length;
-    const average = total
-      ? Math.round(source.reduce((sum, record) => sum + Number(record.confidence || 0), 0) / total)
-      : 0;
-    return { total, newCount, reviewed, sent, average };
+    return { total, newCount, reviewed, sent };
   }
 
   window.OceanNexusData = {
+    ready: load(),          // selesai saat data dashboard sudah terbaca
     getAnomalies,
     saveAnomalies,
     updateAnomaly,
@@ -271,6 +261,7 @@
     addAlertHistory,
     formatNowWib,
     getSummary,
-    baselineAnomalies: clone(baselineAnomalies),
+    getSourceNote: () => sourceNote,
+    getLoadError: () => loadError,
   };
 })();

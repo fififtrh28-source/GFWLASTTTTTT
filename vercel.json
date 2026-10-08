@@ -1,5 +1,13 @@
 {
+  "functions": {
+    "api/gfw/events.js": {
+      "maxDuration": 120
+    }
+  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
