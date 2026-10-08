@@ -465,14 +465,14 @@
     }
 
     .login-screen {
+      /* Warna panel kiri; dipakai juga oleh gradasi tipis di batas panel supaya sambungannya rata */
+      --login-navy: linear-gradient(180deg, #0a3657 0%, #062c4b 46%, #041f37 100%);
       grid-template-columns: minmax(320px, 0.86fr) minmax(440px, 1.14fr);
-      background: linear-gradient(90deg, rgba(3, 30, 48, 0.74) 0 42%, rgba(248, 252, 255, 0.98) 42% 100%);
+      background: #f4faff;
     }
 
     .login-screen::before {
-      background:
-        linear-gradient(90deg, rgba(2, 52, 79, 0.38) 0 42%, rgba(248, 252, 255, 0) 42% 100%),
-        linear-gradient(180deg, rgba(5, 87, 124, 0.18), rgba(2, 21, 34, 0.28));
+      content: none;
     }
 
     .login-left {
@@ -482,7 +482,23 @@
       display: grid;
       grid-template-rows: 88px 1fr auto;
       padding: 0 clamp(26px, 4vw, 48px) 36px;
-      background: rgba(2, 47, 72, 0.48);
+      background: var(--login-navy);
+    }
+
+    /* Lintasan kapal sangat samar di belakang tulisan Welcome: garis lintasan AIS per jam yang sama dengan
+       dashboard (hiasan saja, tanpa nama kapal). Memudar di dekat logo, titik langkah, dan batas panel. */
+    .login-left::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: url("assets/img/login-lintasan.svg") center / cover no-repeat;
+      opacity: 0.22;
+      -webkit-mask-image: linear-gradient(180deg, transparent 5%, #000 21%, #000 86%, transparent 100%), linear-gradient(90deg, #000 0%, #000 62%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(180deg, transparent 5%, #000 21%, #000 86%, transparent 100%), linear-gradient(90deg, #000 0%, #000 62%, transparent 100%);
+      mask-composite: intersect;
+      pointer-events: none;
     }
 
     /* Header panel kiri login: tanpa padding ganda supaya logo mitra tetap di dalam panel gelap */
@@ -527,6 +543,23 @@
       background:
         linear-gradient(180deg, rgba(248, 252, 255, 0.96), rgba(226, 244, 255, 0.98)),
         rgba(255, 255, 255, 0.96);
+    }
+
+    /* Gradasi tipis di batas panel biru–putih (pengganti garis tegas) */
+    .login-right::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: -1;
+      width: 40px;
+      background:
+        linear-gradient(90deg, rgba(20, 118, 176, 0) 0%, rgba(34, 140, 200, 0.55) 36%, rgba(126, 196, 234, 0.78) 66%, rgba(126, 196, 234, 0) 100%),
+        var(--login-navy);
+      -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.95) 12%, rgba(0, 0, 0, 0.78) 30%, rgba(0, 0, 0, 0.5) 52%, rgba(0, 0, 0, 0.22) 74%, rgba(0, 0, 0, 0.06) 90%, transparent 100%);
+      mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.95) 12%, rgba(0, 0, 0, 0.78) 30%, rgba(0, 0, 0, 0.5) 52%, rgba(0, 0, 0, 0.22) 74%, rgba(0, 0, 0, 0.06) 90%, transparent 100%);
+      pointer-events: none;
     }
 
     .login-right .brand-row {
@@ -622,36 +655,10 @@
       transform: translateY(-50%);
     }
 
-    .login-tools {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 18px 0 26px;
-      color: #2d536b;
-      font-size: 13px;
-    }
-
-    .check {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .check input {
-      width: 15px;
-      height: 15px;
-      accent-color: #05699e;
-    }
-
-    .login-tools a {
-      color: #045b91;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
     .login-submit {
       width: 100%;
       height: 52px;
+      margin-top: 28px;
       border: 0;
       border-radius: 6px;
       color: #ffffff;
@@ -1090,7 +1097,7 @@
 
       .login-screen {
         grid-template-columns: 1fr;
-        background: linear-gradient(180deg, rgba(3, 30, 48, 0.78) 0 44%, rgba(248, 252, 255, 0.98) 44% 100%);
+        background: #f4faff;
       }
 
       .login-left,
@@ -1106,6 +1113,16 @@
 
       .login-right {
         grid-template-rows: auto;
+      }
+
+      .login-right::before {
+        right: 0;
+        bottom: auto;
+        width: auto;
+        height: 18px;
+        background: #041f37;
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 100%);
+        mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 100%);
       }
 
       .login-right .brand-row {
@@ -1152,10 +1169,6 @@
       .screen-footer,
       .map-actions {
         align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .login-tools {
         flex-direction: column;
       }
 
@@ -1304,14 +1317,6 @@
                   </svg>
                 </button>
               </label>
-            </div>
-
-            <div class="login-tools">
-              <label class="check">
-                <input type="checkbox">
-                <span data-i18n="login.remember">Remember me</span>
-              </label>
-              <a href="#" data-i18n="login.forgot">Forgot password?</a>
             </div>
 
             <button class="login-submit" type="submit" data-i18n="login.submit">Login</button>
@@ -1469,8 +1474,6 @@
         "login.subtitle": "Enter your credentials to continue",
         "login.username": "Username",
         "login.password": "Password",
-        "login.remember": "Remember me",
-        "login.forgot": "Forgot password?",
         "login.submit": "Login",
         "login.required": "Enter username and password first.",
         "login.invalid": "Username or password is incorrect.",
@@ -1500,8 +1503,6 @@
         "login.subtitle": "Masukkan kredensial untuk melanjutkan",
         "login.username": "Nama pengguna",
         "login.password": "Kata sandi",
-        "login.remember": "Ingat saya",
-        "login.forgot": "Lupa kata sandi?",
         "login.submit": "Masuk",
         "login.required": "Isi nama pengguna dan kata sandi terlebih dahulu.",
         "login.invalid": "Nama pengguna atau kata sandi salah.",

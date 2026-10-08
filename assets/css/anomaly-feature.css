@@ -607,6 +607,67 @@ a {
   height: 220px;
   display: block;
   border: 0;
+  /* Peta Leaflet (tampilan dashboard peta) di lapisan sendiri, supaya tombol peta tidak menutupi bilah di bawahnya */
+  isolation: isolate;
+  background: #d3e4f0;
+}
+
+.onx-map-frame .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 9px;
+}
+
+/* Titik temuan: belah ketupat yang sama dengan di dashboard peta, warnanya menurut jenis temuan */
+.onx-map-diamond {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onx-map-diamond::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border: 2px solid #090c10;
+  border-radius: 3px;
+  background: var(--c);
+  box-shadow: 0 0 5px var(--c);
+  transform: rotate(45deg);
+}
+
+/* Nama laut dan kota: gaya yang sama dengan dashboard peta */
+.onx-map-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: "Roboto", Arial, sans-serif;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
+}
+
+.onx-map-label.is-city {
+  color: #3c4043;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.onx-map-label.is-city.is-mid {
+  font-size: 13px;
+}
+
+.onx-map-label.is-city.is-major {
+  color: #202124;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.onx-map-label.is-sea {
+  color: #4a7fc1;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
 }
 
 .onx-map-toolbar {

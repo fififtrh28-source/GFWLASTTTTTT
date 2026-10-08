@@ -2001,6 +2001,7 @@ function showAiTip(key, toggle = false) {
 // Kembali ke tampilan awal tab AI Inference (dipanggil saat titik yang sama diklik lagi): semua label,
 // garis lintasan dan panel detail ditutup, lalu peta kembali ke posisi saat tab pertama dibuka.
 let aiHomeBounds = null;
+let linkedFindingKey = null; // temuan yang sedang dibuka lewat tautan (#temuan=…): peta langsung ke kapalnya, tanpa ke tampilan awal dulu
 function resetAiView() {
   aiTipTargets.forEach(t => t.layer.unbindTooltip());
   aiTableSelect(null);
@@ -2462,7 +2463,7 @@ function renderLocalKalman(opts = {}) {
   applyAiPointVisibility();
 
   aiHomeBounds = bounds.length ? L.latLngBounds(bounds) : null;
-  if (opts.fit && bounds.length) {
+  if (opts.fit && bounds.length && !linkedFindingKey) {
     try { map.fitBounds(L.latLngBounds(bounds), { padding: [60, 60], maxZoom: 8 }); } catch {}
   }
 }
@@ -3642,6 +3643,25 @@ function aiRowPointShown(row) {
   const key = row.kind === 'traj' ? 'trajectory' : row.kind === 'h5' ? 'h5' : row.type;
   return pointShow.ai[key] !== false;
 }
+
+// ── TAUTAN LANGSUNG KE SATU TEMUAN ───────────────────────────────────────────
+// dashboard.html#temuan=<kunci temuan> (tombol "View on Interactive Map" di Anomaly Alert Center) membuka tab
+// AI Inference langsung pada temuan itu, sama seperti mengklik barisnya di daftar kapal.
+async function openFindingFromLink() {
+  const m = location.hash.match(/^#temuan=(.+)$/);
+  if (!m) return;
+  let key;
+  try { key = decodeURIComponent(m[1]); } catch { return; }
+  linkedFindingKey = key;
+  setMode('ai');
+  // tunggu sampai daftar kapal dan titik-titiknya selesai digambar
+  for (let i = 0; i < 120 && !(integrationRowsLoaded && aiTable.view.length && aiHomeBounds); i++) await new Promise(r => setTimeout(r, 250));
+  linkedFindingKey = null;
+  const i = aiTable.view.findIndex(r => r.kind === 'cand' && r.key === key);
+  if (i >= 0) focusAiTableRow(i);
+  else if (aiHomeBounds) map.fitBounds(aiHomeBounds, { padding: [60, 60], maxZoom: 8 }); // temuan tidak dikenal: tampilan awal biasa
+}
+window.addEventListener('load', openFindingFromLink);
 
 // ── MENU SAMPING (TOMBOL TIGA GARIS) ─────────────────────────────────────────
 // Klik tombol = tampilkan/sembunyikan menu samping. Menu tetap tampil sampai tombolnya diklik lagi,

@@ -1,3 +1,5 @@
+import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
+
 (function () {
   const dataStore = window.OceanNexusData;
   if (!dataStore) return;
@@ -36,23 +38,66 @@
     return state.records.find((record) => record.id === state.selectedId) || null;
   }
 
-  function mapEmbedUrl(record) {
-    const lat = Number(record.lat);
-    const lon = Number(record.lon);
-    const span = 0.06;
-    const bbox = [
-      (lon - span).toFixed(5),
-      (lat - span).toFixed(5),
-      (lon + span).toFixed(5),
-      (lat + span).toFixed(5),
-    ].join(",");
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(5)},${lon.toFixed(5)}`;
+  // Peta kecil di panel detail: tampilan yang sama dengan dashboard peta (peta dasar Esri Ocean Base, nama laut dan
+  // kota Indonesia, titik belah ketupat berwarna sesuai jenis temuan).
+  const TYPE_COLOR = { "Spoofing": "#f85149", "Go Dark": "#e3901a", "Transshipment": "#a371f7" };
+  let miniMap = null;
+
+  function removeMiniMap() {
+    if (!miniMap) return;
+    try { miniMap.remove(); } catch { /* wadahnya sudah diganti */ }
+    miniMap = null;
   }
 
-  function mapFullUrl(record) {
+  function renderMiniMap(record) {
+    removeMiniMap();
+    const box = document.getElementById("detail-map");
+    const L = window.L;
     const lat = Number(record.lat);
     const lon = Number(record.lon);
-    return `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=13/${lat.toFixed(5)}/${lon.toFixed(5)}`;
+    if (!box || !L || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+    const map = L.map(box, { zoomControl: false, attributionControl: false, scrollWheelZoom: false, minZoom: 4, maxZoom: 12 }).setView([lat, lon], 8);
+    miniMap = map;
+    L.control.zoom({ position: "topright" }).addTo(map);
+    L.control.attribution({ position: "topleft", prefix: false }).addTo(map);
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}", {
+      attribution: '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, GEBCO, NOAA',
+      maxZoom: 12,
+    }).addTo(map);
+
+    map.createPane("placeLabels");
+    map.getPane("placeLabels").style.zIndex = 450;
+    map.getPane("placeLabels").style.pointerEvents = "none";
+    const label = (name, la, lo, cls) => L.marker([la, lo], {
+      pane: "placeLabels", interactive: false, keyboard: false,
+      icon: L.divIcon({ className: "", iconSize: [0, 0], html: `<div class="onx-map-label ${cls}">${escapeHtml(name)}</div>` }),
+    });
+    const labels = [
+      ...SEA_LABELS.map(([name, la, lo, minZoom]) => ({ minZoom, maxZoom: 10, marker: label(name, la, lo, "is-sea") })),
+      ...CITY_LABELS.map(([name, la, lo, minZoom]) => ({ minZoom, maxZoom: 19, marker: label(name, la, lo, `is-city ${minZoom <= 5 ? "is-major" : minZoom === 6 ? "is-mid" : ""}`) })),
+    ];
+    const updateLabels = () => {
+      const z = map.getZoom();
+      for (const l of labels) {
+        const show = z >= l.minZoom && z <= l.maxZoom;
+        if (show && !map.hasLayer(l.marker)) l.marker.addTo(map);
+        else if (!show && map.hasLayer(l.marker)) map.removeLayer(l.marker);
+      }
+    };
+    map.on("zoomend", updateLabels);
+    updateLabels();
+
+    L.marker([lat, lon], {
+      interactive: false, keyboard: false,
+      icon: L.divIcon({ className: "", iconSize: [22, 22], iconAnchor: [11, 11], html: `<div class="onx-map-diamond" style="--c:${TYPE_COLOR[record.anomalyType] || "#8b949e"}"></div>` }),
+    }).addTo(map);
+  }
+
+  // Tombol "View on Interactive Map": membuka dashboard peta kita di tab AI Inference, langsung pada temuan ini
+  // (id temuan di halaman ini sama dengan kunci temuan di dashboard).
+  function mapFullUrl(record) {
+    return `dashboard.html#temuan=${encodeURIComponent(record.id)}`;
   }
 
   function syncRecords() {
@@ -140,6 +185,7 @@
 
   function renderDetail() {
     const record = getSelectedRecord();
+    removeMiniMap();
     if (!record) {
       elements.detailBody.innerHTML = `
         <div class="onx-detail-title">
@@ -213,12 +259,7 @@
       </dl>
 
       <div class="onx-mini-map" aria-label="Interactive map for selected vessel">
-        <iframe
-          class="onx-map-frame"
-          title="Interactive map centered on ${escapeHtml(record.vesselName)}"
-          src="${escapeHtml(mapEmbedUrl(record))}"
-          loading="lazy">
-        </iframe>
+        <div class="onx-map-frame" id="detail-map"></div>
         <div class="onx-map-toolbar">
           <span>${escapeHtml(record.location)}</span>
           <a href="${escapeHtml(mapFullUrl(record))}" target="_blank" rel="noopener">View on Interactive Map</a>
@@ -233,6 +274,7 @@
 
     $("#mark-reviewed")?.addEventListener("click", markSelectedReviewed);
     $("#open-alert-preview")?.addEventListener("click", openAlertPreview);
+    renderMiniMap(record);
   }
 
   function renderHistory() {
