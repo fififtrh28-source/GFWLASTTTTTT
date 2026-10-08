@@ -285,6 +285,21 @@
     .aissar-note { color:var(--text-2); font-size:11px; line-height:1.45; }
     @media (max-width:900px) { #aissar-card { bottom:68px; } }
 
+    /* Pengatur titik di peta: baris jenis di panel kiri bisa diklik untuk menampilkan / menyembunyikan titiknya.
+       Yang disembunyikan: titik warnanya menjadi lingkaran kosong dan tulisannya dicoret. */
+    .pt-toggle { cursor:pointer; user-select:none; transition:background .12s; }
+    .pt-toggle:hover { background:var(--surface-2); }
+    .pt-toggle:focus-visible { outline:1px solid var(--blue); outline-offset:-1px; }
+    .pt-toggle .leg-dot { transition:background .12s, opacity .12s; }
+    .stat-row.pt-toggle > .leg-dot { width:11px; height:11px; margin-right:-2px; }
+    .pt-off .leg-dot { background:transparent !important; box-shadow:inset 0 0 0 2px currentColor; opacity:.65; }
+    .pt-off .stat-type, .pt-off .pt-label { text-decoration:line-through; opacity:.5; }
+    .pt-off .stat-val, .pt-off .pt-count, .pt-off .stat-bar-wrap { opacity:.4; }
+    .pt-row { display:flex; align-items:center; gap:11px; padding:8px 20px; font-size:13px; color:var(--text); }
+    .pt-row .leg-dot { width:11px; height:11px; }
+    .pt-row .pt-count { margin-left:auto; font-weight:600; font-variant-numeric:tabular-nums; }
+    .pt-hint { padding:4px 20px 10px; font-size:11px; line-height:1.4; color:var(--text-3); }
+
     /* Keterangan angin di kursor (hanya saat lapisan Angin di tab AIS Live menyala), di sebelah tombol Legend */
     #wind-readout {
       position:fixed; left:calc(104px + var(--nav-w)); bottom:20px; z-index:860; max-width:calc(100vw - 120px - var(--nav-w)); overflow:hidden;
@@ -1219,14 +1234,19 @@ function setStatsMode(m) {
   if (m === 'ais') {
     body.innerHTML = `
       <div class="ais-stat-row"><span class="ais-stat-label">Kapal Aktif</span><span class="ais-stat-val" id="ais-ship-val">0</span></div>
-      <div class="ais-stat-row"><span class="ais-stat-label">Pesan Diterima</span><span class="ais-stat-val" id="ais-msg-val">0</span></div>`;
+      <div class="ais-stat-row"><span class="ais-stat-label">Pesan Diterima</span><span class="ais-stat-val" id="ais-msg-val">0</span></div>
+      <div class="stats-sub">Jenis kapal di peta</div>
+      <div id="ais-type-list"></div>
+      <div class="pt-hint">Klik jenisnya untuk menampilkan atau menyembunyikan titiknya di peta.</div>`;
+    renderAisTypeList();
     document.getElementById('stats-footer').style.display = 'none';
   } else if (m === 'gfw') {
     body.innerHTML = `
-      <div class="stat-row"><span class="stat-type">Fishing</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-fishing" style="background:var(--green);width:0%"></div></div><span class="stat-val" id="cnt-fishing">0</span></div>
-      <div class="stat-row"><span class="stat-type">Encounter</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-encounter" style="background:var(--orange);width:0%"></div></div><span class="stat-val" id="cnt-encounter">0</span></div>
-      <div class="stat-row"><span class="stat-type">Loitering</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-loitering" style="background:var(--yellow);width:0%"></div></div><span class="stat-val" id="cnt-loitering">0</span></div>
-      <div class="stat-row"><span class="stat-type">Lainnya</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-other" style="background:var(--text-3);width:0%"></div></div><span class="stat-val" id="cnt-other">0</span></div>
+      <div class="stat-row pt-toggle${ptOff('gfw', 'FISHING')}" ${ptRowAttrs('gfw', 'FISHING')}><span class="leg-dot" style="color:var(--green);background:currentColor"></span><span class="stat-type">Fishing</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-fishing" style="background:var(--green);width:0%"></div></div><span class="stat-val" id="cnt-fishing">0</span></div>
+      <div class="stat-row pt-toggle${ptOff('gfw', 'ENCOUNTER')}" ${ptRowAttrs('gfw', 'ENCOUNTER')}><span class="leg-dot" style="color:var(--orange);background:currentColor"></span><span class="stat-type">Encounter</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-encounter" style="background:var(--orange);width:0%"></div></div><span class="stat-val" id="cnt-encounter">0</span></div>
+      <div class="stat-row pt-toggle${ptOff('gfw', 'LOITERING')}" ${ptRowAttrs('gfw', 'LOITERING')}><span class="leg-dot" style="color:var(--yellow);background:currentColor"></span><span class="stat-type">Loitering</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-loitering" style="background:var(--yellow);width:0%"></div></div><span class="stat-val" id="cnt-loitering">0</span></div>
+      <div class="stat-row pt-toggle${ptOff('gfw', 'OTHER')}" ${ptRowAttrs('gfw', 'OTHER')}><span class="leg-dot" style="color:var(--text-3);background:currentColor"></span><span class="stat-type">Lainnya</span><div class="stat-bar-wrap"><div class="stat-bar" id="bar-other" style="background:var(--text-3);width:0%"></div></div><span class="stat-val" id="cnt-other">0</span></div>
+      <div class="pt-hint">Klik jenisnya untuk menampilkan atau menyembunyikan titiknya di peta.</div>
       <div class="stats-sub">Wilayah (ZEE)</div>
       <div id="stats-regions"></div>`;
     document.getElementById('stats-footer').style.display = 'flex';
@@ -2030,22 +2050,23 @@ function renderAiSarPanel() {
   const icon = style => `<span class="leg-dot" style="width:10px;height:10px;${style}"></span>`;
   sumEl.innerHTML = `
     ${AI_SAR_TYPES.map(([key, label]) => `
-      <div class="stat-row stat-row-sm ai-sar-filter${aiSarFilter === key ? ' active' : ''}" onclick="setAiSarFilter('${key}')">
-        <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon(`background:${candidateColor(key)};border-radius:2px;transform:rotate(45deg)`)}${label}</span>
+      <div class="stat-row stat-row-sm pt-toggle${ptOff('ai', key)}" ${ptRowAttrs('ai', key)}>
+        <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon(`color:${candidateColor(key)};background:currentColor;border-radius:2px;transform:rotate(45deg)`)}${label}</span>
         <span class="stat-val" style="margin-left:auto">${all.filter(c => c.type === key).length}</span>
       </div>`).join('')}
-    <div class="stat-row stat-row-sm">
-      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:transparent;border:2px solid #ff2d2d')}SAR target</span>
+    <div class="stat-row stat-row-sm pt-toggle${ptOff('ai', 'sar')}" ${ptRowAttrs('ai', 'sar')}>
+      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('color:#ff2d2d;background:transparent;border:2px solid currentColor')}SAR target</span>
       <span class="stat-val" style="margin-left:auto">${sarTargets}</span>
     </div>
-    <div class="stat-row stat-row-sm ai-sar-filter${aiSarFilter === 'trajectory' ? ' active' : ''}" onclick="setAiSarFilter('trajectory')">
-      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:#ffd21a;border:1.5px solid #111827')}Trajectory AIS + Kalman</span>
+    <div class="stat-row stat-row-sm pt-toggle${ptOff('ai', 'trajectory')}" ${ptRowAttrs('ai', 'trajectory')}>
+      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('color:#ffd21a;background:currentColor;border:1.5px solid #111827')}Trajectory AIS + Kalman</span>
       <span class="stat-val" style="margin-left:auto">${trajectoryVessels().length}</span>
     </div>
-    <div class="stat-row stat-row-sm ai-sar-filter${aiSarFilter === 'h5' ? ' active' : ''}" onclick="setAiSarFilter('h5')">
-      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:linear-gradient(90deg,#4493f8 0 25%,#a371f7 25% 50%,#39c5cf 50% 75%,#e3901a 75%);border-radius:50%')}Prediksi model H5</span>
+    <div class="stat-row stat-row-sm pt-toggle${ptOff('ai', 'h5')}" ${ptRowAttrs('ai', 'h5')}>
+      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('color:#7aa7e8;background:linear-gradient(90deg,#4493f8 0 25%,#a371f7 25% 50%,#39c5cf 50% 75%,#e3901a 75%);border-radius:50%')}Prediksi model H5</span>
       <span class="stat-val" style="margin-left:auto">${H5_TEST_RESULTS.vessels.length}</span>
     </div>
+    <div class="pt-hint" style="padding:6px 20px 0">Klik jenisnya untuk menampilkan atau menyembunyikan titiknya di peta.</div>
     <div class="stats-note" style="padding-bottom:6px">Data penelitian, bukan data live. Temuan berasal dari aturan; alat tangkap H5 adalah perkiraan model. Perlu verifikasi.</div>`;
   renderAiTable();
 }
@@ -2198,7 +2219,7 @@ function renderAiTableBody() {
   if (!body) return;
   const all = aiTableRows();
   const q = aiTable.q.trim().toLowerCase();
-  const rows = all.filter(r => aiTableMatches(r) && (!q || r.name.toLowerCase().includes(q) || r.mmsi.includes(q)));
+  const rows = all.filter(r => aiRowPointShown(r) && aiTableMatches(r) && (!q || r.name.toLowerCase().includes(q) || r.mmsi.includes(q)));
   // Nilai kosong selalu di urutan paling akhir. Nilai yang sama: tanggal terbaru dulu, lalu skor aturan tertinggi.
   const val = r => aiTable.sort === 'name' ? r.name.toLowerCase() : aiTable.sort === 'type' ? (r.type === 'none' ? '' : r.type)
     : (r.h5 ? H5_SHORT[r.h5.gear] || r.h5.gear : '');
@@ -2233,7 +2254,7 @@ function renderAiTableBody() {
   body.closest('.ai-table-scroll').scrollTop = 0; // daftar baru selalu mulai dari atas
 
   const filtered = !!(aiSarFilter || q);
-  document.getElementById('ai-table-count').textContent = filtered ? `${rows.length} dari ${all.length} kapal` : `${all.length} kapal`;
+  document.getElementById('ai-table-count').textContent = filtered || rows.length !== all.length ? `${rows.length} dari ${all.length} kapal` : `${all.length} kapal`;
   // Tombol Reset hanya muncul kalau ada yang berbeda dari keadaan awal (filter, pencarian, atau urutan).
   document.getElementById('ai-table-reset').style.display = filtered || aiTable.sort ? '' : 'none';
   document.getElementById('ai-table-type').innerHTML = `<option value="">Semua (${all.length})</option>` + AI_TABLE_TYPES.map(([k, label]) =>
@@ -2438,6 +2459,7 @@ function renderLocalKalman(opts = {}) {
   renderIntegrationCandidateMarkers();
   renderTrajectoryVesselMarkers();
   renderH5OnlyMarkers();
+  applyAiPointVisibility();
 
   aiHomeBounds = bounds.length ? L.latLngBounds(bounds) : null;
   if (opts.fit && bounds.length) {
@@ -2826,6 +2848,7 @@ function processMarker(d, opts = {}) {
     updateAiCounters();
   }
   document.getElementById('ship-count').textContent = Object.keys(ships).length;
+  syncShipMarker(d.key);
 }
 
 // ── LABEL KAPAL DI TAB AIS LIVE ──────────────────────────────────────────────
@@ -3112,7 +3135,7 @@ function hideOtherMarkers() {
   historyLayer.clearLayers();
 }
 function showAllMarkers() {
-  for (const s of Object.values(ships)) { if (!map.hasLayer(s.marker)) s.marker.addTo(map); }
+  for (const s of Object.values(ships)) { if (shipVisible(s) && !map.hasLayer(s.marker)) s.marker.addTo(map); }
   if (sidebarKey && ships[sidebarKey]) showHistoryMarkers(ships[sidebarKey].data);
 }
 
@@ -3515,6 +3538,109 @@ function syncAisSarLegend() {
   const rows = ['unmatched', 'matched'].filter(kind => aisSarShow[kind]).map((kind, i) =>
     `<div class="leg-row leg-aissar"${i ? '' : ' style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px"'}><span class="leg-dot" style="background:${AISSAR_KINDS[kind].color}"></span><span class="leg-label">Satelit: ${AISSAR_KINDS[kind].label}</span></div>`);
   el.insertAdjacentHTML('beforeend', rows.join(''));
+}
+
+// ── PENGATUR TITIK DI PETA ───────────────────────────────────────────────────
+// Di panel kiri tiap tab, baris jenis titik bisa diklik: titiknya tampil atau disembunyikan di peta.
+// Yang disembunyikan terlihat dari titik warnanya yang menjadi lingkaran kosong dan tulisannya yang dicoret.
+// Boleh memilih kombinasi apa saja; pilihan diingat selama halaman terbuka.
+const pointShow = {
+  gfw: { FISHING: true, ENCOUNTER: true, LOITERING: true, OTHER: true },
+  ais: Object.fromEntries(Object.keys(AIS_TYPE_STYLE).map(key => [key, true])),
+  ai:  { spoofing: true, godark: true, transshipment: true, sar: true, trajectory: true, h5: true },
+};
+
+// Kelas dan atribut untuk baris jenis yang bisa diklik (juga bisa dipakai lewat keyboard).
+const ptOff = (tab, key) => (pointShow[tab][key] ? '' : ' pt-off');
+function ptRowAttrs(tab, key) {
+  const on = pointShow[tab][key];
+  return `data-pt="${tab}|${key}" role="button" tabindex="0" aria-pressed="${on}" title="Klik untuk ${on ? 'menyembunyikan' : 'menampilkan'} titik jenis ini di peta"`
+    + ` onclick="togglePointType('${tab}','${key}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePointType('${tab}','${key}')}"`;
+}
+
+function togglePointType(tab, key, on = !pointShow[tab][key]) {
+  pointShow[tab][key] = on;
+  document.querySelectorAll(`[data-pt="${tab}|${key}"]`).forEach(row => {
+    row.classList.toggle('pt-off', !on);
+    row.setAttribute('aria-pressed', String(on));
+    row.title = `Klik untuk ${on ? 'menyembunyikan' : 'menampilkan'} titik jenis ini di peta`;
+  });
+  if (tab === 'ai') {
+    // Pilihan yang sedang terbuka ditutup dulu, supaya tidak ada panel/label untuk titik yang baru disembunyikan.
+    if (!on) { aiTipTargets.forEach(t => t.layer.unbindTooltip()); aiTableSelect(null); closeSidebar(); }
+    applyAiPointVisibility();
+    renderAiTable();   // daftar kapal mengikuti: jenis yang disembunyikan tidak ikut didaftar
+  } else {
+    if (!on && sidebarKey && ships[sidebarKey] && !shipVisible(ships[sidebarKey])) closeSidebar();
+    Object.keys(ships).forEach(syncShipMarker);
+  }
+}
+
+// Titik GFW Events dan AIS Live (objek ships).
+function shipCategory(data) {
+  if (data.source === 'ais') return aisTypeGroup(data.shipType);
+  const type = String(data.type || '').toUpperCase();
+  return type in pointShow.gfw ? type : 'OTHER';
+}
+function shipVisible(ship) {
+  const tab = ship.data.source === 'ais' ? 'ais' : 'gfw';
+  return pointShow[tab][shipCategory(ship.data)] !== false;
+}
+// Menyesuaikan satu titik dengan pilihan di atas. Saat lintasan satu kapal sedang ditampilkan (trajActive),
+// titik kapal lain memang disembunyikan, jadi dibiarkan.
+function syncShipMarker(key) {
+  const ship = ships[key];
+  if (!ship) return;
+  const want = shipVisible(ship) && (!trajActive || key === sidebarKey);
+  if (want && !map.hasLayer(ship.marker)) ship.marker.addTo(map);
+  if (!want && map.hasLayer(ship.marker)) map.removeLayer(ship.marker);
+}
+
+// Daftar jenis kapal di panel kiri tab AIS Live, lengkap dengan jumlahnya saat ini.
+function renderAisTypeList() {
+  const el = document.getElementById('ais-type-list');
+  if (!el) return;
+  el.innerHTML = Object.entries(AIS_TYPE_STYLE).map(([key, style]) => `
+    <div class="pt-row pt-toggle${ptOff('ais', key)}" ${ptRowAttrs('ais', key)}><span class="leg-dot" style="color:${style.color};background:currentColor"></span><span class="pt-label">${style.label}</span><span class="pt-count" id="ais-type-cnt-${key}">0</span></div>`).join('');
+  updateAisTypeCounts();
+}
+function updateAisTypeCounts() {
+  if (mode !== 'ais' || !document.getElementById('ais-type-list')) return;
+  const counts = {};
+  for (const ship of Object.values(ships)) {
+    if (ship.data.source !== 'ais') continue;
+    const key = aisTypeGroup(ship.data.shipType);
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  for (const key of Object.keys(AIS_TYPE_STYLE)) {
+    const cell = document.getElementById(`ais-type-cnt-${key}`);
+    if (cell) cell.textContent = counts[key] || 0;
+  }
+}
+setInterval(updateAisTypeCounts, 2000);
+
+// Titik tab AI Inference (aiTipTargets): jenisnya dibaca dari kuncinya.
+function aiPointCategory(key) {
+  if (key.startsWith('cand|')) return String(key.split('|')[3] || '').toLowerCase();
+  if (key.startsWith('traj|')) return 'trajectory';
+  if (key.startsWith('sar|')) return 'sar';
+  if (key.startsWith('h5|')) return 'h5';
+  return '';
+}
+function applyAiPointVisibility() {
+  aiTipTargets.forEach((target, key) => {
+    const show = pointShow.ai[aiPointCategory(key)] !== false;
+    for (const layer of [target.layer, target.hit]) {
+      if (!layer) continue;
+      if (show && !localKalmanLayer.hasLayer(layer)) localKalmanLayer.addLayer(layer);
+      if (!show && localKalmanLayer.hasLayer(layer)) localKalmanLayer.removeLayer(layer);
+    }
+  });
+}
+// Baris daftar kapal ikut disembunyikan kalau jenis titiknya sedang disembunyikan.
+function aiRowPointShown(row) {
+  const key = row.kind === 'traj' ? 'trajectory' : row.kind === 'h5' ? 'h5' : row.type;
+  return pointShow.ai[key] !== false;
 }
 
 // ── MENU SAMPING (TOMBOL TIGA GARIS) ─────────────────────────────────────────

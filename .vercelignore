@@ -46,4 +46,3 @@ vite-*.log
 
 # Kode + dataset penelitian dari pembuat model H5 (2 GB). Bukan bagian situs; jangan ikut ter-upload saat deploy.
 /newcodinggfw_fixbuanget/
-
