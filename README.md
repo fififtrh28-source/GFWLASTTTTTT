@@ -39,8 +39,8 @@ pw : 12345678
 3. **Temuan di tab AI Inference berasal dari aturan, bukan model.** Kandidat spoofing, go dark, dan transshipment
    dihasilkan `scripts/find-scene-candidates.py` dengan angka batas yang belum punya rujukan jurnal atau peraturan.
    Hasilnya adalah kandidat untuk diperiksa, bukan kesimpulan.
-4. **Model H5 belum tampil di situs.** Programnya ada dan sudah diuji sebagian (lihat bagian Model H5), tetapi
-   hasilnya belum ditampilkan di halaman yang tayang.
+4. **Hasil model H5 yang tampil adalah hasil uji, bukan data langsung.** Tab AI Inference menampilkan prediksi
+   alat tangkap untuk 21 kapal uji pembuat model (lihat bagian Model H5). Model belum dijalankan pada AIS langsung.
 5. **Data GFW hanya untuk pemakaian non-komersial.** Dokumentasi API GFW menyatakan API-nya hanya tersedia untuk
    keperluan non-komersial. Pemakaian komersial memerlukan izin dari GFW.
 6. **AIS Live tidak mencakup seluruh Indonesia.** Datanya berasal dari penerima AIS di darat milik jaringan
@@ -122,6 +122,8 @@ Rekaman riwayat AIS hanya ada bila proyek dijalankan sebagai server sendiri.
 | Angin | NOAA GFS 1° lewat `api/wind.js` | Hanya di tab AIS Live |
 | Peta dasar | Esri World Ocean Base | |
 | Temuan AI Inference | File di `public/` | Data penelitian, tidak bertambah |
+| Pencocokan AIS–SAR (tombol "AIS–SAR" di tab AI Inference) | Deteksi kapal dari radar Sentinel-1 milik GFW, lewat `api/gfw/sar-ais.js` | Titik hijau = cocok dengan AIS, titik merah muda = tidak terlacak AIS. Metode: Paolo dkk. (2024), *Nature* 625:85–91. Posisi per kotak ±1 km; "tidak cocok" belum tentu melanggar |
+| Lintasan kapal per jam | Posisi AIS per jam dari GFW, disimpan di `public/ais-sar-tracks/` (256 file, kapal ada di file nomor MMSI mod 256) | Ketelitian ±1 km, bukan AIS mentah. Kalman dihitung di browser dan pada data ini berhimpit dengan garis AIS |
 
 ## Model H5
 
@@ -157,7 +159,6 @@ sehingga hasil baru muncul setelah rekaman AIS berjalan beberapa hari.
 - Menyimpan status temuan dan riwayat alert di server, supaya sama untuk semua pengguna.
 - Menyambungkan pengiriman alert ke Telegram (`api/telegram/alert.js` sudah ada, belum dipanggil).
 - Mengganti aturan pencarian kandidat dengan metode yang punya rujukan.
-- Pencocokan AIS–SAR untuk menemukan kapal yang tidak terlacak AIS, dari data deteksi satelit GFW.
-- Menampilkan hasil model H5.
+- Menjalankan model H5 pada AIS langsung dan menampilkan hasilnya.
 - Tampilan di layar ponsel.
 - Laporan PDF di Data & Reports belum memuat logo.

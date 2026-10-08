@@ -2,6 +2,9 @@
   "functions": {
     "api/gfw/events.js": {
       "maxDuration": 120
+    },
+    "api/gfw/sar-ais.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

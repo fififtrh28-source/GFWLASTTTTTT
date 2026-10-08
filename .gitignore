@@ -103,13 +103,6 @@ Lampiran_Listing_Program_Siap_Tempel_Word.docx
 # Kode + dataset penelitian dari pembuat model H5 (2 GB, karya pihak lain): tidak ikut.
 newcodinggfw_fixbuanget/
 
-# Salinan percobaan tampilan yang belum disetujui untuk tayang.
-dashboard-h5.html
-dashboard-gabung.html
-dashboard-tanpa-ais.html
-api/gfw/sar-ais.js
-preview-data/
-
 # Catatan lampiran pribadi dan rujukan submodule lama (folder Inference tidak ikut).
 Lampiran_Listing_Program*
 .gitmodules

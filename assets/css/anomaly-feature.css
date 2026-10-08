@@ -133,6 +133,27 @@ a {
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Tombol tiga garis di sebelah logo: menampilkan / menyembunyikan menu samping (assets/js/onx-nav.js). */
+.onx-menu-button {
+  flex: 0 0 auto;
+  margin-right: -8px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.onx-menu-button:hover {
+  border-color: rgba(143, 220, 255, 0.82);
+  background: rgba(143, 220, 255, 0.14);
+}
+
+.onx-shell.is-nav-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.onx-shell.is-nav-hidden .onx-sidebar {
+  display: none;
+}
+
 .onx-profile {
   min-width: 148px;
   display: grid;

@@ -51,7 +51,7 @@
       color:var(--text); white-space:nowrap; border-right:1px solid var(--border);
       height:100%; display:flex; align-items:center; gap:10px;
     }
-    /* Tombol tiga garis di kiri bar atas: membuka/menutup menu pindah halaman (#nav-menu) */
+    /* Tombol tiga garis di kiri bar atas: menampilkan/menyembunyikan menu samping (#nav-menu) */
     .tb-menu-btn {
       width:48px; height:100%; flex-shrink:0; padding:0; border:none; border-right:1px solid var(--border);
       background:none; color:var(--text-2); cursor:pointer;
@@ -59,18 +59,29 @@
     }
     .tb-menu-btn:hover, .tb-menu-btn.open { color:var(--text); background:var(--surface-2); }
     .tb-menu-btn svg { width:20px; height:20px; }
+    /* Menu samping pindah halaman; isinya sama dengan sidebar halaman Anomaly Alert Center dan Data & Reports.
+       Awalnya tersembunyi. Saat tampil, panel kiri peta ikut bergeser selebar menu (--nav-w); di layar sempit
+       menu menumpang di atas panel. */
+    body { --nav-w:0px; }
+    body.nav-open { --nav-w:258px; }
     #nav-menu {
-      position:fixed; top:calc(var(--topbar-h) + 8px); left:8px; z-index:950; width:220px; padding:6px;
-      background:var(--surface); border:1px solid var(--border-2); border-radius:8px;
-      box-shadow:0 12px 32px rgba(0,0,0,.45); display:none;
+      position:fixed; top:var(--topbar-h); left:0; bottom:0; z-index:880; width:258px; padding:24px 18px;
+      display:grid; align-content:start; gap:10px;
+      background:rgba(10,26,47,.97); border-right:1px solid var(--border); backdrop-filter:blur(12px);
+      transform:translateX(-100%); visibility:hidden; transition:transform .18s ease, visibility 0s linear .18s;
     }
-    #nav-menu.open { display:block; }
+    #nav-menu.open { transform:translateX(0); visibility:visible; transition:transform .18s ease, visibility 0s; }
     #nav-menu a {
-      display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:6px;
-      color:var(--text); text-decoration:none; font-size:13px; font-weight:600;
+      min-height:48px; display:flex; align-items:center; gap:12px; padding:0 14px;
+      border:1px solid transparent; border-radius:8px;
+      color:var(--text); text-decoration:none; font-size:14px; font-weight:700;
+      transition:background .16s, border-color .16s, color .16s;
     }
-    #nav-menu a:hover, #nav-menu a:focus-visible { background:var(--surface-3); outline:none; }
-    #nav-menu a svg { width:18px; height:18px; flex-shrink:0; color:var(--blue); }
+    #nav-menu a:hover, #nav-menu a:focus-visible, #nav-menu a.is-active {
+      border-color:rgba(68,147,248,.55); background:var(--blue-dim); color:#fff; outline:none;
+    }
+    #nav-menu a svg { width:18px; height:18px; flex:0 0 auto; }
+    @media (max-width:900px) { body.nav-open { --nav-w:0px; } }
 
     /* Logo Ocean Nexus, sama dengan halaman depan (index.html .brand-mark) */
     .tb-brand img {
@@ -142,7 +153,7 @@
 
     /* ── STATS PANEL (kiri atas) ──────────────────────────────────────────── */
     #stats-panel {
-      position:fixed; top:calc(var(--topbar-h) + 16px); left:16px;
+      position:fixed; top:calc(var(--topbar-h) + 16px); left:calc(16px + var(--nav-w)); transition:left .18s ease;
       width:300px; background:rgba(10,26,47,.94); border:1px solid var(--border);
       border-radius:var(--radius); z-index:700; backdrop-filter:blur(12px);
       overflow:hidden; transition:width .2s ease;
@@ -190,7 +201,7 @@
 
     /* ── LEGEND (kiri bawah) ─────────────────────────────────────────────── */
     .legend-toggle {
-      position:fixed; left:16px; bottom:20px;
+      position:fixed; left:calc(16px + var(--nav-w)); bottom:20px; transition:left .18s ease;
       z-index:860; background:rgba(10,26,47,.96);
       border:1px solid var(--border-2); border-radius:var(--radius);
       color:var(--text); padding:9px 14px; font-size:12px;
@@ -240,9 +251,43 @@
     .ai-table-ico { width:10px; height:10px; flex-shrink:0; }
     .ai-table-empty { padding:16px 8px; color:var(--text-2); text-align:center; cursor:default; }
 
+    /* Prediksi model H5 di tab AI Inference: kolom tabel dan batang peluang di panel detail kanan */
+    .ai-table .col-h5 { width:88px; }
+    .h5-bar { display:flex; align-items:center; gap:8px; flex:1; }
+    .h5-bar i { flex:1; height:6px; border-radius:3px; background:var(--surface-3); overflow:hidden; }
+    .h5-bar b { display:block; height:100%; border-radius:3px; }
+    .h5-bar span { width:38px; text-align:right; font-size:12px; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums; }
+    #sb-traj-btn.h5-none { display:none; }
+
+    /* Kartu lapisan "Pencocokan AIS–SAR (satelit)", di tengah bawah peta; hanya tampil saat lapisannya menyala */
+    #aissar-card {
+      position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:860;
+      width:min(470px, calc(100vw - 32px)); padding:11px 14px 12px;
+      background:rgba(10,26,47,.96); border:1px solid var(--border-2); border-radius:8px;
+      color:var(--text); font-size:12px; backdrop-filter:blur(12px); box-shadow:0 8px 24px rgba(0,0,0,.35);
+    }
+    #aissar-card[hidden] { display:none; }
+    .aissar-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .aissar-head b { font-size:13px; }
+    .aissar-head span { margin-left:auto; color:var(--text-2); font-size:11px; white-space:nowrap; }
+    .aissar-head button { border:none; background:none; color:var(--text-2); font-size:17px; line-height:1; cursor:pointer; padding:0 2px; }
+    .aissar-head button:hover { color:var(--text); }
+    .aissar-kinds { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+    .aissar-kind {
+      display:flex; align-items:flex-start; gap:8px; padding:7px 9px; text-align:left; cursor:pointer;
+      background:var(--surface-2); border:1px solid var(--border-2); border-radius:6px; color:var(--text); font:inherit;
+    }
+    .aissar-kind:hover { border-color:var(--blue); }
+    .aissar-kind.off { opacity:.45; }
+    .aissar-kind i { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+    .aissar-kind b { font-size:15px; font-variant-numeric:tabular-nums; }
+    .aissar-kind em { display:block; font-style:normal; color:var(--text-2); font-size:11px; }
+    .aissar-note { color:var(--text-2); font-size:11px; line-height:1.45; }
+    @media (max-width:900px) { #aissar-card { bottom:68px; } }
+
     /* Keterangan angin di kursor (hanya saat lapisan Angin di tab AIS Live menyala), di sebelah tombol Legend */
     #wind-readout {
-      position:fixed; left:104px; bottom:20px; z-index:860; max-width:calc(100vw - 120px); overflow:hidden;
+      position:fixed; left:calc(104px + var(--nav-w)); bottom:20px; z-index:860; max-width:calc(100vw - 120px - var(--nav-w)); overflow:hidden;
       background:rgba(10,26,47,.96); border:1px solid var(--border-2); border-radius:var(--radius);
       color:var(--text); padding:9px 14px; font-size:12px; backdrop-filter:blur(12px);
       display:flex; align-items:center; gap:10px; white-space:nowrap; pointer-events:none;
@@ -255,7 +300,7 @@
       color:var(--blue); border-color:var(--blue); background:var(--blue-dim);
     }
     .legend-panel {
-      position:fixed; bottom:64px; left:16px;
+      position:fixed; bottom:64px; left:calc(16px + var(--nav-w)); transition:left .18s ease;
       width:300px; max-height:30vh; overflow-y:auto;
       background:rgba(10,26,47,.94); border:1px solid var(--border);
       border-radius:var(--radius); z-index:850; backdrop-filter:blur(12px);
@@ -577,7 +622,7 @@
 
 <!-- TOPBAR -->
 <header id="topbar">
-  <button class="tb-menu-btn" id="btn-nav-menu" type="button" onclick="toggleNavMenu()" title="Menu halaman" aria-label="Menu halaman" aria-controls="nav-menu" aria-expanded="false">
+  <button class="tb-menu-btn" id="btn-nav-menu" type="button" onclick="toggleNavMenu()" title="Tampilkan menu" aria-label="Tampilkan atau sembunyikan menu" aria-controls="nav-menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
   </button>
   <div class="tb-brand" aria-label="Ocean Nexus 2026">
@@ -612,23 +657,28 @@
   <div class="tb-actions">
     <button class="tb-btn active" id="btn-local-kalman" onclick="toggleLocalKalman()">Kalman Lokal</button>
     <button class="tb-btn" id="btn-wind" onclick="toggleWind()" style="display:none">Angin</button>
+    <button class="tb-btn" id="btn-aissar" onclick="toggleAisSar()" style="display:none" title="Kapal yang terlihat satelit: cocok atau tidak cocok dengan AIS">AIS–SAR</button>
     <button class="tb-btn" id="btn-tools" onclick="togglePanel()">Query & Track</button>
   </div>
 </header>
 
-<!-- MENU HALAMAN (dibuka/ditutup dengan tombol tiga garis) -->
+<!-- MENU SAMPING (ditampilkan/disembunyikan dengan tombol tiga garis); isinya sama dengan halaman lain -->
 <nav id="nav-menu" aria-label="Pindah halaman">
   <a href="index.html#menu">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>
-    Menu / Home
+    Home
+  </a>
+  <a class="is-active" href="dashboard.html" aria-current="page">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6 9 4l6 2 5-2v14l-5 2-6-2-5 2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2"></path></svg>
+    Wilayah Indonesia
   </a>
   <a href="anomaly-alert.html">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18L12 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M12 10v4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
-    Anomaly Alert
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M12 9v4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+    Anomaly Alert Center
   </a>
   <a href="data-reports.html">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M14 3v5h5M10 13h6M10 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-    Data Reports
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path><path d="M14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+    Data &amp; Reports
   </a>
 </nav>
 
@@ -676,6 +726,10 @@
 
 <!-- LEGEND -->
 <div id="wind-readout" hidden></div>
+<div id="aissar-card" hidden>
+  <div class="aissar-head"><b>Pencocokan AIS–SAR (satelit)</b><span id="aissar-period"></span><button type="button" onclick="toggleAisSar()" aria-label="Matikan lapisan" title="Matikan lapisan">×</button></div>
+  <div id="aissar-body"></div>
+</div>
 <button id="legend-toggle" class="legend-toggle" type="button" aria-controls="legend" aria-expanded="false" onclick="toggleLegend()">
   Legend
 </button><div id="legend" class="legend-panel" hidden>
@@ -1155,7 +1209,7 @@ function setStatsMode(m) {
     statsPanel.classList.add('ai-mode');
     // Tahap A: hasil analisis citra satelit + Kalman (data penelitian). Hasil H5 live menyusul (Tahap B).
     body.innerHTML = `
-      <div class="stats-sub" style="margin-top:0;border-top:none">Analisis citra satelit + Kalman</div>
+      <div class="stats-sub" style="margin-top:0;border-top:none">Analisis satelit + Kalman + model H5</div>
       <div id="ai-sar-summary"><div class="stats-note">Memuat hasil analisis…</div></div>
       <div id="ai-table" class="ai-table"></div>`;
     document.getElementById('stats-footer').style.display = 'none';
@@ -1193,9 +1247,11 @@ function setMode(m) {
   document.getElementById('stats-range').textContent = '—';
   setStatsMode(m);
   updateLegend(m);
+  syncAisSarLegend();
   document.getElementById('stats-total').textContent = '0';
   syncLocalKalmanLayer();
   syncWindLayer();
+  syncAisSarLayer();
 
   if (m === 'ais') {
     const badgeRow = document.getElementById('ds-badges-row');
@@ -1520,6 +1576,14 @@ function renderIntegrationPanel(sceneName, vessel, candidate, kalman) {
       <div class="sb-section-title">PATCH / SCENE SAR</div>
       ${renderImageItems(integrationImageItems(candidate, sceneName))}
     </div>`;
+  appendH5Section(mmsi);
+}
+
+// Kandidat tanpa lintasan di sekitar waktu satelit: lintasan AIS + Kalman kapal itu sendiri (seluruh periode data),
+// kalau kapalnya termasuk daftar Trajectory AIS + Kalman. null kalau tidak dipakai.
+function ownTrackFor(sceneName, mmsi) {
+  if (findLocalTrack(sceneName, mmsi)) return null;
+  return trajectoryVessels().find(x => x.mmsi === normId(mmsi)) || null;
 }
 
 function plotIntegratedTrajectory(sceneName, mmsi, fit = true) {
@@ -1527,12 +1591,59 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true) {
   const info = document.getElementById('sb-traj-info');
   const track = findLocalTrack(sceneName, mmsi);
   if (!track) {
-    info.textContent = 'Trajectory AIS/Kalman tidak tersedia.';
+    const own = ownTrackFor(sceneName, mmsi);
+    if (own) {
+      // Lintasan ini mencakup seluruh periode data, jadi bisa jauh dari titik kandidat: peta digeser supaya
+      // garis dan titik kandidatnya sama-sama terlihat.
+      drawRawKalmanTrack(own.raw, own.kalman, false, `sar|${sceneName}|${mmsi}`);
+      fitTrackBesidePanels([...own.raw, ...own.kalman, ...(sidebarFocusLatLng ? [sidebarFocusLatLng] : [])]);
+      return;
+    }
+    // Tidak ada lintasan di data penelitian untuk kapal ini → posisi AIS per jam dari GFW.
+    plotHourlyTrack(mmsi, fit, `sar|${sceneName}|${mmsi}`);
     return;
   }
   const raw = (track.raw || []).filter(validLatLon).map(p => [Number(p.lat), Number(p.lon)]);
   const kalman = (track.kalman || []).filter(validLatLon).map(p => [Number(p.lat), Number(p.lon)]);
+  if (raw.length < 2 && kalman.length < 2) {
+    // Data penelitian tidak punya lintasan untuk temuan ini (paling banyak satu titik) → posisi AIS per jam dari GFW.
+    plotHourlyTrack(mmsi, fit, `sar|${sceneName}|${mmsi}`);
+    return;
+  }
   drawRawKalmanTrack(raw, kalman, fit, `sar|${sceneName}|${mmsi}`);
+}
+
+// Lintasan untuk temuan yang tidak punya lintasan di data penelitian: posisi AIS per jam dari GFW (±1 km) dan
+// Kalman-nya, sumber dan hitungannya sama dengan titik hijau lapisan AIS–SAR (loadAisSarTrack, aisSarKalman).
+async function plotHourlyTrack(mmsi, fit, frontKey) {
+  const info = document.getElementById('sb-traj-info');
+  const title = document.getElementById('sidebar-title').textContent;
+  info.textContent = 'Mengambil lintasan AIS…';
+  const points = await loadAisSarTrack(normId(mmsi));
+  // Panel sudah ditutup atau sudah pindah ke kapal lain selagi memuat → jangan menggambar.
+  const side = document.getElementById('sidebar');
+  if (!side.classList.contains('open') || document.getElementById('sidebar-title').textContent !== title) return;
+  if (!points || points.length < 2) { info.textContent = 'Trajectory AIS/Kalman tidak tersedia.'; return; }
+  const kalman = aisSarKalman(points);
+  drawRawKalmanTrack(points.map(p => [p.lat, p.lon]), kalman.map(k => [k.lat, k.lon]), fit, frontKey, {
+    resets: kalman.map(k => k.reset),
+    rawLabel: 'AIS per jam',
+    note: 'Posisi AIS per jam dari GFW (ketelitian ±1 km), bukan AIS mentah. Garis Kalman berhimpit dengan garis AIS.',
+  });
+}
+
+// Zoom ke lintasan + titik kapal tanpa tertutup panel kiri dan panel detail kanan (keduanya menumpang di atas peta).
+// Di layar sempit, tempat sisanya terlalu kecil, jadi dipakai jarak tepi biasa.
+function fitTrackBesidePanels(points) {
+  if (!points.length) return;
+  const left = document.getElementById('stats-panel').getBoundingClientRect().right;
+  const right = document.getElementById('sidebar').offsetWidth;
+  const roomy = map.getSize().x - left - right > 360;
+  map.fitBounds(L.latLngBounds(points), {
+    paddingTopLeft: [roomy ? left + 40 : 60, 60 + 48],
+    paddingBottomRight: [roomy ? right + 40 : 60, 60],
+    maxZoom: 10,
+  });
 }
 
 // Garis AIS mentah (biru putus-putus) dan Kalman (kuning) beserta titik awal/akhir; raw/kalman = [[lat, lon], ...].
@@ -1541,8 +1652,8 @@ function plotIntegratedTrajectory(sceneName, mmsi, fit = true) {
 let trajLines = null;                        // lintasan yang sedang digambar: { raw, kalman, frontKey }
 const trajShow = { raw:true, kalman:true };  // tombol nyala/mati di panel kanan
 
-function drawRawKalmanTrack(raw, kalman, fit = true, frontKey = null) {
-  trajLines = { raw, kalman, frontKey };
+function drawRawKalmanTrack(raw, kalman, fit = true, frontKey = null, opts = {}) {
+  trajLines = { raw, kalman, frontKey, ...opts };
   trajShow.raw = trajShow.kalman = true;
   renderRawKalmanTrack(fit);
 }
@@ -1555,15 +1666,19 @@ function toggleTrajLine(kind) {
 
 function renderRawKalmanTrack(fit) {
   sidebarTrajLayer.clearLayers();
-  const { raw, kalman, frontKey } = trajLines;
+  const { raw, kalman, frontKey, resets, rawLabel = 'AIS mentah', note } = trajLines;
+  // resets (opsional) menandai awal potongan baru: garis dipotong di sana supaya tidak menembus jeda panjang.
+  const split = pts => (resets
+    ? pts.reduce((out, p, i) => { if (resets[i] || !out.length) out.push([]); out[out.length - 1].push(p); return out; }, []).filter(seg => seg.length >= 2)
+    : pts);
   const info = document.getElementById('sb-traj-info');
   const all = [...raw, ...kalman];
 
   // Kalman digambar dulu dan lebih tebal, AIS mentah di atasnya. Keduanya hampir berhimpit (selisih rata-rata
   // ±17 m), jadi kalau Kalman yang di atas, garis AIS mentah tertutup seluruhnya.
   // interactive:false → garis tidak menangkap klik, jadi titik kapal di bawahnya tetap bisa diklik.
-  if (trajShow.kalman && kalman.length >= 2) L.polyline(kalman, { color:'#ffd21a', weight:5, opacity:.95, interactive:false }).addTo(sidebarTrajLayer);
-  if (trajShow.raw && raw.length >= 2) L.polyline(raw, { color:'#00b7ff', weight:2, opacity:1, dashArray:'6 7', interactive:false }).addTo(sidebarTrajLayer);
+  if (trajShow.kalman && kalman.length >= 2) L.polyline(split(kalman), { color:'#ffd21a', weight:5, opacity:.95, interactive:false }).addTo(sidebarTrajLayer);
+  if (trajShow.raw && raw.length >= 2) L.polyline(split(raw), { color:'#00b7ff', weight:2, opacity:1, dashArray:'6 7', interactive:false }).addTo(sidebarTrajLayer);
   if (trajShow.raw && raw.length === 1) L.circleMarker(raw[0], { radius:5, color:'#00b7ff', fillColor:'#00b7ff', fillOpacity:.9 }).bindPopup('AIS raw').addTo(sidebarTrajLayer);
   if (trajShow.kalman && kalman.length === 1) L.circleMarker(kalman[0], { radius:5, color:'#ffd21a', fillColor:'#ffd21a', fillOpacity:.9 }).bindPopup('Kalman').addTo(sidebarTrajLayer);
 
@@ -1579,7 +1694,9 @@ function renderRawKalmanTrack(fit) {
 
   const chip = (kind, label, color, style, n) =>
     `<button class="traj-toggle${trajShow[kind] ? '' : ' off'}" onclick="toggleTrajLine('${kind}')" title="${n} titik — klik untuk ${trajShow[kind] ? 'menyembunyikan' : 'menampilkan'}"><i style="border-top:3px ${style} ${color}"></i>${label} ${n}</button>`;
-  info.innerHTML = chip('raw', 'AIS mentah', '#00b7ff', 'dashed', raw.length) + chip('kalman', 'Kalman', '#ffd21a', 'solid', kalman.length);
+  info.innerHTML = chip('raw', rawLabel, '#00b7ff', 'dashed', raw.length) + chip('kalman', 'Kalman', '#ffd21a', 'solid', kalman.length)
+    + (note ? `<div style="flex:0 0 100%;margin-top:6px;font-size:11px;line-height:1.4;color:var(--text-2)">${note}</div>` : '');
+  info.style.flexWrap = note ? 'wrap' : '';
   if (fit && all.length) map.fitBounds(L.latLngBounds(all), { padding:[60, 60], maxZoom:10 });
 }
 
@@ -1618,12 +1735,13 @@ function renderIntegrationCandidateMarkers() {
       .addTo(localKalmanLayer);
     aiTipTargets.set(`cand|${key}`, {
       layer: marker,
-      html: aiTipHtml({ mmsi: row.MMSI, sub: titleCase(vessel.category), alert: row.candidate_type }),
+      html: aiTipHtml({ mmsi: row.MMSI, sub: titleCase(vessel.category), alert: row.candidate_type }) + h5TipLine(row.MMSI),
     });
   }
 }
 
 async function openIntegratedSarDetail(sceneName, vessel = {}) {
+  clearAisSarTip();
   closeToolPanel();
   sidebarKey = null;
   trajActive = false;
@@ -1675,6 +1793,7 @@ function toggleLocalKalman() {
   localKalmanLayer.clearLayers();
   syncLocalKalmanLayer();
   updateLegend(mode);
+  syncAisSarLegend();
   if (localKalmanVisible) loadLocalKalman({ fit: true });
 }
 
@@ -1923,7 +2042,11 @@ function renderAiSarPanel() {
       <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:#ffd21a;border:1.5px solid #111827')}Trajectory AIS + Kalman</span>
       <span class="stat-val" style="margin-left:auto">${trajectoryVessels().length}</span>
     </div>
-    <div class="stats-note" style="padding-bottom:6px">Data penelitian, bukan data live dan bukan prediksi model H5. Kandidat perlu verifikasi.</div>`;
+    <div class="stat-row stat-row-sm ai-sar-filter${aiSarFilter === 'h5' ? ' active' : ''}" onclick="setAiSarFilter('h5')">
+      <span class="stat-type" style="width:auto;display:flex;align-items:center;gap:8px">${icon('background:linear-gradient(90deg,#4493f8 0 25%,#a371f7 25% 50%,#39c5cf 50% 75%,#e3901a 75%);border-radius:50%')}Prediksi model H5</span>
+      <span class="stat-val" style="margin-left:auto">${H5_TEST_RESULTS.vessels.length}</span>
+    </div>
+    <div class="stats-note" style="padding-bottom:6px">Data penelitian, bukan data live. Temuan berasal dari aturan; alat tangkap H5 adalah perkiraan model. Perlu verifikasi.</div>`;
   renderAiTable();
 }
 
@@ -1932,21 +2055,120 @@ function setAiSarFilter(key) {
   renderAiSarPanel();
 }
 
+// ── AI INFERENCE: PREDIKSI MODEL H5 (digabung per kapal dengan analisis satelit + Kalman) ──
+// Kapal yang punya prediksi H5 menampilkannya di tabel, di label peta dan di panel detail, berdampingan dengan
+// temuan satelit / lintasan Kalman-nya. Kapal yang hanya punya prediksi H5 ikut masuk daftar ("Tanpa temuan").
+// Isinya (H5_TEST_RESULTS) = hasil server/h5-worker.py pada 21 kapal uji pembuat model, bukan AIS live.
+const H5_TEST_RESULTS = {"source":"contoh: 21 kapal uji pembuat model (bukan AIS live)","spoofingThreshold":0.4154211424307387,"vessels":[{"mmsi":"533092888","name":"NILAM-01","lat":6.45866,"lon":99.68186,"speed":8.1,"course":200,"dataStart":1764547865,"dataEnd":1774998760,"points":5293,"gear":"purse_seines","gearProbability":0.9999,"gearProbs":{"drifting_longlines":0,"fixed_gear":0,"purse_seines":0.9999,"trawlers":0},"gearVotes":["purse_seines","purse_seines","purse_seines","purse_seines","purse_seines"],"gearWindows":221,"gfwGear":"purse_seines","spoofing":null,"spoofingProbability":null,"spoofingWindows":null},{"mmsi":"533125463","name":"CS19","lat":6.13804,"lon":99.9947,"speed":3.4,"course":166,"dataStart":1764630540,"dataEnd":1775001327,"points":2642,"gear":"purse_seines","gearProbability":0.9999,"gearProbs":{"drifting_longlines":0,"fixed_gear":0,"purse_seines":0.9999,"trawlers":0.0001},"gearVotes":["purse_seines","purse_seines","purse_seines","purse_seines","purse_seines"],"gearWindows":56,"gfwGear":"purse_seines","spoofing":null,"spoofingProbability":null,"spoofingWindows":null},{"mmsi":"533348240","name":"SH","lat":4.21423,"lon":100.57755,"speed":0,"course":320,"dataStart":1769906262,"dataEnd":1774997808,"points":3416,"gear":"purse_seines","gearProbability":0.9998,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0001,"purse_seines":0.9998,"trawlers":0.0002},"gearVotes":["purse_seines","purse_seines","purse_seines","purse_seines","purse_seines"],"gearWindows":296,"gfwGear":"purse_seines","spoofing":"spoofing","spoofingProbability":0.4162,"spoofingWindows":312},{"mmsi":"533121054","name":"GODDESS","lat":4.65741,"lon":103.94192,"speed":3.2,"course":175,"dataStart":1764547276,"dataEnd":1774866163,"points":3511,"gear":"trawlers","gearProbability":0.9997,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0003,"purse_seines":0,"trawlers":0.9997},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":350,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.3914,"spoofingWindows":175},{"mmsi":"567909079","name":"SH909079","lat":7.98778,"lon":98.89941,"speed":8.3,"course":6,"dataStart":1764547207,"dataEnd":1774835063,"points":2226,"gear":"purse_seines","gearProbability":0.9996,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0001,"purse_seines":0.9996,"trawlers":0.0003},"gearVotes":["purse_seines","purse_seines","purse_seines","purse_seines","purse_seines"],"gearWindows":151,"gfwGear":"purse_seines","spoofing":"normal","spoofingProbability":0.2679,"spoofingWindows":77},{"mmsi":"525132218","name":"KM 1011","lat":4.7584,"lon":98.60278,"speed":2.8,"course":358,"dataStart":1764866934,"dataEnd":1775001406,"points":4390,"gear":"trawlers","gearProbability":0.9995,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0005,"purse_seines":0,"trawlers":0.9995},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":496,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.3958,"spoofingWindows":303},{"mmsi":"533010338","name":"HG","lat":3.26191,"lon":103.63743,"speed":2.9,"course":192,"dataStart":1764566147,"dataEnd":1774972541,"points":1883,"gear":"trawlers","gearProbability":0.9995,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0005,"purse_seines":0,"trawlers":0.9995},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":50,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.2848,"spoofingWindows":39},{"mmsi":"525130181","name":"SINAR BARAT UNTUNG","lat":4.04492,"lon":98.89059,"speed":1.9,"course":185,"dataStart":1764739625,"dataEnd":1774829346,"points":4620,"gear":"trawlers","gearProbability":0.9994,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0006,"purse_seines":0,"trawlers":0.9994},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":499,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.3579,"spoofingWindows":405},{"mmsi":"525129128","name":"KM USAHA BARU SUKSES","lat":3.59585,"lon":99.68023,"speed":3.5,"course":323,"dataStart":1769904135,"dataEnd":1775001499,"points":1531,"gear":"trawlers","gearProbability":0.9993,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0006,"purse_seines":0,"trawlers":0.9993},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":123,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.3815,"spoofingWindows":56},{"mmsi":"525120643","name":"KM SINO SINAR BARU","lat":4.0461,"lon":99.09649,"speed":5,"course":227,"dataStart":1769910226,"dataEnd":1774919168,"points":1518,"gear":"trawlers","gearProbability":0.9992,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0008,"purse_seines":0,"trawlers":0.9992},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":157,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.3611,"spoofingWindows":53},{"mmsi":"525058405","name":"KM BINTANG KARYA 1","lat":-6.86974,"lon":112.29505,"speed":2.7,"course":247,"dataStart":1766179168,"dataEnd":1772781557,"points":1075,"gear":"fixed_gear","gearProbability":0.9991,"gearProbs":{"drifting_longlines":0.0001,"fixed_gear":0.9991,"purse_seines":0,"trawlers":0.0007},"gearVotes":["fixed_gear","fixed_gear","fixed_gear","fixed_gear","fixed_gear"],"gearWindows":113,"gfwGear":"fixed_gear","spoofing":"normal","spoofingProbability":0.2268,"spoofingWindows":24},{"mmsi":"525127688","name":"KM 567","lat":4.90726,"lon":98.26572,"speed":1.5,"course":354,"dataStart":1769954372,"dataEnd":1775001209,"points":2114,"gear":"trawlers","gearProbability":0.9991,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0009,"purse_seines":0,"trawlers":0.9991},"gearVotes":["trawlers","trawlers","trawlers","trawlers","trawlers"],"gearWindows":192,"gfwGear":"trawlers","spoofing":"normal","spoofingProbability":0.3407,"spoofingWindows":140},{"mmsi":"567001929","name":"KROSIRICHAI 19","lat":7.88035,"lon":98.41677,"speed":0.8,"course":26,"dataStart":1764561859,"dataEnd":1774925628,"points":2895,"gear":"purse_seines","gearProbability":0.999,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.0005,"purse_seines":0.999,"trawlers":0.0005},"gearVotes":["purse_seines","purse_seines","purse_seines","purse_seines","purse_seines"],"gearWindows":27,"gfwGear":"purse_seines","spoofing":"normal","spoofingProbability":0.2629,"spoofingWindows":4},{"mmsi":"533824898","name":"TFA2615","lat":5.33965,"lon":103.14016,"speed":5.6,"course":274,"dataStart":1766501725,"dataEnd":1774975267,"points":616,"gear":"fixed_gear","gearProbability":0.998,"gearProbs":{"drifting_longlines":0.0001,"fixed_gear":0.998,"purse_seines":0.0016,"trawlers":0.0003},"gearVotes":["fixed_gear","fixed_gear","fixed_gear","fixed_gear","fixed_gear"],"gearWindows":9,"gfwGear":"fixed_gear","spoofing":"normal","spoofingProbability":0.327,"spoofingWindows":15},{"mmsi":"533347711","name":"SH","lat":4.22006,"lon":100.57723,"speed":2.2,"course":346,"dataStart":1769936677,"dataEnd":1774477784,"points":1157,"gear":"purse_seines","gearProbability":0.9933,"gearProbs":{"drifting_longlines":0.0001,"fixed_gear":0.0052,"purse_seines":0.9933,"trawlers":0.0014},"gearVotes":["purse_seines","purse_seines","purse_seines","purse_seines","purse_seines"],"gearWindows":49,"gfwGear":"purse_seines","spoofing":null,"spoofingProbability":null,"spoofingWindows":null},{"mmsi":"533347523","name":"PAF4339","lat":5.3523,"lon":103.16918,"speed":7.2,"course":248,"dataStart":1764547281,"dataEnd":1773415567,"points":182,"gear":"fixed_gear","gearProbability":0.9807,"gearProbs":{"drifting_longlines":0.0014,"fixed_gear":0.9807,"purse_seines":0.0172,"trawlers":0.0008},"gearVotes":["fixed_gear","fixed_gear","fixed_gear","fixed_gear","fixed_gear"],"gearWindows":2,"gfwGear":"fixed_gear","spoofing":null,"spoofingProbability":null,"spoofingWindows":null},{"mmsi":"525600097","name":"BANDAR NELAYAN - 288","lat":-34.50417,"lon":100.42785,"speed":4.5,"course":0,"dataStart":1770859919,"dataEnd":1775001538,"points":1212,"gear":"fixed_gear","gearProbability":0.9345,"gearProbs":{"drifting_longlines":0.0001,"fixed_gear":0.9345,"purse_seines":0,"trawlers":0.0653},"gearVotes":["fixed_gear","fixed_gear","fixed_gear","fixed_gear","fixed_gear"],"gearWindows":144,"gfwGear":"drifting_longlines","spoofing":null,"spoofingProbability":null,"spoofingWindows":null},{"mmsi":"431448000","name":"MYOJIN MARU NO.8","lat":38.90704,"lon":141.58286,"speed":2.1,"course":3,"dataStart":1769904043,"dataEnd":1771648511,"points":552,"gear":"drifting_longlines","gearProbability":0.8031,"gearProbs":{"drifting_longlines":0.8031,"fixed_gear":0.0001,"purse_seines":0.1966,"trawlers":0.0002},"gearVotes":["purse_seines","drifting_longlines","drifting_longlines","drifting_longlines","drifting_longlines"],"gearWindows":12,"gfwGear":"drifting_longlines","spoofing":"spoofing","spoofingProbability":0.4424,"spoofingWindows":48},{"mmsi":"525600095","name":"BANDAR NELAYAN - 108","lat":-36.47859,"lon":100.77464,"speed":7,"course":271,"dataStart":1771048017,"dataEnd":1775001558,"points":1934,"gear":"fixed_gear","gearProbability":0.7779,"gearProbs":{"drifting_longlines":0,"fixed_gear":0.7779,"purse_seines":0.0001,"trawlers":0.222},"gearVotes":["trawlers","fixed_gear","fixed_gear","trawlers","fixed_gear"],"gearWindows":250,"gfwGear":"drifting_longlines","spoofing":"normal","spoofingProbability":0.2934,"spoofingWindows":196},{"mmsi":"416006701","name":"HO HSIN HSING NO.603","lat":15.95538,"lon":115.30405,"speed":8.3,"course":34,"dataStart":1770250455,"dataEnd":1775001513,"points":1137,"gear":"drifting_longlines","gearProbability":0.6005,"gearProbs":{"drifting_longlines":0.6005,"fixed_gear":0.3258,"purse_seines":0.0642,"trawlers":0.0095},"gearVotes":["fixed_gear","drifting_longlines","fixed_gear","drifting_longlines","drifting_longlines"],"gearWindows":25,"gfwGear":"drifting_longlines","spoofing":"normal","spoofingProbability":0.3551,"spoofingWindows":133},{"mmsi":"412510000","name":"JIA AN","lat":2.75067,"lon":101.32458,"speed":2.9,"course":330,"dataStart":1765439300,"dataEnd":1774999535,"points":4312,"gear":"trawlers","gearProbability":0.5919,"gearProbs":{"drifting_longlines":0.4074,"fixed_gear":0.0002,"purse_seines":0.0005,"trawlers":0.5919},"gearVotes":["trawlers","trawlers","trawlers","drifting_longlines","drifting_longlines"],"gearWindows":156,"gfwGear":"fixed_gear","spoofing":"spoofing","spoofingProbability":0.4379,"spoofingWindows":699}]};
+const H5_GEARS = ['drifting_longlines', 'fixed_gear', 'purse_seines', 'trawlers'];
+const H5_SHORT = { drifting_longlines: 'Longline', fixed_gear: 'Fixed Gear', purse_seines: 'Purse Seine', trawlers: 'Trawler' };
+const h5ByMmsi = new Map(H5_TEST_RESULTS.vessels.map(v => [String(v.mmsi), v]));
+// Di atas 99,5% ditulis ">99%", supaya tidak terbaca sebagai kepastian 100%.
+const h5Pct = p => p >= 0.995 ? '>99%' : p > 0 && p < 0.005 ? '<1%' : `${Math.round(p * 100)}%`;
+
+function h5For(mmsi) {
+  return h5ByMmsi.get(normId(mmsi)) || null;
+}
+
+// Baris tambahan di label peta untuk kapal yang punya prediksi H5.
+function h5TipLine(mmsi) {
+  const v = h5For(mmsi);
+  if (!v) return '';
+  const gear = trajGearLabel(v.gear);
+  return `<div style="color:var(--text-2);margin-top:1px">H5: <b style="color:${gearColor(gear.key)}">${esc(gear.label)}</b> ${h5Pct(v.gearProbability)}</div>`;
+}
+
+// Bagian "Prediksi model H5" untuk panel detail kanan.
+function h5SectionHtml(v) {
+  const gear = trajGearLabel(v.gear);
+  const row = (k, val) => `<div class="sb-row"><span class="sb-key">${k}</span><span class="sb-val">${val}</span></div>`;
+  const fmtDay = t => new Date(t * 1000).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+  const agree = (v.gearVotes || []).filter(x => x === v.gear).length;
+  const gfw = v.gfwGear ? trajGearLabel(v.gfwGear) : null;
+  const bars = H5_GEARS.map(key => {
+    const g = trajGearLabel(key);
+    const p = v.gearProbs?.[key] || 0;
+    return `<div class="sb-row"><span class="sb-key" style="width:112px">${esc(g.label)}</span><span class="h5-bar"><i><b style="width:${Math.round(p * 100)}%;background:${gearColor(g.key)}"></b></i><span>${h5Pct(p)}</span></span></div>`;
+  }).join('');
+  return `
+    <div class="sb-section h5-section">
+      <div class="sb-section-title">PREDIKSI MODEL H5</div>
+      ${row('Alat tangkap (perkiraan)', `<span style="color:${gearColor(gear.key)}">${esc(gear.label)}</span>`)}
+      ${row('Keyakinan model', h5Pct(v.gearProbability))}
+      ${row('Model yang sepakat', `${agree} dari ${(v.gearVotes || []).length}`)}
+      ${gfw ? row('Alat tangkap menurut GFW', `${esc(gfw.label)} <span class="sb-val dim">· ${gfw.key === gear.key ? 'sama' : 'beda'}</span>`) : ''}
+      ${bars}
+      ${row('Dasar data', `${v.gearWindows} potongan lintasan`)}
+      ${row('Periode AIS', `${fmtDay(v.dataStart)} – ${fmtDay(v.dataEnd)}`)}
+      <div class="stats-note" style="padding:8px 16px 4px">Perkiraan model, bukan kepastian. Pada data uji benar untuk 18 dari 21 kapal.</div>
+    </div>`;
+}
+
+// Menyisipkan bagian H5 tepat di bawah bagian pertama panel detail (kalau kapalnya punya prediksi H5).
+function appendH5Section(mmsi) {
+  const v = h5For(mmsi);
+  const body = document.getElementById('sidebar-body');
+  if (!v || !body || body.querySelector('.h5-section')) return;
+  const first = body.querySelector('.sb-section');
+  if (first) first.insertAdjacentHTML('afterend', h5SectionHtml(v));
+  else body.insertAdjacentHTML('beforeend', h5SectionHtml(v));
+}
+
+// Kapal yang hanya punya prediksi H5 (tidak ada di kandidat satelit maupun daftar lintasan).
+function h5OnlyVessels() {
+  const known = new Set([...trajectoryVessels().map(v => String(v.mmsi)), ...integrationCandidates.map(r => normId(r.MMSI))]);
+  return H5_TEST_RESULTS.vessels.filter(v => !known.has(String(v.mmsi)));
+}
+
+function renderH5OnlyMarkers() {
+  if (!integrationRowsLoaded) return;
+  for (const v of h5OnlyVessels()) {
+    const key = `h5|${v.mmsi}`;
+    const gear = trajGearLabel(v.gear);
+    const marker = L.circleMarker([v.lat, v.lon], { radius:6, color:'#111827', weight:1.5, fillColor:gearColor(gear.key), fillOpacity:1 })
+      .on('click', () => { if (showAiTip(key, true)) { aiTableSelect(key); showH5Detail(v); } else resetAiView(); })
+      .addTo(localKalmanLayer);
+    aiTipTargets.set(key, { layer: marker, html: `<div style="font-weight:700;color:#cdd9e5;margin-bottom:2px">MMSI ${esc(v.mmsi)}</div>` + h5TipLine(v.mmsi) });
+  }
+}
+
+function showH5Detail(v) {
+  clearAisSarTip();
+  closeToolPanel();
+  sidebarKey = null;
+  trajActive = false;
+  sidebarTrajLayer.clearLayers();
+  historyLayer.clearLayers();
+  document.getElementById('sidebar-title').textContent = v.name || `MMSI ${v.mmsi}`;
+  document.getElementById('sidebar-sub').textContent = `MMSI ${v.mmsi}`;
+  document.getElementById('sidebar-body').innerHTML = h5SectionHtml(v)
+    + `<div class="sb-note">Kapal ini tidak punya temuan dari citra satelit dan tidak termasuk daftar lintasan Kalman.</div>`;
+  document.getElementById('sb-traj-info').textContent = 'Lintasan Kalman tidak tersedia untuk kapal ini.';
+  sidebarFocusLatLng = [v.lat, v.lon];
+  document.getElementById('sb-traj-btn').className = 'sb-btn h5-none'; // tidak ada lintasan untuk ditampilkan
+  document.getElementById('sidebar').classList.add('open');
+}
+
 // ── AI INFERENCE: TABEL KAPAL ────────────────────────────────────────────────
-// Daftar kapal di panel kiri: kandidat (spoofing / go dark / transshipment) dan kapal trajectory dalam satu tabel,
-// dengan pencarian nama/MMSI, filter jenis (aiSarFilter, sama dengan baris angka di atasnya) dan urut per kolom.
-// Klik baris = memilih kapal itu di peta.
+// Daftar kapal di panel kiri: kandidat (spoofing / go dark / transshipment), kapal trajectory, dan kapal yang hanya
+// punya prediksi H5, dalam satu tabel, dengan pencarian nama/MMSI, filter (aiSarFilter, sama dengan baris angka di
+// atasnya) dan urut per kolom. Klik baris = memilih kapal itu di peta.
 // Skor aturan (0,55–1,00 dari scripts/find-scene-candidates.py) sengaja tidak dijadikan kolom: bukan peluang dan
 // mudah disalahartikan. Nilainya tetap ada di panel detail kanan dan dipakai untuk mengurutkan tanggal yang sama.
 const AI_TABLE_TYPES = [...AI_SAR_TYPES, ['trajectory', 'Trajectory AIS + Kalman']];
-const AI_TABLE_COLS = [['name', 'Nama kapal'], ['type', 'Jenis'], ['time', 'Tanggal']];
-// sort null = urutan awal: kandidat anomali dulu (terbaru di atas), kapal trajectory di akhir.
+const AI_TABLE_COLS = [['name', 'Nama kapal'], ['type', 'Temuan'], ['h5', 'Prediksi H5']];
+// sort null = urutan awal: kandidat anomali dulu (terbaru di atas), lalu kapal trajectory, lalu yang hanya punya H5.
 const aiTable = { q:'', sort:null, dir:1, selected:null, view:[] };
 
 function aiTableRows() {
-  const cand = aiSarCandidates().map(c => ({ kind:'cand', key:c.key, name:c.row.Name || '', mmsi:String(c.row.MMSI || ''), type:c.type, time:c.time, score:c.score, c }));
-  const traj = trajectoryVessels().map(v => ({ kind:'traj', key:`traj|${v.mmsi}`, name:v.name || '', mmsi:String(v.mmsi), type:'trajectory', time:v.end, score:null }));
-  return [...cand, ...traj];
+  const cand = aiSarCandidates().map(c => ({ kind:'cand', order:0, key:c.key, name:c.row.Name || '', mmsi:String(c.row.MMSI || ''), type:c.type, time:c.time, score:c.score, h5:h5For(c.row.MMSI), c }));
+  const traj = trajectoryVessels().map(v => ({ kind:'traj', order:1, key:`traj|${v.mmsi}`, name:v.name || '', mmsi:String(v.mmsi), type:'trajectory', time:v.end, score:null, h5:h5For(v.mmsi) }));
+  const only = h5OnlyVessels().map(v => ({ kind:'h5', order:2, key:`h5|${v.mmsi}`, name:v.name || '', mmsi:String(v.mmsi), type:'none', time:v.dataEnd * 1000, score:null, h5:v }));
+  return [...cand, ...traj, ...only];
+}
+
+function aiTableMatches(r) {
+  return !aiSarFilter || (aiSarFilter === 'h5' ? !!r.h5 : r.type === aiSarFilter);
 }
 
 function renderAiTable() {
@@ -1976,13 +2198,14 @@ function renderAiTableBody() {
   if (!body) return;
   const all = aiTableRows();
   const q = aiTable.q.trim().toLowerCase();
-  const rows = all.filter(r => (!aiSarFilter || r.type === aiSarFilter) && (!q || r.name.toLowerCase().includes(q) || r.mmsi.includes(q)));
-  // Nama kosong selalu di urutan paling akhir. Nilai yang sama: tanggal terbaru dulu, lalu skor aturan tertinggi.
-  const val = r => aiTable.sort === 'name' ? r.name.toLowerCase() : aiTable.sort === 'type' ? r.type : (r.time || 0);
+  const rows = all.filter(r => aiTableMatches(r) && (!q || r.name.toLowerCase().includes(q) || r.mmsi.includes(q)));
+  // Nilai kosong selalu di urutan paling akhir. Nilai yang sama: tanggal terbaru dulu, lalu skor aturan tertinggi.
+  const val = r => aiTable.sort === 'name' ? r.name.toLowerCase() : aiTable.sort === 'type' ? (r.type === 'none' ? '' : r.type)
+    : (r.h5 ? H5_SHORT[r.h5.gear] || r.h5.gear : '');
   const blank = v => v === '' || v == null;
   const tie = (a, b) => (b.time || 0) - (a.time || 0) || (b.score ?? -1) - (a.score ?? -1);
   rows.sort((a, b) => {
-    if (!aiTable.sort) return (a.kind === 'traj') - (b.kind === 'traj') || tie(a, b);
+    if (!aiTable.sort) return a.order - b.order || tie(a, b);
     const x = val(a), y = val(b);
     if (blank(x) || blank(y)) return blank(x) - blank(y) || tie(a, b);
     return (x < y ? -1 : x > y ? 1 : 0) * aiTable.dir || tie(a, b);
@@ -1992,38 +2215,40 @@ function renderAiTableBody() {
   document.getElementById('ai-table-head').innerHTML = AI_TABLE_COLS.map(([key, label]) =>
     `<th class="col-${key}" onclick="sortAiTable('${key}')">${label}<span class="ai-table-sort">${aiTable.sort === key ? (aiTable.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('');
 
-  // Tanggal tanpa tahun: rentang tahunnya sudah tertulis di judul panel.
-  const fmtDay = t => Number.isFinite(t) ? new Date(t).toLocaleDateString('id-ID', { day:'numeric', month:'short' }) : '—';
+  const fmtDay = t => Number.isFinite(t) ? new Date(t).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) : '—';
   body.innerHTML = rows.length ? rows.map((r, i) => {
-    const color = r.type === 'trajectory' ? '#ffd21a' : candidateColor(r.type);
-    const label = r.type === 'trajectory' ? 'Trajectory' : (AI_SAR_TYPES.find(([k]) => k === r.type)?.[1] || r.type);
-    const ico = r.type === 'trajectory' ? `background:${color};border:1.5px solid #111827;border-radius:50%` : `background:${color};border-radius:2px;transform:rotate(45deg)`;
+    const color = r.type === 'trajectory' ? '#ffd21a' : r.type === 'none' ? '#8b949e' : candidateColor(r.type);
+    const label = r.type === 'trajectory' ? 'Trajectory' : r.type === 'none' ? 'Tanpa temuan' : (AI_SAR_TYPES.find(([k]) => k === r.type)?.[1] || r.type);
+    const h5Gear = r.h5 ? trajGearLabel(r.h5.gear) : null;
+    const ico = r.kind === 'cand' ? `background:${color};border-radius:2px;transform:rotate(45deg)`
+      : `background:${r.kind === 'h5' ? gearColor(h5Gear.key) : color};border:1.5px solid #111827;border-radius:50%`;
     const name = r.name || (r.mmsi ? `MMSI ${r.mmsi}` : '—');
-    return `<tr class="${r.key === aiTable.selected ? 'selected' : ''}" onclick="focusAiTableRow(${i})" title="${esc(r.name ? `${r.name} · MMSI ${r.mmsi || '-'}` : name)}">
+    const tip = `${r.name ? `${r.name} · MMSI ${r.mmsi || '-'}` : name} · ${fmtDay(r.time)}${r.h5 ? ` · H5: ${h5Gear.label} ${h5Pct(r.h5.gearProbability)}` : ''}`;
+    return `<tr class="${r.key === aiTable.selected ? 'selected' : ''}" onclick="focusAiTableRow(${i})" title="${esc(tip)}">
       <td class="col-name"><div class="ai-table-name"><span class="ai-table-ico" style="${ico}"></span><span>${esc(name)}</span></div></td>
-      <td class="col-type"><span class="ai-badge" style="background:${color}22;color:${color};border:1px solid ${color}66">${esc(label)}</span></td>
-      <td class="col-time">${fmtDay(r.time)}</td>
+      <td class="col-type">${r.type === 'none' ? `<span style="color:var(--text-3)">${label}</span>` : `<span class="ai-badge" style="background:${color}22;color:${color};border:1px solid ${color}66">${esc(label)}</span>`}</td>
+      <td class="col-h5">${r.h5 ? `<span style="color:${gearColor(h5Gear.key)};font-weight:600">${esc(H5_SHORT[r.h5.gear] || h5Gear.label)}</span>` : '<span style="color:var(--text-3)">—</span>'}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="${AI_TABLE_COLS.length}" class="ai-table-empty">Tidak ada kapal yang cocok dengan filter.</td></tr>`;
-
   body.closest('.ai-table-scroll').scrollTop = 0; // daftar baru selalu mulai dari atas
 
   const filtered = !!(aiSarFilter || q);
   document.getElementById('ai-table-count').textContent = filtered ? `${rows.length} dari ${all.length} kapal` : `${all.length} kapal`;
   // Tombol Reset hanya muncul kalau ada yang berbeda dari keadaan awal (filter, pencarian, atau urutan).
   document.getElementById('ai-table-reset').style.display = filtered || aiTable.sort ? '' : 'none';
-  document.getElementById('ai-table-type').innerHTML = `<option value="">Semua jenis (${all.length})</option>` + AI_TABLE_TYPES.map(([k, label]) =>
-    `<option value="${k}"${aiSarFilter === k ? ' selected' : ''}>${label} (${all.filter(r => r.type === k).length})</option>`).join('');
+  document.getElementById('ai-table-type').innerHTML = `<option value="">Semua (${all.length})</option>` + AI_TABLE_TYPES.map(([k, label]) =>
+    `<option value="${k}"${aiSarFilter === k ? ' selected' : ''}>${label} (${all.filter(r => r.type === k).length})</option>`).join('')
+    + `<option value="h5"${aiSarFilter === 'h5' ? ' selected' : ''}>Punya prediksi H5 (${all.filter(r => r.h5).length})</option>`;
 }
 
 function sortAiTable(key) {
-  // Klik kolom yang sama membalik urutan; kolom baru mulai dari terbaru→terlama untuk tanggal, A→Z untuk teks.
-  aiTable.dir = aiTable.sort === key ? -aiTable.dir : (key === 'time' ? -1 : 1);
+  // Klik kolom yang sama membalik urutan; kolom baru mulai dari A→Z.
+  aiTable.dir = aiTable.sort === key ? -aiTable.dir : 1;
   aiTable.sort = key;
   renderAiTableBody();
 }
 
-// Tombol Reset: kembali ke keadaan awal tabel (tanpa cari, tanpa filter jenis, urutan awal).
+// Tombol Reset: kembali ke keadaan awal tabel (tanpa cari, tanpa filter, urutan awal).
 function resetAiTable() {
   aiTable.q = '';
   aiTable.sort = null;
@@ -2045,8 +2270,14 @@ function focusAiTableRow(i) {
   if (!r) return;
   aiTableSelect(r.key);
   if (r.kind === 'traj') return showTrajectoryVessel(r.mmsi);
+  if (r.kind === 'h5') {
+    map.setView([r.h5.lat, r.h5.lon], Math.max(map.getZoom(), 8), { animate:true });
+    showAiTip(r.key);
+    return showH5Detail(r.h5);
+  }
   const c = r.c;
-  map.setView([c.lat, c.lon], Math.max(map.getZoom(), 9), { animate:true });
+  // Kalau lintasan kapalnya sendiri yang akan digambar, peta diatur di sana (garis + titik kandidat sekaligus).
+  if (!ownTrackFor(c.row.scene, c.row.MMSI)) map.setView([c.lat, c.lon], Math.max(map.getZoom(), 9), { animate:true });
   showAiTip(`cand|${c.key}`);
   openIntegratedSarDetail(c.row.scene, {
     mmsi: c.row.MMSI,
@@ -2110,7 +2341,7 @@ function renderTrajectoryVesselMarkers() {
     const marker = L.circleMarker(v.kalman[v.kalman.length - 1], { radius:6, color:'#111827', weight:1.5, fillColor:'#ffd21a', fillOpacity:1 })
       .on('click', () => { if (showAiTip(tipKey, true)) { aiTableSelect(tipKey); showTrajectoryVessel(v.mmsi, false); } else resetAiView(); })
       .addTo(localKalmanLayer);
-    aiTipTargets.set(tipKey, { layer: marker, html: aiTipHtml({ mmsi: v.mmsi, gearKey: gear.key, gearText: esc(gear.label) }) });
+    aiTipTargets.set(tipKey, { layer: marker, html: aiTipHtml({ mmsi: v.mmsi, gearKey: gear.key, gearText: esc(gear.label) }) + h5TipLine(v.mmsi) });
   }
 }
 
@@ -2118,6 +2349,7 @@ function renderTrajectoryVesselMarkers() {
 function showTrajectoryVessel(mmsi, withTip = true) {
   const v = trajectoryVessels().find(x => x.mmsi === normId(mmsi));
   if (!v) return;
+  clearAisSarTip();
   if (withTip) showAiTip(`traj|${v.mmsi}`);
   closeToolPanel();
   sidebarKey = null;
@@ -2142,6 +2374,7 @@ function showTrajectoryVessel(mmsi, withTip = true) {
       ${row('<span style="width:26px;border-top:3px dashed #00b7ff;display:inline-block"></span>', 'AIS mentah')}
       ${row('<span style="width:26px;border-top:3px solid #ffd21a;display:inline-block"></span>', 'Kalman')}
     </div>`;
+  appendH5Section(v.mmsi);
   const btn = document.getElementById('sb-traj-btn');
   btn.className = 'sb-btn';
   btn.textContent = 'Tampilkan Trajectory';
@@ -2204,6 +2437,7 @@ function renderLocalKalman(opts = {}) {
   }
   renderIntegrationCandidateMarkers();
   renderTrajectoryVesselMarkers();
+  renderH5OnlyMarkers();
 
   aiHomeBounds = bounds.length ? L.latLngBounds(bounds) : null;
   if (opts.fit && bounds.length) {
@@ -2943,18 +3177,359 @@ function plotSidebarTrail(latlngs, trackData = []) {
   try { map.fitBounds(L.polyline(latlngs).getBounds(), { padding:[40,80] }); } catch {}
 }
 
-// ── MENU HALAMAN (TOMBOL TIGA GARIS) ─────────────────────────────────────────
-// Klik tombol = buka/tutup. Menu juga menutup kalau klik di luar atau tekan Esc.
+// ── PENCOCOKAN AIS–SAR (SATELIT) ────────────────────────────────────────────
+// Kapal yang terlihat di citra radar Sentinel-1 di ZEE Indonesia (/api/gfw/sar-ais), dipisah dua:
+//   cocok dengan AIS → punya identitas (nama, MMSI, bendera, jenis);
+//   tidak cocok      → tidak terlacak AIS ("dark vessel"), tanpa identitas.
+// Sumber dan metode: Global Fishing Watch, Paolo dkk. (2024), Nature 625:85-91. Bukan hasil aturan/model sendiri.
+// Hanya di tab AI Inference, dan memakai jangka waktu yang sama dengan data tab itu (waktu citra satelit paling
+// awal sampai paling akhir pada temuannya). Awalnya mati; dinyalakan lewat tombol "AIS–SAR" di bar atas.
+const AISSAR_KINDS = {
+  unmatched: { color: '#ff5ccf', label: 'tidak cocok AIS (dark vessel)' },
+  matched:   { color: '#10b981', label: 'cocok dengan AIS' },
+};
+const AISSAR_MAX_DAYS = 62;    // batas rentang di /api/gfw/sar-ais
+const AISSAR_TYPE_LABEL = { FISHING:'Kapal ikan', CARGO:'Kargo', PASSENGER:'Penumpang', OTHER:'Lainnya', GEAR:'Pelampung alat tangkap', BUNKER:'Bunker', SEISMIC_VESSEL:'Kapal seismik', CARRIER:'Pengangkut ikan', SUPPORT:'Pendukung' };
+let aisSarOn = false;
+let aisSarData = null;         // data yang sedang tampil
+let aisSarPeriod = '';         // tulisan periode di kartu, sama dengan yang tertulis di kepala panel AI Inference
+let aisSarLoading = false;
+let aisSarTrackToken = 0;      // naik tiap kali lintasan diganti/dibersihkan, supaya jawaban yang terlambat diabaikan
+const aisSarTrackLayer = L.layerGroup().addTo(map);   // garis lintasan kapal yang sedang dipilih
+const aisSarTrackCache = new Map();                   // MMSI → titik lintasan (null = tidak tersedia)
+let aisSarTip = null;          // titik yang labelnya sedang terbuka
+const aisSarShow = { unmatched: true, matched: true };   // kelompok mana yang ditampilkan
+const aisSarGroups = { unmatched: null, matched: null };
+const aisSarCache = new Map(); // rentang → { at, data } dari /api/gfw/sar-ais
+// Digambar di kanvas tersendiri DI BAWAH titik kapal lain, supaya ±30 ribu titik tetap ringan dan tidak
+// menghalangi klik pada titik GFW / kandidat.
+map.createPane('aisSar');
+map.getPane('aisSar').style.zIndex = 350;
+const aisSarRenderer = L.canvas({ pane: 'aisSar', padding: 0.3 });
+
+// Ukuran titik mengikuti zoom: dari jauh kecil dan tipis (terlihat sebagai sebaran), dari dekat jelas per titik.
+// Yang cocok dengan AIS (kapal "biasa") sedikit lebih tipis daripada dark vessel.
+const aisSarBaseStyle = zoom => (zoom <= 5 ? { radius: 1.2, fillOpacity: .4 } : zoom <= 7 ? { radius: 1.9, fillOpacity: .55 } : zoom <= 9 ? { radius: 3, fillOpacity: .8 } : { radius: 4.5, fillOpacity: .9 });
+const aisSarStyle = (kind, base = aisSarBaseStyle(map.getZoom())) =>
+  (kind === 'matched' ? { radius: base.radius, fillOpacity: base.fillOpacity * .9 } : base);
+let aisSarZoomRadius = aisSarBaseStyle(map.getZoom()).radius;
+map.on('zoomend', () => {
+  const base = aisSarBaseStyle(map.getZoom());
+  if (base.radius === aisSarZoomRadius) return;
+  aisSarZoomRadius = base.radius;
+  for (const kind of Object.keys(aisSarGroups)) {
+    const style = aisSarStyle(kind, base);
+    aisSarGroups[kind]?.eachLayer(dot => { dot.setRadius(style.radius); dot.setStyle({ fillOpacity: style.fillOpacity }); });
+  }
+});
+
+// Jangka waktu = periode data tab AI Inference, dihitung dari temuannya sendiri (sama dengan renderAiSarPanel).
+// start/end untuk API memakai tanggal UTC, dan "end" tidak ikut dihitung.
+async function aisSarRange() {
+  await ensureIntegrationRows();
+  const times = aiSarCandidates().map(c => c.time).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!times.length) return null;
+  const DAY = 24 * 60 * 60 * 1000;
+  const utcDay = t => new Date(t).toISOString().slice(0, 10);
+  const last = times[times.length - 1];
+  const first = Math.max(times[0], last - (AISSAR_MAX_DAYS - 1) * DAY);
+  const fmt = t => new Date(t).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+  return { start: utcDay(first), end: utcDay(last + DAY), label: `${fmt(first)} – ${fmt(last)}` };
+}
+const fmtSarDay = day => new Date(`${day}T00:00:00Z`).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric', timeZone:'UTC' });
+
+async function loadAisSar(range) {
+  const key = `${range.start},${range.end}`;
+  const hit = aisSarCache.get(key);
+  if (hit && Date.now() - hit.at < 60 * 60 * 1000) return hit.data;
+  const r = await fetch(apiUrl(`/api/gfw/sar-ais?start=${range.start}&end=${range.end}`));
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || data.error) throw new Error(data.error || `HTTP ${r.status}`);
+  aisSarCache.set(key, { at: Date.now(), data });
+  return data;
+}
+
+function clearAisSarTip() {
+  if (aisSarTip) aisSarTip.unbindTooltip();
+  aisSarTip = null;
+  aisSarTrackToken++;
+  aisSarTrackLayer.clearLayers();
+}
+
+// Menutup pilihan di tab AI Inference (label, baris tabel, panel kanan, garis lintasan) TANPA menggeser peta.
+// Berbeda dengan resetAiView(), yang juga mengembalikan peta ke tampilan awal.
+function clearAiSelection() {
+  aiTipTargets.forEach(t => t.layer.unbindTooltip());
+  aiTableSelect(null);
+  closeSidebar();
+}
+
+// Klik di area kosong peta (tab AI Inference) = pilihan ditutup, jadi garis lintasan ikut hilang.
+// Klik pada titik kapal tidak lewat sini: titik itu punya kelas leaflet-interactive / leaflet-marker-icon.
+map.on('click', e => {
+  if (mode !== 'ai') return;
+  const target = e.originalEvent && e.originalEvent.target;
+  if (target && target.closest && target.closest('.leaflet-interactive, .leaflet-marker-icon, .leaflet-control')) return;
+  clearAisSarTip();
+  if (document.getElementById('sidebar').classList.contains('open') || document.querySelector('.ai-map-tip')) clearAiSelection();
+});
+
+function toggleAisSar() {
+  aisSarOn = !aisSarOn;
+  syncAisSarLayer();
+}
+
+function removeAisSarLayers() {
+  for (const kind of Object.keys(aisSarGroups)) {
+    if (aisSarGroups[kind]) map.removeLayer(aisSarGroups[kind]);
+    aisSarGroups[kind] = null;
+  }
+  clearAisSarTip();
+  aisSarData = null;
+  document.getElementById('aissar-card').hidden = true;
+  syncAisSarLegend();
+}
+
+async function syncAisSarLayer() {
+  const btn = document.getElementById('btn-aissar');
+  const here = mode === 'ai';
+  btn.style.display = here ? '' : 'none';
+  btn.classList.toggle('active', aisSarOn);
+  if (!(here && aisSarOn)) { removeAisSarLayers(); return; }
+  if (aisSarData || aisSarLoading) return;   // sudah tampil / sedang diambil; periodenya tetap (periode data tab ini)
+
+  aisSarLoading = true;
+  try {
+    btn.textContent = 'AIS–SAR…';
+    showAisSarCard('<div class="aissar-note"><span class="mini-spin"></span> Mengambil data satelit dari Global Fishing Watch…</div>');
+    const range = await aisSarRange();
+    if (!range) throw new Error('periode data AI Inference belum tersedia');
+    const data = await loadAisSar(range);
+    if (!aisSarOn || mode !== 'ai') return;   // sudah dimatikan atau pindah tab selagi memuat
+    drawAisSar(data, range.label);
+  } catch (err) {
+    aisSarOn = false;
+    btn.classList.remove('active');
+    if (mode !== 'ai') return;
+    showAisSarCard(`<div class="aissar-note">Data satelit belum bisa diambil (${esc(err.message || 'gagal')}). Coba lagi sebentar lagi.</div>`);
+    setTimeout(() => { if (!aisSarOn) document.getElementById('aissar-card').hidden = true; }, 6000);
+  } finally {
+    aisSarLoading = false;
+    btn.textContent = 'AIS–SAR';
+  }
+}
+
+function drawAisSar(data, periodLabel) {
+  aisSarData = data;
+  aisSarPeriod = periodLabel;
+  // Yang cocok digambar dulu, dark vessel di atasnya.
+  for (const kind of ['matched', 'unmatched']) {
+    const style = aisSarStyle(kind);
+    const group = L.featureGroup();
+    for (const point of data[kind].points) {
+      const dot = L.circleMarker([point[0], point[1]], { renderer: aisSarRenderer, ...style, stroke: false, fillColor: AISSAR_KINDS[kind].color, bubblingMouseEvents: false });
+      dot.sarPoint = point;
+      group.addLayer(dot);
+    }
+    group.on('click', e => showAisSarTip(e.propagatedFrom || e.layer, kind));
+    aisSarGroups[kind] = group;
+    if (aisSarShow[kind]) group.addTo(map);
+  }
+  renderAisSarCard();
+  syncAisSarLegend();
+}
+
+// Tombol di kartu: tampilkan / sembunyikan satu kelompok (cocok atau tidak cocok).
+function toggleAisSarKind(kind) {
+  if (!aisSarData) return;
+  aisSarShow[kind] = !aisSarShow[kind];
+  clearAisSarTip();
+  const group = aisSarGroups[kind];
+  if (aisSarShow[kind]) group.addTo(map); else map.removeLayer(group);
+  if (aisSarShow.unmatched && aisSarShow.matched) aisSarGroups.unmatched.eachLayer(dot => dot.bringToFront());
+  renderAisSarCard();
+  syncAisSarLegend();
+}
+
+function renderAisSarCard() {
+  const data = aisSarData;
+  const dark = data.unmatched.total, ok = data.matched.total, all = dark + ok;
+  const pct = all ? Math.round(dark / all * 100) : 0;
+  const chip = (kind, n, text, sub) =>
+    `<button type="button" class="aissar-kind${aisSarShow[kind] ? '' : ' off'}" onclick="toggleAisSarKind('${kind}')" title="Klik untuk ${aisSarShow[kind] ? 'menyembunyikan' : 'menampilkan'}"><i style="background:${AISSAR_KINDS[kind].color}"></i><span><b>${n.toLocaleString('id-ID')}</b> ${text}<em>${sub}</em></span></button>`;
+  showAisSarCard(`
+    <div class="aissar-kinds">
+      ${chip('unmatched', dark, 'tidak cocok AIS', `dark vessel · ${pct}% dari deteksi satelit`)}
+      ${chip('matched', ok, 'cocok dengan AIS', 'ada nama kapal')}
+    </div>
+    <div class="aissar-note">Sumber: Global Fishing Watch, radar Sentinel-1 (metode Paolo dkk. 2024, <i>Nature</i>). Tidak cocok berarti tidak terlacak AIS; belum tentu mematikan AIS, bisa juga kapal kecil yang tidak wajib AIS (PM 7/2019). Posisi per kotak ±1 km. Jangka waktu mengikuti data tab AI Inference. Klik titik hijau untuk melihat lintasan AIS per jam dan Kalman kapal itu.</div>`,
+    aisSarPeriod);
+}
+
+// Kartu keterangan di tengah bawah peta; hanya tampil selama lapisan ini menyala.
+function showAisSarCard(bodyHtml, period = '') {
+  document.getElementById('aissar-period').textContent = period;
+  document.getElementById('aissar-body').innerHTML = bodyHtml;
+  document.getElementById('aissar-card').hidden = false;
+}
+
+// Klik titik = label kecil (satu label saja); klik titik yang sama lagi = label hilang.
+function showAisSarTip(dot, kind) {
+  if (!dot || !dot.sarPoint || !aisSarData) return;
+  const same = aisSarTip === dot;
+  clearAisSarTip();
+  if (same) return;
+  // Pindah dari temuan / kapal trajectory ke titik satelit: pilihan lama (panel, label, garis) ditutup dulu.
+  if (document.getElementById('sidebar').classList.contains('open') || document.querySelector('.ai-map-tip')) clearAiSelection();
+  const [, , dayIndex, n, vesselIndex] = dot.sarPoint;
+  const seen = `Terlihat satelit: ${fmtSarDay(aisSarData.days[dayIndex])} (UTC)`;
+  const dim = 'color:#9aa7b4';
+  let html;
+  if (kind === 'matched') {
+    const [name, mmsi, flag, type] = aisSarData.matched.vessels[vesselIndex] || [];
+    const info = [mmsi && `MMSI ${esc(mmsi)}`, flag && esc(flag), type && esc(AISSAR_TYPE_LABEL[type] || titleCase(type))].filter(Boolean).join(' · ');
+    html = `<div style="font-weight:700;color:#cdd9e5;margin-bottom:2px">${esc(name || 'Nama tidak diketahui')}</div>`
+      + (info ? `<div>${info}</div>` : '')
+      + `<div style="color:${AISSAR_KINDS.matched.color}">Cocok dengan AIS</div>`
+      + `<div style="${dim}">${seen}</div>`;
+  } else {
+    html = `<div style="font-weight:700;color:${AISSAR_KINDS.unmatched.color};margin-bottom:2px">Dark vessel (tidak terlacak AIS)</div>`
+      + `<div>${seen}</div>`
+      + `<div style="${dim}">${n > 1 ? `${n} deteksi di kotak ini · ` : ''}posisi ±1 km · perlu diperiksa</div>`;
+  }
+  dot.bindTooltip(html, { permanent: true, direction: 'right', offset: [8, 0], className: 'ai-map-tip' }).openTooltip();
+  aisSarTip = dot;
+  if (kind === 'matched') showAisSarTrack(dot, (aisSarData.matched.vessels[vesselIndex] || [])[1], html);
+}
+
+// ── Lintasan AIS per jam + Kalman untuk kapal yang cocok dengan AIS ──────────
+// Posisi AIS per jam berasal dari GFW (dataset "presence", ketelitian kotak 0,01° ≈ ±1 km), satu file per MMSI.
+// Kalman dihitung di sini dengan model yang sama seperti lintasan Kalman yang sudah ada di tab ini
+// (constant velocity XY, sigma percepatan 0,03 m/s²). Karena posisinya berupa kotak, galat ukurnya dianggap
+// seragam di dalam kotak: sigma = lebar kotak / √12 ≈ 320 m. Data ini tidak memuat kecepatan/haluan, jadi hanya
+// posisi yang dipakai sebagai ukuran. Jeda lebih dari 6 jam memulai potongan lintasan baru.
+// File lintasannya dipadatkan menjadi 256 keping di public/ais-sar-tracks/: kapal ada di keping nomor
+// (MMSI mod 256), dan tiap nilainya disimpan sebagai selisih dari titik sebelumnya.
+const AISSAR_TRACK_URL = 'ais-sar-tracks/';
+const AISSAR_TRACK_SHARDS = 256n;
+const AISSAR_KALMAN = { accelSigma: 0.03, posSigma: 320, gapHours: 6 };
+const aisSarShardCache = new Map();   // nomor keping → Promise isi keping (null kalau tidak ada)
+
+async function loadAisSarTrack(mmsi) {
+  mmsi = String(mmsi ?? '');
+  if (aisSarTrackCache.has(mmsi)) return aisSarTrackCache.get(mmsi);
+  let points = null;
+  try {
+    if (/^\d+$/.test(mmsi)) {
+      const shard = Number(BigInt(mmsi) % AISSAR_TRACK_SHARDS);
+      if (!aisSarShardCache.has(shard)) {
+        aisSarShardCache.set(shard, fetch(`${AISSAR_TRACK_URL}${shard}.json`)
+          .then(r => (r.ok && (r.headers.get('content-type') || '').includes('json') ? r.json() : null))
+          .catch(() => null));
+      }
+      const data = await aisSarShardCache.get(shard);
+      const track = data?.v?.[mmsi];
+      if (track) {
+        const t0 = Date.parse(data.s);
+        const [dHour, dLat, dLon] = track;
+        let hour = 0, lat = 0, lon = 0;
+        points = dHour.map((dh, i) => {
+          hour += dh; lat += dLat[i]; lon += dLon[i];
+          return { t: t0 + hour * 3600000, lat: lat / 100, lon: lon / 100 };
+        });
+      }
+    }
+  } catch { points = null; }
+  aisSarTrackCache.set(mmsi, points);
+  return points;
+}
+
+// Kalman constant-velocity; sumbu timur dan utara dihitung terpisah (meter), yang diukur hanya posisi.
+// Hasil per titik: posisi Kalman, apakah titik itu awal potongan baru, dan selisihnya dari posisi AIS (meter).
+function aisSarKalman(points) {
+  const { accelSigma, posSigma, gapHours } = AISSAR_KALMAN;
+  const R = posSigma ** 2, q = accelSigma ** 2;
+  const lat0 = points[0].lat, lon0 = points[0].lon;
+  const mLat = 111320, mLon = 111320 * Math.cos(lat0 * Math.PI / 180);
+  const init = z => ({ x: z, v: 0, p00: R, p01: 0, p11: 25 });   // kecepatan awal belum diketahui (sigma 5 m/s)
+  const step = (s, z, dt) => {
+    const x = s.x + s.v * dt;                                                   // prediksi
+    const p00 = s.p00 + 2 * dt * s.p01 + dt * dt * s.p11 + q * dt ** 4 / 4;
+    const p01 = s.p01 + dt * s.p11 + q * dt ** 3 / 2;
+    const p11 = s.p11 + q * dt * dt;
+    const k0 = p00 / (p00 + R), k1 = p01 / (p00 + R), innov = z - x;            // koreksi dengan posisi terukur
+    return { x: x + k0 * innov, v: s.v + k1 * innov, p00: (1 - k0) * p00, p01: (1 - k0) * p01, p11: p11 - k1 * p01 };
+  };
+  const out = [];
+  let east = null, north = null, prevT = 0;
+  for (const p of points) {
+    const zx = (p.lon - lon0) * mLon, zy = (p.lat - lat0) * mLat;
+    const dt = (p.t - prevT) / 1000;
+    const reset = east === null || dt > gapHours * 3600;
+    if (reset) { east = init(zx); north = init(zy); } else { east = step(east, zx, dt); north = step(north, zy, dt); }
+    prevT = p.t;
+    out.push({ lat: lat0 + north.x / mLat, lon: lon0 + east.x / mLon, reset, corr: Math.hypot(east.x - zx, north.x - zy) });
+  }
+  return out;
+}
+
+async function showAisSarTrack(dot, mmsi, baseHtml) {
+  const token = ++aisSarTrackToken;
+  aisSarTrackLayer.clearLayers();
+  const dim = 'color:#9aa7b4';
+  const setTip = extra => { if (aisSarTip === dot) dot.setTooltipContent(baseHtml + extra); };
+  if (!mmsi) return setTip(`<div style="${dim}">Lintasan AIS tidak tersedia (tanpa MMSI)</div>`);
+  setTip(`<div style="${dim}">Mengambil lintasan AIS…</div>`);
+  const points = await loadAisSarTrack(mmsi);
+  if (token !== aisSarTrackToken || aisSarTip !== dot) return;   // sudah pindah ke titik lain
+  if (!points || points.length < 2) return setTip(`<div style="${dim}">Lintasan AIS tidak tersedia</div>`);
+
+  const kalman = aisSarKalman(points);
+  // Garis dipotong di jeda panjang, supaya tidak ada garis lurus yang menembus daratan.
+  const segments = list => {
+    const out = [];
+    list.forEach((p, i) => { if (kalman[i].reset) out.push([]); out[out.length - 1].push([p.lat, p.lon]); });
+    return out.filter(seg => seg.length >= 2);
+  };
+  // Sama seperti lintasan lain di tab ini: Kalman kuning tebal di bawah, AIS biru putus-putus di atasnya.
+  L.polyline(segments(kalman), { color: '#ffd21a', weight: 5, opacity: .95, interactive: false }).addTo(aisSarTrackLayer);
+  L.polyline(segments(points), { color: '#00b7ff', weight: 2, opacity: 1, dashArray: '6 7', interactive: false }).addTo(aisSarTrackLayer);
+
+  const updated = kalman.filter(k => !k.reset);
+  const mean = updated.length ? updated.reduce((sum, k) => sum + k.corr, 0) / updated.length : 0;
+  setTip(`<div style="margin-top:4px;padding-top:4px;border-top:1px solid #2a3b55"><span style="color:#00b7ff">AIS per jam</span>: ${points.length.toLocaleString('id-ID')} titik (±1 km)</div>`
+    + `<div><span style="color:#ffd21a">Kalman</span>: ${mean < 1 ? 'berhimpit dengan AIS (selisih rata-rata di bawah 1 m)' : `selisih rata-rata ${Math.round(mean).toLocaleString('id-ID')} m dari AIS`}</div>`);
+
+  // Peta digeser supaya seluruh lintasan dan titiknya terlihat, tidak tertutup panel kiri dan kartu bawah.
+  const left = document.getElementById('stats-panel').getBoundingClientRect().right;
+  const roomy = map.getSize().x - left > 500;
+  map.fitBounds(L.latLngBounds([...points.map(p => [p.lat, p.lon]), dot.getLatLng()]), {
+    paddingTopLeft: [roomy ? left + 40 : 60, 60 + 48], paddingBottomRight: [60, 210], maxZoom: 10,
+  });
+}
+
+function syncAisSarLegend() {
+  const el = document.getElementById('legend');
+  el.querySelectorAll('.leg-aissar').forEach(row => row.remove());
+  if (!aisSarData) return;
+  const rows = ['unmatched', 'matched'].filter(kind => aisSarShow[kind]).map((kind, i) =>
+    `<div class="leg-row leg-aissar"${i ? '' : ' style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px"'}><span class="leg-dot" style="background:${AISSAR_KINDS[kind].color}"></span><span class="leg-label">Satelit: ${AISSAR_KINDS[kind].label}</span></div>`);
+  el.insertAdjacentHTML('beforeend', rows.join(''));
+}
+
+// ── MENU SAMPING (TOMBOL TIGA GARIS) ─────────────────────────────────────────
+// Klik tombol = tampilkan/sembunyikan menu samping. Menu tetap tampil sampai tombolnya diklik lagi,
+// sama seperti sidebar di halaman Anomaly Alert Center dan Data & Reports.
 function toggleNavMenu(force) {
   const menu = document.getElementById('nav-menu');
   const btn = document.getElementById('btn-nav-menu');
   const open = force ?? !menu.classList.contains('open');
   menu.classList.toggle('open', open);
   btn.classList.toggle('open', open);
+  document.body.classList.toggle('nav-open', open);
   btn.setAttribute('aria-expanded', String(open));
+  btn.title = open ? 'Sembunyikan menu' : 'Tampilkan menu';
 }
-document.addEventListener('click', e => { if (!e.target.closest('#nav-menu, #btn-nav-menu')) toggleNavMenu(false); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleNavMenu(false); });
 
 // ── TOOL PANEL ────────────────────────────────────────────────────────────────
 function togglePanel() {
@@ -3549,6 +4124,7 @@ setStatsMode('gfw');
 updateLegend(mode);
 syncLocalKalmanLayer();
 syncWindLayer();
+syncAisSarLayer();
 loadGfwRegionNames();
 loadGfw();
 </script>

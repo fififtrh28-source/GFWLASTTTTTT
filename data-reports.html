@@ -7,10 +7,14 @@
   <link rel="stylesheet" href="assets/css/anomaly-feature.css">
   <script type="module" src="assets/js/anomaly-data.js"></script>
   <script type="module" src="assets/js/data-reports.js"></script>
+  <script type="module" src="assets/js/onx-nav.js"></script>
 </head>
 <body class="onx-body onx-light">
   <div class="onx-shell">
     <header class="onx-topbar">
+      <button class="onx-icon-button onx-menu-button" id="onx-menu-toggle" type="button" aria-label="Tampilkan atau sembunyikan menu" aria-controls="onx-sidebar" aria-expanded="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+      </button>
       <a class="onx-brand" href="index.html" aria-label="Ocean Nexus 2026">
         <img src="assets/logos/ocean-nexus.png" alt="" width="38" height="38">
         <span>
@@ -40,9 +44,9 @@
       </div>
     </header>
 
-    <aside class="onx-sidebar" aria-label="Reports navigation">
+    <aside class="onx-sidebar" id="onx-sidebar" aria-label="Reports navigation">
       <nav>
-        <a href="index.html">
+        <a href="index.html#menu">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
           </svg>
