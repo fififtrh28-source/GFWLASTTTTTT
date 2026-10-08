@@ -1,3 +1,5 @@
+import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
+
 (function () {
   const dataStore = window.OceanNexusData;
   if (!dataStore) return;
@@ -8,7 +10,7 @@
     selectedIds: new Set(),
     reportRecords: [],
     page: 1,
-    perPage: 5,
+    perPage: PAGE_SIZE,
     filters: {
       start: "",
       end: "",
@@ -105,7 +107,6 @@
 
   function renderTable() {
     const rows = getCurrentPageRecords();
-    const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.perPage));
     const startNumber = (state.page - 1) * state.perPage;
 
     if (!rows.length) {
@@ -130,9 +131,15 @@
       `).join("");
     }
 
-    elements.pageInfo.textContent = `Page ${state.page} of ${maxPage}`;
-    elements.prevPage.disabled = state.page <= 1;
-    elements.nextPage.disabled = state.page >= maxPage;
+    renderPagination(elements.pagination, {
+      page: state.page,
+      total: state.filtered.length,
+      perPage: state.perPage,
+      onPage: (page) => {
+        state.page = page;
+        renderAll();
+      },
+    });
 
     const visible = rows.map((record) => record.id);
     const checkedCount = visible.filter((id) => state.selectedIds.has(id)).length;
@@ -305,17 +312,6 @@
     elements.generatePdf.addEventListener("click", generateReport);
     elements.downloadPdf.addEventListener("click", downloadReportPdf);
 
-    elements.prevPage.addEventListener("click", () => {
-      state.page = Math.max(1, state.page - 1);
-      renderAll();
-    });
-
-    elements.nextPage.addEventListener("click", () => {
-      const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.perPage));
-      state.page = Math.min(maxPage, state.page + 1);
-      renderAll();
-    });
-
     elements.selectVisible.addEventListener("change", () => {
       getCurrentPageRecords().forEach((record) => {
         if (elements.selectVisible.checked) {
@@ -360,9 +356,7 @@
     elements.selectVisible = $("#select-visible-records");
     elements.selectionLabel = $("#selection-label");
     elements.tableBody = $("#records-table-body");
-    elements.prevPage = $("#prev-page");
-    elements.nextPage = $("#next-page");
-    elements.pageInfo = $("#page-info");
+    elements.pagination = $("#records-pagination");
     elements.preview = $("#report-preview");
   }
 

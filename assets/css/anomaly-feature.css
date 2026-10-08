@@ -839,8 +839,10 @@ a {
   flex-wrap: wrap;
 }
 
+/* Penomoran halaman tabel: keterangan jumlah di kiri, tombol nomor halaman di kanan */
 .onx-pagination {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -850,8 +852,52 @@ a {
 
 .onx-pagination span {
   color: #9bb8cc;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.onx-page-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.onx-page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid rgba(190, 231, 255, 0.22);
+  border-radius: 8px;
+  color: #d7e9f8;
+  background: rgba(190, 231, 255, 0.08);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.onx-page-btn:hover:not(:disabled):not(.is-active) {
+  background: rgba(190, 231, 255, 0.18);
+}
+
+.onx-page-btn.is-active {
+  border-color: #7fdcff;
+  color: #052c47;
+  background: #7fdcff;
+  cursor: default;
+}
+
+.onx-page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Panah sebelumnya / berikutnya */
+.onx-page-btn[aria-label] {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .onx-preview {
@@ -1267,6 +1313,27 @@ body.onx-light {
 
 .onx-light .onx-pagination {
   border-top: 1px solid #e3ebf2;
+}
+
+.onx-light .onx-pagination .onx-page-info {
+  color: #33536b;
+}
+
+.onx-light .onx-page-btn {
+  border-color: #d9e4ee;
+  color: #0b2c47;
+  background: #f1f5f9;
+}
+
+.onx-light .onx-page-btn:hover:not(:disabled):not(.is-active) {
+  border-color: #b9cddd;
+  background: #e3edf5;
+}
+
+.onx-light .onx-page-btn.is-active {
+  border-color: #034e7d;
+  color: #ffffff;
+  background: #075f92;
 }
 
 .onx-light .onx-report-card {

@@ -1,4 +1,5 @@
 import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
+import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
 
 (function () {
   const dataStore = window.OceanNexusData;
@@ -9,6 +10,7 @@ import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
     filtered: [],
     activeTab: "All",
     selectedId: null,
+    page: 1,
   };
 
   const elements = {};
@@ -140,9 +142,24 @@ import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
       return matchesTab && matchesStart && matchesEnd && matchesType && matchesStatus && matchesSearch;
     });
 
+    const maxPage = Math.max(1, Math.ceil(state.filtered.length / PAGE_SIZE));
+    state.page = Math.min(state.page, maxPage);
+
+    // Kalau kapal yang dipilih tidak ada lagi di daftar, pilih baris pertama di halaman yang sedang dibuka
     if (!state.filtered.some((record) => record.id === state.selectedId)) {
-      state.selectedId = state.filtered[0]?.id || null;
+      state.selectedId = getCurrentPageRecords()[0]?.id || null;
     }
+  }
+
+  function getCurrentPageRecords() {
+    const start = (state.page - 1) * PAGE_SIZE;
+    return state.filtered.slice(start, start + PAGE_SIZE);
+  }
+
+  // Filter atau tab berubah: daftar mulai lagi dari halaman pertama
+  function filtersChanged() {
+    state.page = 1;
+    renderAll();
   }
 
   function renderSummary() {
@@ -160,14 +177,24 @@ import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
   }
 
   function renderTable() {
+    renderPagination(elements.pagination, {
+      page: state.page,
+      total: state.filtered.length,
+      onPage: (page) => {
+        state.page = page;
+        renderTable();
+      },
+    });
+
     if (!state.filtered.length) {
       elements.tableBody.innerHTML = '<tr><td class="onx-empty" colspan="7">No anomaly records match the current filters.</td></tr>';
       return;
     }
 
-    elements.tableBody.innerHTML = state.filtered.map((record, index) => `
+    const startNumber = (state.page - 1) * PAGE_SIZE;
+    elements.tableBody.innerHTML = getCurrentPageRecords().map((record, index) => `
       <tr data-id="${escapeHtml(record.id)}" tabindex="0" class="${record.id === state.selectedId ? "is-selected" : ""}">
-        <td>${index + 1}</td>
+        <td>${startNumber + index + 1}</td>
         <td>
           <span class="onx-vessel-name">
             <strong>${escapeHtml(record.vesselName)}</strong>
@@ -391,13 +418,13 @@ import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
     document.querySelectorAll("[data-tab]").forEach((button) => {
       button.addEventListener("click", () => {
         state.activeTab = button.dataset.tab;
-        renderAll();
+        filtersChanged();
       });
     });
 
     [elements.startDate, elements.endDate, elements.typeFilter, elements.statusFilter, elements.searchInput].forEach((input) => {
-      input.addEventListener("input", renderAll);
-      input.addEventListener("change", renderAll);
+      input.addEventListener("input", filtersChanged);
+      input.addEventListener("change", filtersChanged);
     });
 
     elements.tableBody.addEventListener("click", (event) => {
@@ -437,6 +464,7 @@ import { SEA_LABELS, CITY_LABELS } from "./onx-map-labels.js";
     elements.statusFilter = $("#filter-status");
     elements.searchInput = $("#filter-search");
     elements.tableBody = $("#anomaly-table-body");
+    elements.pagination = $("#anomaly-pagination");
     elements.detailBody = $("#anomaly-detail-body");
     elements.historyBody = $("#alert-history-body");
     elements.modal = $("#telegram-modal");
