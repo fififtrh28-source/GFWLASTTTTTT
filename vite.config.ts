@@ -20,29 +20,66 @@ function loadDotEnv() {
   }
 }
 
-const API_DIR = path.join(__dirname, "api");
-
-function isInside(baseDir: string, target: string): boolean {
-  const rel = path.relative(baseDir, target);
-  return Boolean(rel) && !rel.startsWith("..") && !path.isAbsolute(rel);
+// K-1 (laporan audit, B.1): mengikuti kode "Rekomendasi Perbaikan" di PDF, dengan dua tambahan:
+// 1. Awalan "/api/" dibuang SEBELUM path.normalize. Pada kode PDF, garis miring di depan ikut tersisa
+//    ("/gfw/events"), sehingga path.resolve menganggapnya alamat dari akar disk (D:\gfw\events.js)
+//    dan semua rute /api menjadi 404. Di Windows, path.normalize juga mengubah "/" menjadi "\",
+//    sehingga replace(/^\/api/) setelah normalize tidak pernah cocok.
+// 2. File berawalan "_" atau "." (mis. _redis.js) bukan rute, sama seperti aturan Vercel.
+function resolveHandler(urlPath: string): string | null {
+  const clean = path.normalize(urlPath.split("?")[0].replace(/\/$/, "").replace(/^\/api\/?/, ""));
+  const apiDir = path.resolve(__dirname, "api");
+  if (clean.split(/[\\/]/).some((segment) => segment.startsWith("_") || segment.startsWith("."))) return null;
+  const candidates = [
+    path.resolve(apiDir, clean + ".js"),
+    path.resolve(apiDir, clean, "index.js"),
+  ];
+  const found = candidates.find(fs.existsSync);
+  // Pastikan path hasil resolve tetap berada di dalam folder api
+  if (found && (found.startsWith(apiDir + path.sep) || found === apiDir)) {
+    return found;
+  }
+  return null;
 }
 
-// Alamat /api/... hanya boleh menunjuk handler di dalam folder api/ (sama seperti server/index.mjs).
-// Alamat berisi ../ atau file berawalan "_" / "." ditolak, supaya tidak ada file lain yang ikut dijalankan.
-function resolveHandler(urlPath: string): string | null {
-  let pathname: string;
+// F3-S (laporan audit B.4 dan Fase 3): halaman, data, dan API hanya dikirim bila cookie sesi login sah, dengan aturan
+// yang sama seperti middleware.js di Vercel. Berkas internal Vite (/@vite/, /node_modules/, ...) hanya ada saat
+// npm run dev dan tidak berisi data, jadi dibiarkan.
+const VITE_INTERNAL = /^\/(?:@vite\/|@id\/|@fs\/|node_modules\/|__vite)/;
+
+// api/_session.js dimuat langsung oleh Node (bukan dibundel bersama vite.config.ts), supaya modulnya sama dengan
+// yang dipakai handler api/ (termasuk catatan sesi yang sudah logout).
+type SessionModule = typeof import("./api/_session.js");
+let sessionModule: Promise<SessionModule> | null = null;
+function loadSession(): Promise<SessionModule> {
+  sessionModule ??= import(pathToFileURL(path.join(__dirname, "api", "_session.js")).href);
+  return sessionModule;
+}
+
+async function sessionGate(req: IncomingMessage, res: ServerResponse, next: () => void) {
+  const url = req.url || "/";
+  if (VITE_INTERNAL.test(url)) return next();
   try {
-    pathname = new URL(urlPath, "http://localhost").pathname;
-  } catch {
-    return null;
+    const { decideAccess, UNAUTHORIZED_BODY } = await loadSession();
+    const decision = await decideAccess({ method: req.method, url, cookieHeader: req.headers.cookie, secure: false });
+    if (decision.action === "allow") {
+      if (decision.setCookie) res.setHeader("Set-Cookie", decision.setCookie);
+      return next();
+    }
+    res.setHeader("Cache-Control", "no-store");
+    if (decision.action === "redirect") {
+      res.statusCode = 302;
+      res.setHeader("Location", decision.location ?? "/index.html");
+      return res.end();
+    }
+    res.statusCode = 401;
+    res.setHeader("Content-Type", "application/problem+json; charset=utf-8");
+    return res.end(UNAUTHORIZED_BODY);
+  } catch (err) {
+    console.error("[sesi] pemeriksaan gagal:", err);
+    res.statusCode = 500;
+    return res.end();
   }
-  if (!pathname.startsWith("/api/")) return null;
-  const segments = pathname.split("/").filter(Boolean).slice(1);
-  if (!segments.length || segments.some((segment) => segment.startsWith("_") || segment.startsWith(".") || segment.includes("\\"))) {
-    return null;
-  }
-  const base = path.join(API_DIR, ...segments);
-  return [`${base}.js`, path.join(base, "index.js")].find((file) => isInside(API_DIR, file) && fs.existsSync(file)) ?? null;
 }
 
 type AisRelay = { handle: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>; start: () => void };
@@ -59,6 +96,8 @@ function vercelApiPlugin() {
       loadDotEnv();
       // Relay langsung jalan saat server mulai, supaya riwayat AIS terkumpul walau dashboard belum dibuka.
       loadAisRelay().then((relay) => relay.start()).catch((err) => console.error("[ais-relay] gagal dimulai:", err));
+
+      server.middlewares.use(sessionGate);
 
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
         if (!req.url?.startsWith("/api/")) return next();

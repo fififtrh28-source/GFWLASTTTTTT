@@ -36,16 +36,18 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
       .replace(/'/g, "&#039;");
   }
 
-  // Hanya status yang dikenal yang masuk ke nama kelas, supaya isi status tidak bisa menyisipkan atribut HTML.
+  // T-8 (laporan audit, B.14): label status dibuat dengan createElement + textContent, sama dengan
+  // "Rekomendasi Perbaikan" di PDF. Hanya status yang dikenal yang masuk ke nama kelas, dan isi status
+  // tidak pernah dibaca sebagai HTML. Di template tabel/detail cukup ditaruh tempat kosong [data-status-slot].
   const SAFE_STATUSES = new Set(["new", "reviewed", "sent"]);
 
-  function statusClass(status) {
-    const key = String(status || "").toLowerCase().trim();
-    return `onx-status onx-status-${SAFE_STATUSES.has(key) ? key : "unknown"}`;
-  }
-
-  function statusBadge(status) {
-    return `<span class="${statusClass(status)}">${escapeHtml(status)}</span>`;
+  function createStatusBadge(status) {
+    const rawStatus = String(status || "").toLowerCase().trim();
+    const statusClass = SAFE_STATUSES.has(rawStatus) ? rawStatus : "unknown";
+    const badge = document.createElement("span");
+    badge.className = `onx-status onx-status-${statusClass}`;
+    badge.textContent = statusClass.toUpperCase(); // textContent aman dari evaluasi HTML
+    return badge;
   }
 
   function uniqueValues(key) {
@@ -130,9 +132,10 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
           <td>${escapeHtml(record.anomalyType)}</td>
           <td>${escapeHtml(record.dateLabel)}</td>
           <td>${escapeHtml(record.basis)}</td>
-          <td>${statusBadge(record.status)}</td>
+          <td data-status-slot></td>
         </tr>
       `).join("");
+      elements.tableBody.querySelectorAll("[data-status-slot]").forEach((cell, i) => cell.append(createStatusBadge(rows[i].status)));
     }
 
     renderPagination(elements.pagination, {

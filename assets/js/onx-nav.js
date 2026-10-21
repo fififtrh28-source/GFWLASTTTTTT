@@ -3,6 +3,24 @@
 (function () {
   const KEY = "ocean-nexus-nav-hidden";
 
+  // F3-S: tombol Sign out. Sesi login di server diakhiri (cookie dihapus), lalu kembali ke halaman login.
+  document.addEventListener("click", async (event) => {
+    const logout = event.target.closest?.("[data-onx-logout]");
+    if (!logout) return;
+    logout.disabled = true;
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.warn("[onx-nav] logout gagal:", error);
+    }
+    try {
+      sessionStorage.removeItem("onx-login");
+    } catch (error) {
+      // penyimpanan diblokir: abaikan
+    }
+    location.replace("index.html?keluar=1");
+  });
+
   document.addEventListener("DOMContentLoaded", () => {
     const shell = document.querySelector(".onx-shell");
     const button = document.getElementById("onx-menu-toggle");

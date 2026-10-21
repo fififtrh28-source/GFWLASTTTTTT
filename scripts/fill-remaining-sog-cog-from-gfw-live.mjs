@@ -23,9 +23,9 @@ const KNOTS_PER_MPS = 1.94384;
 
 loadEnvIfNeeded();
 
-const token = process.env.GFW_TOKEN;
+const token = process.env.GFW_API_TOKEN || process.env.GFW_TOKEN;
 if (!token) {
-  throw new Error("GFW_TOKEN tidak ditemukan di environment atau .env.lokal");
+  throw new Error("GFW_API_TOKEN (atau GFW_TOKEN) tidak ditemukan di environment atau .env.lokal");
 }
 
 const { headers, rows } = parseCsv(readFileSync(inputPath, "utf8"));
@@ -312,7 +312,7 @@ function surroundingPair(track, sceneTime) {
 }
 
 function loadEnvIfNeeded() {
-  if (process.env.GFW_TOKEN) return;
+  if (process.env.GFW_API_TOKEN || process.env.GFW_TOKEN) return;
   const envPath = join(repoRoot, ".env.lokal");
   if (!existsSync(envPath)) return;
   for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {

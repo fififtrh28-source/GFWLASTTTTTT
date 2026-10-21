@@ -34,6 +34,8 @@ dist/
 /public/Dataset_Test_Enriched/Dataset_Test_Enriched_EEZ_Indonesia/trajectory_outputs_25seq_windows_reference_style/trajectory_points_raw_vs_kalman.csv
 
 *.h5
+# Angka scaler/kalibrator yang disalin dari file H5 (N-1): bagian dari model pihak lain, tidak ikut
+*.preprocessing.json
 *.pt
 *.SAFE
 *.tif

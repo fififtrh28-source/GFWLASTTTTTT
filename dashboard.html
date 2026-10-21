@@ -84,12 +84,15 @@
     @media (max-width:900px) { body.nav-open { --nav-w:0px; } }
 
     /* Logo Ocean Nexus, sama dengan halaman depan (index.html .brand-mark) */
-    /* Penanda mode demo (temuan audit K-4): halaman ini belum dilindungi login di server */
-    .tb-demo {
-      padding:2px 8px; border:1px solid rgba(240,178,82,.55); border-radius:999px;
-      background:rgba(227,144,26,.14); color:#f0b252; font-size:10px; font-weight:700; letter-spacing:.08em;
-      cursor:help;
+    /* Tombol keluar (F3-S): mengakhiri sesi login di server, lalu kembali ke halaman login.
+       Menempati tempat label mode demo yang lama; halaman kini dilindungi login di server. */
+    .tb-logout {
+      padding:2px 9px; border:1px solid var(--border); border-radius:999px;
+      background:transparent; color:var(--text-2); font:inherit; font-size:10px; font-weight:700; letter-spacing:.08em;
+      text-transform:uppercase; cursor:pointer;
     }
+    .tb-logout:hover { color:var(--text); border-color:var(--blue); background:var(--blue-dim); }
+    .tb-logout:focus-visible { outline:1px solid var(--blue); outline-offset:1px; }
     .tb-brand img {
       width:26px; height:26px; flex-shrink:0;
       filter:drop-shadow(0 4px 8px rgba(0,0,0,.22));
@@ -651,7 +654,7 @@
   <div class="tb-brand" aria-label="Ocean Nexus 2026">
     <img src="assets/logos/ocean-nexus.png" alt="" width="26" height="26">
     OCEAN NEXUS 2026
-    <span class="tb-demo" title="Mode demo: halaman ini belum dilindungi login di server, jadi siapa pun yang tahu alamatnya bisa membukanya.">MODE DEMO</span>
+    <button class="tb-logout" type="button" onclick="signOut()" title="Keluar dari Ocean Nexus (sesi login diakhiri)">Keluar</button>
   </div>
   <div class="tb-modes">
     <button class="mode-btn active-gfw" id="btn-gfw" onclick="setMode('gfw')">GFW Events</button>
@@ -3682,6 +3685,17 @@ window.addEventListener('load', openFindingFromLink);
 // ── MENU SAMPING (TOMBOL TIGA GARIS) ─────────────────────────────────────────
 // Klik tombol = tampilkan/sembunyikan menu samping. Menu tetap tampil sampai tombolnya diklik lagi,
 // sama seperti sidebar di halaman Anomaly Alert Center dan Data & Reports.
+// F3-S: keluar. Sesi login di server diakhiri (cookie dihapus), lalu kembali ke halaman login.
+async function signOut() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (err) {
+    console.warn('[dashboard] logout gagal:', err);
+  }
+  try { sessionStorage.removeItem('onx-login'); } catch (err) { /* penyimpanan diblokir: abaikan */ }
+  location.replace('index.html?keluar=1');
+}
+
 function toggleNavMenu(force) {
   const menu = document.getElementById('nav-menu');
   const btn = document.getElementById('btn-nav-menu');

@@ -8,6 +8,8 @@ import {
 } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+// C.1 (laporan audit): proyeksi meter untuk filter Kalman memakai Turf.js (permukaan bola), bukan bidang datar.
+import { projectToMeters, unprojectFromMeters } from "./geodesi.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -1313,22 +1315,6 @@ function processNoise(dt, sigmaA) {
   ];
 }
 
-function projectToMeters(lat, lon, refLat, refLon) {
-  const earthM = 6_371_008.8;
-  return {
-    x: toRad(lonDelta(refLon, lon)) * earthM * Math.cos(toRad(refLat)),
-    y: toRad(lat - refLat) * earthM,
-  };
-}
-
-function unprojectFromMeters(x, y, refLat, refLon) {
-  const earthM = 6_371_008.8;
-  return {
-    lat: refLat + toDeg(y / earthM),
-    lon: wrapLon(refLon + toDeg(x / (earthM * Math.cos(toRad(refLat))))),
-  };
-}
-
 function haversineM(lat1, lon1, lat2, lon2) {
   const earthM = 6_371_008.8;
   const dLat = toRad(lat2 - lat1);
@@ -1479,17 +1465,6 @@ function escapeXml(input) {
 
 function escapeHtml(input) {
   return escapeXml(input).replaceAll("'", "&#39;");
-}
-
-// Selisih bujur toLon − fromLon dijaga di antara −180° dan 180° (kapal yang melewati bujur 180° tidak meloncat 360°).
-function lonDelta(fromLon, toLon) {
-  const diff = toLon - fromLon;
-  return diff > 180 ? diff - 360 : diff < -180 ? diff + 360 : diff;
-}
-
-// Mengembalikan bujur ke rentang −180°..180°; bujur yang sudah di dalam rentang tidak diubah.
-function wrapLon(lon) {
-  return lon > 180 ? lon - 360 : lon < -180 ? lon + 360 : lon;
 }
 
 function toRad(degrees) {

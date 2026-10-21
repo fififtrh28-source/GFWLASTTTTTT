@@ -120,7 +120,7 @@ function resolvePath(input) {
 }
 
 function loadEnvIfNeeded() {
-  if (process.env.GFW_TOKEN) return;
+  if (process.env.GFW_API_TOKEN || process.env.GFW_TOKEN) return;
   for (const name of [".env.lokal", ".env.local", ".env"]) {
     const envPath = join(repoRoot, name);
     if (!existsSync(envPath)) continue;
@@ -134,7 +134,7 @@ function loadEnvIfNeeded() {
       }
       if (!process.env[key]) process.env[key] = val;
     }
-    if (process.env.GFW_TOKEN) return;
+    if (process.env.GFW_API_TOKEN || process.env.GFW_TOKEN) return;
   }
 }
 
@@ -565,8 +565,8 @@ function buildSummary(progress, allMmsi, selectedMmsi) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   loadEnvIfNeeded();
-  const token = process.env.GFW_TOKEN;
-  if (!token) throw new Error("GFW_TOKEN tidak ditemukan di environment, .env.lokal, .env.local, atau .env");
+  const token = process.env.GFW_API_TOKEN || process.env.GFW_TOKEN;
+  if (!token) throw new Error("GFW_API_TOKEN (atau GFW_TOKEN) tidak ditemukan di environment, .env.lokal, .env.local, atau .env");
 
   mkdirSync(args.outDir, { recursive: true });
   const paths = outputPaths(args);

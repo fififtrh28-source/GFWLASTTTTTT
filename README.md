@@ -29,10 +29,15 @@ Tiga tab di dashboard peta menjawab tiga pertanyaan berbeda:
 Bagian ini sengaja ditaruh di depan. Beberapa hal di proyek ini belum selesai, dan tampilannya bisa memberi kesan
 sebaliknya.
 
-1. **Login hanya melindungi halaman depan.** Nama pengguna dan kata sandi diperiksa di server (`api/auth/login.js`)
-   dari pengaturan `LOGIN_USERNAME` dan `LOGIN_PASSWORD`, dan tidak lagi ditulis di kode maupun di dokumen ini;
-   data login dibagikan terpisah. Halaman dashboard, Anomaly Alert Center, dan Data & Reports masih bisa dibuka
-   langsung lewat alamatnya, jadi ketiganya ditandai "MODE DEMO".
+1. **Semua halaman, data, dan API butuh login.** Nama pengguna dan kata sandi diperiksa di server (`api/auth/login.js`)
+   dari pengaturan `LOGIN_USERNAME` dan `LOGIN_PASSWORD`, dan tidak ditulis di kode maupun di dokumen ini; data login
+   dibagikan terpisah. Login yang benar mendapat cookie sesi HttpOnly bertanda tangan `SESSION_SECRET`
+   (`api/_session.js`), dan server memeriksanya sebelum mengirim halaman atau data: `middleware.js` di Vercel,
+   `vite.config.ts` saat `npm run dev`, `server/index.mjs` saat `npm run start` (laporan audit B.4 dan Fase 3).
+   Sesi berakhir setelah 8 jam, atau 30 menit tanpa aktivitas (OWASP Session Management Cheat Sheet). Tanpa login,
+   halaman diarahkan ke halaman login dan data/API dibalas 401. Hanya halaman login dan berkas tampilan di `/assets/`
+   yang terbuka. Tombol Keluar / Sign out ada di bilah atas. Selama belum ada Redis, logout menghapus cookie di
+   browser tetapi belum mencabut sesi di semua server Vercel; mengganti `SESSION_SECRET` mengakhiri semua sesi.
 2. **Anomaly Alert Center dan Data & Reports memakai temuan yang sama dengan tab AI Inference.** Datanya dibaca
    `assets/js/anomaly-data.js` dari file kandidat yang juga dipakai dashboard peta (365 temuan), jadi isinya
    mengikuti butir 3 di bawah. Status tiap temuan (New, Reviewed, Sent) hanya tersimpan di browser masing-masing
@@ -78,11 +83,12 @@ ke repositori.
 
 | Nama | Wajib | Untuk apa |
 |---|---|---|
-| `GFW_TOKEN` | Ya | Semua data GFW. Daftar di https://globalfishingwatch.org/our-apis/ |
+| `GFW_API_TOKEN` | Ya | Semua data GFW. Daftar di https://globalfishingwatch.org/our-apis/ (nama lama `GFW_TOKEN` masih dibaca) |
 | `AISSTREAM_API_KEY` | Ya, untuk AIS Live | Posisi kapal langsung. Daftar di https://aisstream.io |
 | `LOGIN_USERNAME`, `LOGIN_PASSWORD` | Ya, untuk login | Data login halaman depan, diperiksa di server |
+| `SESSION_SECRET` | Ya, untuk login | Kunci tanda tangan cookie sesi, minimal 32 karakter acak. Tanpa ini login ditolak (503) |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Tidak | Cache dan pembatas permintaan. Tanpa ini tetap jalan |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Tidak | Dipakai `api/telegram/`, yang belum dipanggil halaman mana pun |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_DEFAULT_CHAT_ID` | Tidak | Dipakai `api/telegram/`, yang belum dipanggil halaman mana pun |
 | `AIS_HISTORY_DB`, `AIS_HISTORY_DAYS` | Tidak | Lokasi dan lama simpan rekaman AIS |
 | `H5_PATH`, `H5_INTERVAL_MIN`, `AIS_LOOKBACK_DAYS` | Tidak | Pengaturan worker model H5 |
 
@@ -113,6 +119,7 @@ Rekaman riwayat AIS hanya ada bila proyek dijalankan sebagai server sendiri.
 | `server/h5-worker.py`, `server/h5-check.py` | Menjalankan dan memeriksa model H5 |
 | `scripts/` | Skrip penelitian: Kalman, pencarian kandidat, pengolahan citra satelit |
 | `public/` | Data penelitian yang ditampilkan tab AI Inference |
+| `src/`, `tsconfig.json`, `components.json`, `eslint.config.js` | Versi lama aplikasi (React + TanStack Start) yang diperiksa laporan audit. Tidak dipakai website; disimpan dan diperbaiki sesuai laporan audit (T-3, T-4, T-6, M-2, M-6, M-7, R-3, R-4, R-5, C.3, C.4) |
 | `docs/` | Catatan alur lama (sebagian sudah tidak sesuai) |
 
 ## Sumber data
@@ -133,7 +140,15 @@ File model `FINAL_4_PIPELINE_MODELS.h5` (324 MB) **tidak ikut di repositori** ka
 File itu harus diminta terpisah dan ditaruh di folder utama proyek. Model dan kode pelatihannya dibuat pihak lain;
 pemakaiannya perlu izin pembuatnya.
 
-Yang dibutuhkan: Python 3.13 dengan `torch`, `h5py`, `numpy`, `pandas`, `scipy`, `scikit-learn`, `rasterio`.
+Yang dibutuhkan: Python 3.13 dengan `torch`, `h5py`, `numpy`, `pandas`, `scipy`, `scikit-learn`, `rasterio`, `pyproj`.
+
+Scaler dan kalibrator model (24 berkas joblib di dalam file H5) tidak dibuka dengan joblib/pickle saat model dijalankan
+(temuan N-1). Angkanya disalin sekali ke `FINAL_4_PIPELINE_MODELS.preprocessing.json` (tidak ikut repositori, sama
+seperti file H5) dengan `python scripts/export-h5-preprocessing.py`. Jalankan ulang perintah itu setiap menerima file H5
+baru; `run-final-h5-yolo-fusion.py` dan `server/h5-worker.py` menolak JSON yang sidik jarinya tidak cocok dengan H5.
+
+Perhitungan posisi di skrip penelitian memakai pustaka geospasial (laporan audit C.1): `pyproj` (geodesik WGS84) untuk
+skrip Python dan Turf.js (`@turf/*`, terpasang lewat `npm install`) untuk skrip Node lewat `scripts/geodesi.mjs`.
 
 ```bash
 python server/h5-worker.py --once     # satu kali putaran pada rekaman AIS

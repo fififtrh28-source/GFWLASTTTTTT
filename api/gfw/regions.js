@@ -1,4 +1,5 @@
 import { sendProblem } from "../_problem.js";
+import { gfwToken } from "../_gfw-token.js";
 import { cacheGet, cacheSet } from "../_redis.js";
 import { applyRateLimit } from "../_rate-limit.js";
 
@@ -24,8 +25,8 @@ export default async function handler(req, res) {
     return res.json(cached.payload);
   }
 
-  const token = process.env.GFW_TOKEN;
-  if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured", { eez: {} });
+  const token = gfwToken();
+  if (!token) return sendProblem(res, 500, "GFW_API_TOKEN not configured", { eez: {} });
 
   try {
     const gfwRes = await fetch(`${GFW_BASE}/datasets/public-eez-areas/context-layers`, {

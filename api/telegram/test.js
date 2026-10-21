@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return sendProblem(res, 500, "Telegram env belum lengkap", {
       ok: false,
       missing: config.missing,
-      expected: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
+      expected: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_DEFAULT_CHAT_ID"],
     });
   }
 
@@ -36,8 +36,9 @@ export default async function handler(req, res) {
       telegram_message_id: result?.message_id,
     });
   } catch (err) {
+    // T-1 (laporan audit, B.7): pesan dan status 502 sama dengan PDF, dikirim dalam format RFC 7807 (C.3).
     // Detail galat hanya dicatat di log server, supaya isi galat (alamat, keterangan Telegram) tidak sampai ke browser.
-    console.error("[telegram-test] gagal:", err);
-    return sendProblem(res, 502, "Gagal mengirim Telegram test. Periksa koneksi atau pengaturan Telegram di server.", { ok: false });
+    console.error("[telegram-test] Internal error:", err); // Log lengkap hanya di server
+    return sendProblem(res, 502, "Gagal menghubungi layanan Telegram. Silakan periksa koneksi atau konfigurasi server.", { ok: false });
   }
 }

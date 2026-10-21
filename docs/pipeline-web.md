@@ -28,7 +28,7 @@ api/gfw/events.js (Node.js handler)
   │  1. Rate limit per IP
   │  2. Cek Redis/KV cache berdasarkan start_date + end_date
   │     HIT fresh → return langsung
-  │  3. Baca GFW_TOKEN dari environment
+  │  3. Baca GFW_API_TOKEN (atau GFW_TOKEN) dari environment
   │  4. POST ke GFW API v3/events
   │     - datasets: [fishing, encounter, loitering]
   │     - geometry: Indonesia polygon (95°E–141°E, 11°S–6°N)
@@ -132,7 +132,7 @@ loadGfw() dipanggil
 | `api/_rate-limit.js` | Fixed-window rate limit per IP |
 | `vite.config.ts` | Proxy `/api/*` ke handler lokal saat dev |
 | `vercel.json` | Rewrite SPA + serverless functions saat production |
-| `.env` | `GFW_TOKEN`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (tidak di-commit) |
+| `.env` | `GFW_API_TOKEN`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (tidak di-commit) |
 
 ---
 

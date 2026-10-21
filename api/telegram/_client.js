@@ -39,7 +39,10 @@ export function telegramConfig() {
     "BOT_TOKEN",
     "TG_BOT_TOKEN",
   ]);
+  // T-2 (laporan audit, B.8): tujuan chat hanya dibaca dari variabel server. Nama di B.8 PDF adalah
+  // TELEGRAM_DEFAULT_CHAT_ID; nama di tabel B.17 PDF (TELEGRAM_CHAT_ID) tetap dibaca sebagai cadangan.
   const chatId = firstEnv([
+    "TELEGRAM_DEFAULT_CHAT_ID",
     "TELEGRAM_CHAT_ID",
     "TELEGRAM_CHATID",
     "TG_CHAT_ID",
@@ -50,7 +53,7 @@ export function telegramConfig() {
     chatId,
     missing: [
       token ? "" : "TELEGRAM_BOT_TOKEN",
-      chatId ? "" : "TELEGRAM_CHAT_ID",
+      chatId ? "" : "TELEGRAM_DEFAULT_CHAT_ID",
     ].filter(Boolean),
   };
 }

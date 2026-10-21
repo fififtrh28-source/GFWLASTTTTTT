@@ -1460,6 +1460,11 @@
     let loggedIn = false; // layar Menu (indeks 2) baru boleh dibuka lewat titik setelah login berhasil
     // Login diingat selama tab ini terbuka, supaya kembali dari dashboard (index.html#menu) tidak perlu login ulang.
     try { loggedIn = sessionStorage.getItem("onx-login") === "1"; } catch (error) { /* penyimpanan diblokir: abaikan */ }
+    // F3-S: halaman lain yang butuh login mengarahkan ke sini dengan ?next=/alamat-halaman. Hanya alamat di website
+    // ini sendiri yang diterima (diawali satu "/"), supaya tidak bisa dipakai untuk mengarahkan ke situs lain.
+    const pageParams = new URLSearchParams(location.search);
+    const nextTarget = /^\/(?![\/\\])/.test(pageParams.get("next") || "") ? pageParams.get("next") : "";
+    const signedOut = pageParams.get("keluar") === "1";
 
     const translations = {
       en: {
@@ -1484,6 +1489,8 @@
         "login.checking": "Checking…",
         "login.tooMany": "Too many attempts. Wait a few minutes and try again.",
         "login.unavailable": "Login is not available right now. Try again later.",
+        "login.sessionRequired": "Sign in to open that page. Your session may have ended.",
+        "login.signedOut": "You have signed out.",
         "option.title": "Choose Your Path",
         "option.subtitle": "Select an action to continue inside Ocean Nexus 2026",
         "option.indonesiaTitle": "Indonesian Waters",
@@ -1516,6 +1523,8 @@
         "login.checking": "Memeriksa…",
         "login.tooMany": "Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.",
         "login.unavailable": "Login sedang tidak tersedia. Coba lagi nanti.",
+        "login.sessionRequired": "Silakan login untuk membuka halaman itu. Sesi login mungkin sudah berakhir.",
+        "login.signedOut": "Anda sudah keluar.",
         "option.title": "Pilih Menu",
         "option.subtitle": "Pilih aksi berikut untuk melanjutkan di Ocean Nexus 2026",
         "option.indonesiaTitle": "Wilayah Indonesia",
@@ -1781,6 +1790,11 @@
       status.textContent = "";
       loggedIn = true;
       try { sessionStorage.setItem("onx-login", "1"); } catch (error) { /* penyimpanan diblokir: abaikan */ }
+      // Datang dari halaman lain: kembali ke halaman itu (termasuk tanda #, misalnya #temuan=...).
+      if (nextTarget) {
+        location.replace(nextTarget + location.hash);
+        return;
+      }
       showScreen(2);
     });
 
@@ -1801,6 +1815,15 @@
     updateDots();
     // Datang dari menu tiga garis di dashboard: langsung ke layar Menu; kalau belum login, ke layar Login.
     if (location.hash === "#menu") showScreen(loggedIn ? 2 : 1);
+    // F3-S: diarahkan ke sini karena belum login / sesi berakhir, atau baru saja keluar: tampilkan layar Login.
+    if (nextTarget || signedOut) {
+      const loginStatus = document.getElementById("login-status");
+      const key = nextTarget ? "login.sessionRequired" : "login.signedOut";
+      loginStatus.dataset.messageKey = key;
+      loginStatus.textContent = translations[language][key];
+      loginStatus.classList.add("is-info");
+      showScreen(1);
+    }
   </script>
 </body>
 </html>

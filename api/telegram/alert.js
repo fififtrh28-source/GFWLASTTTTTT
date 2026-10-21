@@ -171,7 +171,7 @@ export default async function handler(req, res) {
     return sendProblem(res, 500, "Telegram env belum lengkap", {
       ok: false,
       missing: config.missing,
-      expected: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
+      expected: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_DEFAULT_CHAT_ID"],
     });
   }
 
@@ -184,7 +184,7 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     // Detail galat hanya dicatat di log server, supaya isi galat (alamat, keterangan Telegram) tidak sampai ke browser.
-    console.error("[telegram-alert] gagal:", err);
-    return sendProblem(res, 502, "Gagal mengirim alert Telegram. Periksa koneksi atau pengaturan Telegram di server.", { ok: false });
+    console.error("[telegram-alert] Internal error:", err); // Log lengkap hanya di server
+    return sendProblem(res, 502, "Gagal menghubungi layanan Telegram. Silakan periksa koneksi atau konfigurasi server.", { ok: false });
   }
 }

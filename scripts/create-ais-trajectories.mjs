@@ -1,6 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+// C.1 (laporan audit): titik potong lintasan di bujur 180° dicari di permukaan bumi dengan Turf.js.
+import { interpolatePosition, lonDelta } from "./geodesi.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -90,11 +92,14 @@ for (const [mmsi, group] of groups) {
     end_time_utc: group[group.length - 1].timestamp_utc,
   };
 
-  // number() mengubah isian kosong menjadi NaN, sehingga posisi AIS yang kosong dibuang dan tidak menjadi titik (0, 0).
-  // Lintang/bujur 0 yang benar-benar tercatat tetap dipakai.
-  const rawCoordinates = group
-    .map((p) => [number(p.ais_lon), number(p.ais_lat)])
-    .filter(([lon, lat]) => finiteLatLon(lat, lon));
+  // K-5 (laporan audit, B.5): posisi AIS yang kosong tidak boleh menjadi titik (0, 0) di GeoJSON.
+  const rawCoordinates = [];
+  for (const p of group) {
+    const lon = validCoord(p.ais_lon);
+    const lat = validCoord(p.ais_lat);
+    if (lon === null || lat === null) continue; // Jangan masukkan koordinat kosong ke GeoJSON
+    if (finiteLatLon(lat, lon)) rawCoordinates.push([lon, lat]);
+  }
   if (rawCoordinates.length >= 2) {
     rawFeatures.push({
       type: "Feature",
@@ -103,10 +108,7 @@ for (const [mmsi, group] of groups) {
         trajectory_type: "raw_ais_before_kalman",
         source: "AIS_Latitude_AIS_Longitude_before_Kalman",
       },
-      geometry: {
-        type: "LineString",
-        coordinates: rawCoordinates,
-      },
+      geometry: lineGeometry(rawCoordinates),
     });
   }
 
@@ -117,10 +119,7 @@ for (const [mmsi, group] of groups) {
       trajectory_type: "kalman_after_filter",
       source: "kalman_estimated_AIS_trajectory",
     },
-    geometry: {
-      type: "LineString",
-      coordinates: group.map((p) => [Number(p.kalman_lon), Number(p.kalman_lat)]),
-    },
+    geometry: lineGeometry(group.map((p) => [Number(p.kalman_lon), Number(p.kalman_lat)])),
   });
 }
 
@@ -218,14 +217,22 @@ function renderTrajectoryComparisonSvg(mmsi, group) {
     .map((point, index) => ({
       ...point,
       index,
-      rawLat: number(point.ais_lat),
-      rawLon: number(point.ais_lon),
+      rawLat: validCoord(point.ais_lat) ?? NaN,
+      rawLon: validCoord(point.ais_lon) ?? NaN,
       kalmanLat: Number(point.kalman_lat),
       kalmanLon: Number(point.kalman_lon),
     }))
     .filter((point) => finiteLatLon(point.rawLat, point.rawLon) && finiteLatLon(point.kalmanLat, point.kalmanLon));
 
   if (valid.length < 2) return null;
+
+  // K-3 (laporan audit, B.3): bujur dibuat bersambung relatif terhadap titik pertama, supaya gambar lintasan yang
+  // melewati bujur 180° tidak melebar ke seluruh dunia. Bujur yang tidak melewati 180° tidak diubah sama sekali.
+  const refLon = valid[0].rawLon;
+  for (const point of valid) {
+    point.rawLon = unwrapLon(refLon, point.rawLon);
+    point.kalmanLon = unwrapLon(refLon, point.kalmanLon);
+  }
 
   const width = 1600;
   const height = 760;
@@ -344,6 +351,59 @@ function number(input) {
   if (!raw) return NaN;
   const n = Number(raw);
   return Number.isFinite(n) ? n : NaN;
+}
+
+// Bujur dibuat bersambung terhadap refLon; nilainya hanya diubah bila memang melewati bujur 180°.
+function unwrapLon(refLon, lon) {
+  const diff = lonDelta(refLon, lon);
+  return diff === lon - refLon ? lon : refLon + diff;
+}
+
+// C.1: lintang titik potong di bujur 180° pada jalur terpendek (great circle) antara dua titik, dicari dengan bagi dua
+// (bisection) di sepanjang jalur memakai Turf.js. Ketelitiannya sekitar 10 cm (batas pembulatan bujur 6 desimal).
+function antimeridianCrossingLat(lat1, lon1, lat2, lon2, edge) {
+  const side = (lon) => lonDelta(lon1, lon) * Math.sign(edge); // naik dari 0 sampai melewati garis 180°
+  const target = Math.abs(lonDelta(lon1, edge));
+  let lo = 0;
+  let hi = 1;
+  for (let k = 0; k < 50; k += 1) {
+    const mid = (lo + hi) / 2;
+    const p = interpolatePosition(lat1, lon1, lat2, lon2, mid);
+    if (side(p.lon) >= 0 && side(p.lon) < target) lo = mid; else hi = mid;
+  }
+  return interpolatePosition(lat1, lon1, lat2, lon2, (lo + hi) / 2).lat;
+}
+
+// Garis lintasan GeoJSON. Bagian yang melewati bujur 180° dipotong tepat di garis itu, sesuai RFC 7946 bagian 3.1.9
+// (Antimeridian Cutting), sehingga hasilnya MultiLineString. Lintasan yang tidak melewati 180° tetap LineString biasa.
+function lineGeometry(coordinates) {
+  const lines = [[coordinates[0]]];
+  for (let k = 1; k < coordinates.length; k += 1) {
+    const [lon1, lat1] = coordinates[k - 1];
+    const [lon2, lat2] = coordinates[k];
+    const diff = lonDelta(lon1, lon2);
+    const unwrapped = lon1 + diff;
+    if (unwrapped > 180 || unwrapped < -180) {
+      const edge = unwrapped > 180 ? 180 : -180;
+      const latCross = antimeridianCrossingLat(lat1, lon1, lat2, lon2, edge);
+      lines[lines.length - 1].push([edge, latCross]);
+      lines.push([[-edge, latCross]]);
+    }
+    lines[lines.length - 1].push(coordinates[k]);
+  }
+  return lines.length === 1
+    ? { type: "LineString", coordinates: lines[0] }
+    : { type: "MultiLineString", coordinates: lines };
+}
+
+// K-5 (laporan audit, B.5): sama persis dengan "Rekomendasi Perbaikan" di PDF.
+// Validasi ketat string kosong sebelum konversi numerik. Angka 0 juga ditolak, karena posisi AIS yang
+// kosong sering tercatat sebagai 0. Catatan: posisi yang tepat 0,00000000° (khatulistiwa atau bujur 0°)
+// ikut terbuang; pada data saat ini tidak ada satu pun titik AIS yang tepat 0.
+function validCoord(val) {
+  if (val === null || val === undefined || val === "" || typeof val === "boolean") return null;
+  const num = Number(val);
+  return Number.isFinite(num) && num !== 0 ? num : null;
 }
 
 function parseDateish(input) {

@@ -3,7 +3,7 @@
 // kapal ikan = jenis AIS 30 ATAU jenis menurut GFW = FISHING (view fishing_vessels).
 //
 // Tiap menit mengambil kapal yang belum/perlu dicek ulang, 8 MMSI per permintaan (where ssvid=.. OR ..).
-// Batas aman 3.000 permintaan/hari (batas GFW 50.000/hari). Butuh GFW_TOKEN.
+// Batas aman 3.000 permintaan/hari (batas GFW 50.000/hari). Butuh GFW_API_TOKEN (atau GFW_TOKEN).
 // Data GFW berlisensi CC BY-NC 4.0 (non-komersial) dan wajib atribusi "Powered by Global Fishing Watch".
 
 const GFW_SEARCH_URL = "https://gateway.api.globalfishingwatch.org/v3/vessels/search";
@@ -80,7 +80,7 @@ async function lookupBatch(mmsis, token) {
 }
 
 async function run() {
-  const token = String(process.env.GFW_TOKEN || "").trim();
+  const token = String(process.env.GFW_API_TOKEN || process.env.GFW_TOKEN || "").trim();
   if (!db || running || !token) return;
   running = true;
   try {
@@ -172,7 +172,7 @@ export function stats() {
     const c = db.prepare("SELECT COUNT(*) AS checked, SUM(found) AS found FROM vessel_identity").get();
     const f = db.prepare("SELECT COUNT(*) AS n FROM fishing_vessels").get();
     return {
-      enabled: Boolean(process.env.GFW_TOKEN),
+      enabled: Boolean(process.env.GFW_API_TOKEN || process.env.GFW_TOKEN),
       error: lastError,
       checked: c.checked,
       foundInGfw: c.found ?? 0,

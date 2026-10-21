@@ -1,12 +1,14 @@
 // Server Ocean Nexus: website, handler di folder api/, dan relay AIS dalam satu proses.
 // Jalankan dari folder proyek: npm run start   (butuh Node.js 22+)
 // Pengaturan lewat .env.local / environment: PORT (default 3000), HOST (default 127.0.0.1),
-// GFW_TOKEN, AISSTREAM_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+// GFW_API_TOKEN, AISSTREAM_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_DEFAULT_CHAT_ID (nama lama GFW_TOKEN dan
+// TELEGRAM_CHAT_ID masih dibaca).
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as aisRelay from "./ais-relay.mjs";
+import { decideAccess, UNAUTHORIZED_BODY } from "../api/_session.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIR = path.join(ROOT, "public");
@@ -215,6 +217,19 @@ async function handleApi(req, res, url) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://localhost");
   try {
+    // F3-S (laporan audit B.4 dan Fase 3): halaman, data, API, dan relay AIS hanya dikirim bila cookie sesi login sah,
+    // dengan aturan yang sama seperti middleware.js di Vercel (api/_session.js).
+    const decision = await decideAccess({ method: req.method, url: req.url || "/", cookieHeader: req.headers.cookie, secure: false });
+    if (decision.action === "redirect") {
+      res.writeHead(302, { Location: decision.location, "Cache-Control": "no-store" });
+      return res.end();
+    }
+    if (decision.action === "deny") {
+      res.writeHead(401, { "Content-Type": "application/problem+json; charset=utf-8", "Cache-Control": "no-store" });
+      return res.end(UNAUTHORIZED_BODY);
+    }
+    if (decision.setCookie) res.setHeader("Set-Cookie", decision.setCookie);
+
     if (url.pathname.startsWith("/api/ais/")) {
       if (await aisRelay.handle(req, res)) return;
       return sendJson(res, 404, { error: `API route not found: ${url.pathname}` });

@@ -51,6 +51,8 @@ new/XML/
 
 # Large binary/model artifacts
 *.h5
+# Angka scaler/kalibrator yang disalin dari file H5 (N-1): bagian dari model pihak lain, tidak ikut
+*.preprocessing.json
 *.pt
 *.zip
 *.SAFE

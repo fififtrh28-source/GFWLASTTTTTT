@@ -11,6 +11,7 @@ writes new output CSVs. It never modifies source datasets.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import math
@@ -20,9 +21,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import h5py
-import joblib
 import numpy as np
 import pandas as pd
+from pyproj import Geod
+from scipy.spatial import cKDTree
+from scipy.special import expit
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -363,6 +366,34 @@ def iso_from_epoch(value: object) -> str:
     if pd.isna(n):
         return ""
     return pd.to_datetime(float(n), unit="s", utc=True).isoformat().replace("+00:00", "Z")
+
+
+# C.1 (laporan audit, Bagian C): posisi di antara dua titik AIS dihitung di sepanjang geodesik elipsoid WGS84 dengan
+# pustaka pyproj (Geod, algoritma Karney 2013, Journal of Geodesy 87:43-55), bukan interpolasi linear lintang/bujur.
+WGS84_GEOD = Geod(ellps="WGS84")
+
+
+def normalize_longitude(lon: np.ndarray) -> np.ndarray:
+    # K-3 (laporan audit, B.3): langkah normalisasi bujur dari fungsi interpolateLongitude di PDF, versi numpy:
+    # bujur dikembalikan ke rentang -180°..180° lalu dibulatkan 6 angka di belakang koma (toFixed(6) di PDF).
+    result = np.asarray(lon, dtype=float)
+    while np.any(result < -180.0):
+        result = np.where(result < -180.0, result + 360.0, result)
+    while np.any(result > 180.0):
+        result = np.where(result > 180.0, result - 360.0, result)
+    return np.round(result, 6)
+
+
+def interpolate_position(
+    lat1: np.ndarray, lon1: np.ndarray, lat2: np.ndarray, lon2: np.ndarray, factor: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    # Titik pada bagian factor (0..1) dari geodesik antara (lat1, lon1) dan (lat2, lon2). Kapal yang melewati bujur 180°
+    # tidak ditarik memutari bumi karena geodesik selalu mengambil jalur terpendek.
+    lat1 = np.asarray(lat1, dtype=float)
+    lon1 = np.asarray(lon1, dtype=float)
+    az12, _az21, dist = WGS84_GEOD.inv(lon1, lat1, np.asarray(lon2, dtype=float), np.asarray(lat2, dtype=float))
+    lon, lat, _back = WGS84_GEOD.fwd(lon1, lat1, az12, dist * np.asarray(factor, dtype=float))
+    return np.asarray(lat, dtype=float), normalize_longitude(lon)
 
 
 def haversine_km_np(lat1: np.ndarray, lon1: np.ndarray, lat2: np.ndarray, lon2: np.ndarray) -> np.ndarray:
@@ -808,11 +839,78 @@ NUMPY_SAFE_GLOBALS = [np.ndarray, np.dtype, _numpy_reconstruct] + [
 ]
 
 
+# N-1: scaler dan kalibrator dibaca dari <nama H5>.preprocessing.json, yang dibuat sekali oleh
+# scripts/export-h5-preprocessing.py, bukan dibuka dengan joblib/pickle (pembukaan pickle bisa ikut menjalankan kode,
+# sejenis temuan audit K-2). Hitungannya meniru scikit-learn 1.8 langkah demi langkah (RobustScaler.transform dan
+# LogisticRegression.predict_proba), dengan jenis angka (float32/float64) yang sama, sehingga hasilnya identik.
+PREPROCESSING_SUFFIX = ".preprocessing.json"
+PREPROCESSING_FORMAT = "ocean-nexus-h5-preprocessing/1"
+
+
+def preprocessing_path(h5_path: Path) -> Path:
+    return h5_path.with_name(h5_path.stem + PREPROCESSING_SUFFIX)
+
+
+class JsonRobustScaler:
+    """Pengganti RobustScaler hasil latih: (X - center_) / scale_."""
+
+    def __init__(self, entry: dict):
+        self.with_centering = bool(entry["with_centering"])
+        self.with_scaling = bool(entry["with_scaling"])
+        self.n_features_in_ = int(entry["n_features_in"])
+        self.center_ = np.asarray(entry["center"], dtype=entry["center_dtype"]) if self.with_centering else None
+        self.scale_ = np.asarray(entry["scale"], dtype=entry["scale_dtype"]) if self.with_scaling else None
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        X = np.asarray(X)
+        dtype = X.dtype if X.dtype in (np.float64, np.float32, np.float16) else np.float64
+        X = np.array(X, dtype=dtype, copy=True)
+        if X.ndim != 2 or X.shape[1] != self.n_features_in_:
+            raise ValueError(f"scaler expects 2D input with {self.n_features_in_} features, got {X.shape}")
+        if self.with_centering:
+            X -= self.center_
+        if self.with_scaling:
+            X /= self.scale_
+        return X
+
+
+class JsonPlattCalibrator:
+    """Pengganti LogisticRegression kalibrasi Platt dua kelas: expit(X @ coef_.T + intercept_)."""
+
+    def __init__(self, entry: dict):
+        self.classes_ = np.asarray(entry["classes"])
+        self.coef_ = np.asarray(entry["coef"], dtype=entry["coef_dtype"])
+        self.intercept_ = np.asarray(entry["intercept"], dtype=entry["intercept_dtype"])
+        self.n_features_in_ = int(entry["n_features_in"])
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        X = np.asarray(X)
+        if X.dtype == object:
+            X = X.astype(np.float64)
+        if X.ndim != 2 or X.shape[1] != self.n_features_in_:
+            raise ValueError(f"calibrator expects 2D input with {self.n_features_in_} features, got {X.shape}")
+        scores = X @ self.coef_.T + self.intercept_
+        if scores.ndim > 1 and scores.shape[1] == 1:
+            scores = scores.reshape(-1)
+        prob = expit(scores)
+        return np.vstack([1 - prob, prob]).T
+
+
 class H5ModelBundle:
     def __init__(self, path: Path):
         if not path.exists():
             raise FileNotFoundError(path)
         self.path = path
+        # N-1: angka scaler/kalibrator dari JSON hasil scripts/export-h5-preprocessing.py.
+        self.preprocessing_file = preprocessing_path(path)
+        if not self.preprocessing_file.exists():
+            raise FileNotFoundError(
+                f"{self.preprocessing_file.name} belum ada. Jalankan sekali: python scripts/export-h5-preprocessing.py --h5 \"{path}\""
+            )
+        payload = json.loads(self.preprocessing_file.read_text(encoding="utf-8"))
+        if payload.get("format") != PREPROCESSING_FORMAT:
+            raise ValueError(f"{self.preprocessing_file.name}: format tidak dikenal")
+        self._preprocessing: dict[str, dict] = payload["entries"]
 
     def _read_bytes(self, files: h5py.Group, path: str) -> bytes:
         if path not in files:
@@ -823,17 +921,39 @@ class H5ModelBundle:
         raw = self._read_bytes(files, path).decode("utf-8-sig")
         return json.loads(raw)
 
+    def _preprocessing_entry(self, files: h5py.Group, path: str, kind: str) -> dict:
+        # Sidik jari SHA-256 berkas joblib di H5 harus sama dengan yang dicatat saat ekspor; kalau tidak (misalnya file
+        # H5 baru dari pembuat model), JSON lama tidak dipakai. Berkas joblib hanya dibaca sebagai byte, tidak dibuka.
+        key = f"{files.name}/{path}".lstrip("/")
+        entry = self._preprocessing.get(key)
+        if entry is None or entry.get("kind") != kind:
+            raise KeyError(f"{key} ({kind}) tidak ada di {self.preprocessing_file.name}; jalankan ulang scripts/export-h5-preprocessing.py")
+        if hashlib.sha256(self._read_bytes(files, path)).hexdigest() != entry["sha256"]:
+            raise ValueError(f"{key} di file H5 tidak cocok dengan {self.preprocessing_file.name}; jalankan ulang scripts/export-h5-preprocessing.py")
+        return entry
+
+    def _load_scaler(self, files: h5py.Group, path: str) -> JsonRobustScaler:
+        return JsonRobustScaler(self._preprocessing_entry(files, path, "RobustScaler"))
+
+    def _load_calibrator(self, files: h5py.Group, path: str) -> dict:
+        entry = self._preprocessing_entry(files, path, "PlattLogisticRegression")
+        return {**entry["metadata"], "estimator": JsonPlattCalibrator(entry)}
+
     def _load_member(self, files: h5py.Group, pipeline: str, model_path: str, scaler_path: str, expected_features: int) -> ModelMember:
-        # weights_only=True: file model hanya dibaca sebagai data (bobot dan angka), tidak boleh menjalankan kode.
-        # Ke-20 checkpoint di FINAL_4_PIPELINE_MODELS.h5 juga memuat array numpy, jadi tiga jenis pembangun
-        # array numpy diizinkan secara khusus; jenis objek lain tetap ditolak.
+        # K-2 (laporan audit, B.2): torch.load(..., weights_only=True) sesuai rekomendasi PDF, file model hanya
+        # dibaca sebagai data (bobot dan angka), tidak boleh menjalankan kode.
+        # Tambahan: ke-20 checkpoint di FINAL_4_PIPELINE_MODELS.h5 juga memuat array numpy, sehingga tanpa
+        # daftar izin (torch.serialization.safe_globals, cara resmi PyTorch) ke-20 model gagal dibuka.
+        # Hanya pembangun array numpy berisi angka yang diizinkan; jenis objek lain tetap ditolak.
+        # Bobot ke-20 checkpoint ada di kunci "model_state", jadi baris load_state_dict di PDF (yang mencari
+        # "state_dict") diganti state_dict_from_checkpoint() yang mengenali "model_state" dan "state_dict".
         with torch.serialization.safe_globals(NUMPY_SAFE_GLOBALS):
             ck = torch.load(io.BytesIO(self._read_bytes(files, model_path)), map_location="cpu", weights_only=True)
         if not isinstance(ck, dict):
             raise TypeError(f"Checkpoint is not a dict: {model_path}")
         state = state_dict_from_checkpoint(ck)
         model = instantiate_from_checkpoint(ck, state)
-        scaler = joblib.load(io.BytesIO(self._read_bytes(files, scaler_path)))
+        scaler = self._load_scaler(files, scaler_path)
         scaler_n = scaler_feature_count(scaler)
         input_size = int(ck["input_size"])
         if input_size != expected_features:
@@ -900,11 +1020,11 @@ class H5ModelBundle:
                 for fold in [0, 1, 2]
             ]
             godark_lock = self._read_json(godark_files, "godark/GODARK_MODEL_LOCK.json")
-            godark_cal = joblib.load(io.BytesIO(self._read_bytes(godark_files, "godark/model/compact_h128_platt.joblib")))
+            godark_cal = self._load_calibrator(godark_files, "godark/model/compact_h128_platt.joblib")
             spoof_policy = self._read_json(spoof_files, "spoofing/validation/platt_scenario_policy.json")
             trans_lock = self._read_json(trans_files, "transshipment/validation/winner_internal_only.json")
             trans_cals = {
-                seed: joblib.load(io.BytesIO(self._read_bytes(trans_files, f"transshipment/model/calibrators/syn125_seed_{seed}_platt.joblib")))
+                seed: self._load_calibrator(trans_files, f"transshipment/model/calibrators/syn125_seed_{seed}_platt.joblib")
                 for seed in [42, 43, 44]
             }
         log(
@@ -1207,13 +1327,9 @@ def regularize_vessels(ais: pd.DataFrame, gear_by_mmsi: dict[str, dict]) -> pd.D
             vals = g[col].to_numpy(dtype=float)
             return vals[lo] * (1.0 - frac) + vals[hi] * frac
 
-        def interp_lon() -> np.ndarray:
-            # Bujur titik sesudah digeser 360° bila kapal melewati bujur 180°, supaya interpolasi tidak
-            # memutari bumi. Untuk perairan Indonesia pergeserannya 0, jadi hasilnya sama dengan interp("lon").
-            vals = g["lon"].to_numpy(dtype=float)
-            diff = vals[hi] - vals[lo]
-            hi_vals = vals[hi] + np.where(diff > 180.0, -360.0, np.where(diff < -180.0, 360.0, 0.0))
-            return vals[lo] * (1.0 - frac) + hi_vals * frac
+        lat_vals = g["lat"].to_numpy(dtype=float)
+        lon_vals = g["lon"].to_numpy(dtype=float)
+        pos_lat, pos_lon = interpolate_position(lat_vals[lo], lon_vals[lo], lat_vals[hi], lon_vals[hi], frac)
 
         course = g["course"].to_numpy(dtype=float)
         rad = np.deg2rad(course % 360.0)
@@ -1227,8 +1343,8 @@ def regularize_vessels(ais: pd.DataFrame, gear_by_mmsi: dict[str, dict]) -> pd.D
             {
                 "timestamp": grid.astype(np.int64),
                 "mmsi": str(mmsi),
-                "lat": interp("lat"),
-                "lon": ((interp_lon() + 180.0) % 360.0) - 180.0,
+                "lat": pos_lat,
+                "lon": pos_lon,
                 "speed": interp("speed"),
                 "course": (np.rad2deg(np.arctan2(si, ci)) + 360.0) % 360.0,
                 "shore_km": interp("shore_km"),
@@ -1248,51 +1364,59 @@ def build_transshipment_event_rows(ais: pd.DataFrame, gear_by_mmsi: dict[str, di
         return pd.DataFrame()
     parts: list[pd.DataFrame] = []
     event_no = 0
+    # C.2 (laporan audit): pasangan kapal berjarak <= 2 km dicari dengan indeks spasial KD-Tree (scipy.spatial.cKDTree),
+    # bukan perulangan bertingkat yang membandingkan setiap kapal dengan semua kapal lain (O(n^2) per waktu).
+    # Posisi dipetakan ke bola satuan (x, y, z) dan radius pencarian adalah jarak tali busur yang setara 2 km (sedikit
+    # dilebihkan). Jarak haversine tiap pasangan calon tetap dihitung persis seperti sebelumnya, dan pasangan diurutkan
+    # (i < j), sehingga hasil dan urutannya sama dengan perulangan lama.
+    pair_chord = 2.0 * math.sin(2.0 / (2.0 * 6371.0088)) * (1.0 + 1e-6)
     # Real encounter candidates from AIS time alignment.
     for ts, tg in reg.groupby("timestamp", sort=True):
         if len(tg) < 2:
             continue
         rows = tg.reset_index(drop=True)
-        for i in range(len(rows) - 1):
+        lat_r = np.deg2rad(rows["lat"].to_numpy(dtype=float))
+        lon_r = np.deg2rad(rows["lon"].to_numpy(dtype=float))
+        xyz = np.column_stack([np.cos(lat_r) * np.cos(lon_r), np.cos(lat_r) * np.sin(lon_r), np.sin(lat_r)])
+        for i, j in sorted(cKDTree(xyz).query_pairs(r=pair_chord)):
             a = rows.iloc[i]
-            for j in range(i + 1, len(rows)):
-                b = rows.iloc[j]
-                d = float(haversine_km_np(np.array([a["lat"]]), np.array([a["lon"]]), np.array([b["lat"]]), np.array([b["lon"]]))[0])
-                if d > 2.0:
-                    continue
-                pair_id = "__".join(sorted([str(a["mmsi"]), str(b["mmsi"])]))
-                parts.append(
-                    pd.DataFrame(
-                        [
-                            base_event_row(
-                                timestamp=int(ts),
-                                event_mode_id=1,
-                                mmsi_a=str(a["mmsi"]),
-                                mmsi_b=str(b["mmsi"]),
-                                pair_id=pair_id,
-                                lat_a=float(a["lat"]),
-                                lon_a=float(a["lon"]),
-                                lat_b=float(b["lat"]),
-                                lon_b=float(b["lon"]),
-                                speed_a=float(a["speed"]),
-                                speed_b=float(b["speed"]),
-                                course_a=float(a["course"]),
-                                course_b=float(b["course"]),
-                                shore_a=float(a["shore_km"]),
-                                shore_b=float(b["shore_km"]),
-                                port_a=float(a["port_km"]),
-                                port_b=float(b["port_km"]),
-                                is_fishing_a=float(a["is_fishing"]),
-                                is_fishing_b=float(b["is_fishing"]),
-                                gear_a_id=int(a["gear_id"]),
-                                gear_b_id=int(b["gear_id"]),
-                                gear_a_label=str(a["gear_label"]),
-                                gear_b_label=str(b["gear_label"]),
-                                distance_between_km=d,
-                            )
-                        ]
-                    )
+            b = rows.iloc[j]
+            d = float(haversine_km_np(np.array([a["lat"]]), np.array([a["lon"]]), np.array([b["lat"]]), np.array([b["lon"]]))[0])
+            if d > 2.0:
+                continue
+            pair_id = "__".join(sorted([str(a["mmsi"]), str(b["mmsi"])]))
+            parts.append(
+                pd.DataFrame(
+                    [
+                        base_event_row(
+                            timestamp=int(ts),
+                            event_mode_id=1,
+                            mmsi_a=str(a["mmsi"]),
+                            mmsi_b=str(b["mmsi"]),
+                            pair_id=pair_id,
+                            lat_a=float(a["lat"]),
+                            lon_a=float(a["lon"]),
+                            lat_b=float(b["lat"]),
+                            lon_b=float(b["lon"]),
+                            speed_a=float(a["speed"]),
+                            speed_b=float(b["speed"]),
+                            course_a=float(a["course"]),
+                            course_b=float(b["course"]),
+                            shore_a=float(a["shore_km"]),
+                            shore_b=float(b["shore_km"]),
+                            port_a=float(a["port_km"]),
+                            port_b=float(b["port_km"]),
+                            is_fishing_a=float(a["is_fishing"]),
+                            is_fishing_b=float(b["is_fishing"]),
+                            gear_a_id=int(a["gear_id"]),
+                            gear_b_id=int(b["gear_id"]),
+                            gear_a_label=str(a["gear_label"]),
+                            gear_b_label=str(b["gear_label"]),
+                            distance_between_km=d,
+                        )
+                    ]
                 )
+            )
     encounter_df = pd.concat(parts, ignore_index=True, sort=False) if parts else pd.DataFrame()
     event_parts: list[pd.DataFrame] = []
     if not encounter_df.empty:
