@@ -186,11 +186,23 @@ function value(input) {
   return String(input ?? "").trim();
 }
 
+// Angka pemeriksa nomor IMO: enam angka pertama dikalikan 7, 6, 5, 4, 3, 2 lalu dijumlahkan; angka terakhir dari
+// jumlah itu harus sama dengan angka ketujuh. Contoh: 9074729 → 9×7+0×6+7×5+4×4+7×3+2×2 = 139 → angka pemeriksa 9.
+function imoCheckDigitOk(digits) {
+  if (!/^\d{7}$/.test(digits)) return false;
+  const sum = [7, 6, 5, 4, 3, 2].reduce((total, weight, i) => total + Number(digits[i]) * weight, 0);
+  return sum % 10 === Number(digits[6]);
+}
+
+// Mengambil nomor IMO yang sah: 7 angka yang tidak menempel pada angka lain (bukan potongan MMSI atau nomor
+// panjang lain) dan lolos angka pemeriksa. Nilai yang tidak memenuhi menjadi kosong.
 function normalizeImo(input) {
   const raw = value(input);
   if (!raw) return "";
-  const match = raw.match(/\d{7}/);
-  return match ? match[0] : "";
+  for (const match of raw.matchAll(/(?<!\d)\d{7}(?!\d)/g)) {
+    if (imoCheckDigitOk(match[0])) return match[0];
+  }
+  return "";
 }
 
 function validImo(input) {

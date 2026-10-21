@@ -1,7 +1,4 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import tsConfigPaths from "vite-tsconfig-paths";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -10,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function loadDotEnv() {
-  for (const fileName of [".env", ".env.local", ".env.lokal"]) {
+  for (const fileName of [".env", ".env.local"]) {
     const envFile = path.join(__dirname, fileName);
     if (!fs.existsSync(envFile)) continue;
     for (const line of fs.readFileSync(envFile, "utf-8").split("\n")) {
@@ -89,11 +86,23 @@ function vercelApiPlugin() {
 
         let bodyText = "";
         if (req.method === "POST") {
-          bodyText = await new Promise<string>((resolve) => {
+          // Kiriman lebih dari 1 MB ditolak (sama seperti server/index.mjs), supaya memori server lokal tidak habis.
+          const MAX_BODY_BYTES = 1024 * 1024;
+          const tooLarge = await new Promise<boolean>((resolve) => {
             const chunks: Buffer[] = [];
-            req.on("data", (c: Buffer) => chunks.push(c));
-            req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+            let size = 0;
+            req.on("data", (c: Buffer) => {
+              size += c.length;
+              if (size > MAX_BODY_BYTES) { resolve(true); req.destroy(); return; }
+              chunks.push(c);
+            });
+            req.on("end", () => { bodyText = Buffer.concat(chunks).toString("utf-8"); resolve(false); });
           });
+          if (tooLarge) {
+            res.statusCode = 413;
+            res.setHeader("Content-Type", "application/json");
+            return res.end(JSON.stringify({ error: "Request body terlalu besar (maksimal 1 MB)" }));
+          }
         }
 
         const mockReq = {
@@ -132,7 +141,7 @@ function vercelApiPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), tsConfigPaths(), vercelApiPlugin()],
+  plugins: [vercelApiPlugin()],
   build: {
     rollupOptions: {
       input: {

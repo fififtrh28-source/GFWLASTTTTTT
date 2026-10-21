@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import { cacheGet, cacheSet } from "../_redis.js";
 import { applyRateLimit } from "../_rate-limit.js";
 
@@ -40,6 +41,7 @@ async function fetchDataset(token, dataset, start, end) {
   url.searchParams.set("sort", "-start");
 
   const gfwRes = await fetch(url.toString(), {
+    signal: AbortSignal.timeout(15000), // batas waktu 15 detik per dataset
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -96,7 +98,7 @@ export default async function handler(req, res) {
   }
 
   const token = process.env.GFW_TOKEN;
-  if (!token) return res.status(500).json({ events: [], error: "GFW_TOKEN not configured" });
+  if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured", { events: [] });
 
   try {
     console.log(`[gfw] fetching ${start} -> ${end} ...`);
@@ -128,6 +130,6 @@ export default async function handler(req, res) {
       });
     }
     res.setHeader("cache-control", "no-store");
-    res.status(500).json({ events: [], error: e?.message || "events failed" });
+    sendProblem(res, 500, e?.message || "events failed", { events: [] });
   }
 }

@@ -912,7 +912,7 @@ const localKalmanLayer = L.layerGroup(); // ditambahkan ke peta hanya di tab AI 
 let mode               = 'gfw';
 let msgCount           = 0;
 // Data AIS live datang dari relay di server; API key AISStream tidak lagi disimpan di browser.
-try { localStorage.removeItem('ais_key'); } catch {}
+try { localStorage.removeItem('ais_key'); } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
 let aisStream          = null;
 let sidebarKey         = null;
 let trajActive         = false;
@@ -2471,7 +2471,7 @@ function renderLocalKalman(opts = {}) {
 
   aiHomeBounds = bounds.length ? L.latLngBounds(bounds) : null;
   if (opts.fit && bounds.length && !linkedFindingKey) {
-    try { map.fitBounds(L.latLngBounds(bounds), { padding: [60, 60], maxZoom: 8 }); } catch {}
+    try { map.fitBounds(L.latLngBounds(bounds), { padding: [60, 60], maxZoom: 8 }); } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
   }
 }
 
@@ -2501,12 +2501,12 @@ async function detectAisMode() {
   try {
     const r = await fetch(apiUrl('/api/ais/status'), { cache:'no-store' });
     if (r.ok && (r.headers.get('content-type') || '').includes('application/json')) return (aisMode = { type:'relay' });
-  } catch {}
+  } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
   try {
     const r = await fetch(apiUrl('/api/ais/config'), { cache:'no-store' });
     const j = r.ok ? await r.json() : null;
     if (j?.key) return (aisMode = { type:'direct', key:j.key });
-  } catch {}
+  } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
   return { type:'relay' }; // relay maupun key tidak tersedia: status akan "AIS Terputus"
 }
 
@@ -2556,7 +2556,7 @@ const aisDirectShips = {};
 
 function startAisDirect(key) {
   let ws = null, timer = null, closed = false, delay = 2000;
-  const conn = { close() { closed = true; clearTimeout(timer); try { ws?.close(); } catch {} } };
+  const conn = { close() { closed = true; clearTimeout(timer); try { ws?.close(); } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); } } };
   aisStream = conn;
   const connect = () => {
     if (closed) return;
@@ -2685,7 +2685,7 @@ async function loadGfw(forceRefresh) {
           return;
         }
       }
-    } catch {}
+    } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
   }
 
   // Hapus hanya marker GFW (bukan AIS) saat di AI mode
@@ -2737,7 +2737,7 @@ async function loadGfw(forceRefresh) {
       clearInterval(progressTimer);
       setProgress(-1);
       if (badgeRow) badgeRow.style.display = 'none';
-      if (!isAiMode) { try { localStorage.setItem(GFW_CACHE_KEY, JSON.stringify({ t:Date.now(), events:evs, range:rangeStr })); } catch {} }
+      if (!isAiMode) { try { localStorage.setItem(GFW_CACHE_KEY, JSON.stringify({ t:Date.now(), events:evs, range:rangeStr })); } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); } }
       return;
     }
 
@@ -2761,7 +2761,7 @@ async function loadGfw(forceRefresh) {
       setStatus(true, `GFW · ${evs.length} events · ${elapsedGfw}s`);
       updateStats();
       document.getElementById('stats-range').textContent = rangeStr;
-      try { localStorage.setItem(GFW_CACHE_KEY, JSON.stringify({ t:Date.now(), events:evs, range:rangeStr })); } catch {}
+      try { localStorage.setItem(GFW_CACHE_KEY, JSON.stringify({ t:Date.now(), events:evs, range:rangeStr })); } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
     } else {
       setStatus(true, `GFW ${evs.length} + AIS live · ${elapsedGfw}s`);
       updateAiCounters();
@@ -3205,7 +3205,7 @@ function plotSidebarTrail(latlngs, trackData = []) {
     L.circleMarker(ll, { radius:2.5, color:'#d29922', fillColor:'#d29922', fillOpacity:.8 })
       .bindPopup(`${p.timestamp||''}<br>Speed: ${p.speed??'—'} kn`).addTo(sidebarTrajLayer);
   });
-  try { map.fitBounds(L.polyline(latlngs).getBounds(), { padding:[40,80] }); } catch {}
+  try { map.fitBounds(L.polyline(latlngs).getBounds(), { padding:[40,80] }); } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
 }
 
 // ── PENCOCOKAN AIS–SAR (SATELIT) ────────────────────────────────────────────
@@ -3709,6 +3709,8 @@ async function loadQueryCatalog() {
   list.textContent = 'Memuat…';
   try {
     const r = await fetch(apiUrl('/api/gfwr/queries'));
+    // Katalog ini dulu disediakan versi lama (folder src/, sudah dihapus); kalau tidak ada, tampilkan pesan yang jelas.
+    if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) throw new Error('Katalog query belum tersedia.');
     const d = await r.json();
     queryCatalogLoaded = true;
     list.innerHTML = (d.queries||[]).map(q => `
@@ -3718,7 +3720,7 @@ async function loadQueryCatalog() {
         Dataset: ${esc((q.datasets||[]).join(', ')||'—')}<br>
         ${q.description ? esc(q.description) : ''}</div>
       </div>`).join('');
-  } catch (err) { list.textContent = 'Gagal memuat: ' + err.message; }
+  } catch (err) { console.warn('[query] katalog gagal dimuat:', err); list.textContent = err.message === 'Katalog query belum tersedia.' ? err.message : 'Gagal memuat: ' + err.message; }
 }
 function setDefaultDates() {
   const end=new Date(), start=new Date(end);
@@ -3897,7 +3899,7 @@ function saveInferenceCache() {
       results: aiResults,
       rawTrack: aiRawTrack,
     }));
-  } catch {}
+  } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
 }
 
 function loadInferenceCache() {
@@ -3909,7 +3911,7 @@ function loadInferenceCache() {
     aiResults = cached.results;
     aiRawTrack = Array.isArray(cached.rawTrack) ? cached.rawTrack : [];
     aiInferenceMessage = cached.message || `${aiResults.length} kapal dari cache lokal.`;
-  } catch {}
+  } catch (err) { console.warn("[dashboard] galat diabaikan:", err?.message || err); }
 }
 
 function renderInferenceState() {

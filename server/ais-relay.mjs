@@ -320,11 +320,11 @@ export function stop() {
   socket = null;
   try {
     ws?.close();
-  } catch {}
+  } catch (err) { console.warn("[ais-relay] galat diabaikan:", err?.message || err); }
   for (const res of clients) {
     try {
       res.end();
-    } catch {}
+    } catch (err) { console.warn("[ais-relay] galat diabaikan:", err?.message || err); }
   }
   clients.clear();
 }

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const ENV_FILES = [".env", ".env.local", ".env.lokal"];
+const ENV_FILES = [".env", ".env.local"];
 
 function loadLocalEnv() {
   for (const fileName of ENV_FILES) {
@@ -63,6 +63,7 @@ export async function sendTelegramMessage(text) {
   }
 
   const response = await fetch(`https://api.telegram.org/bot${config.token}/sendMessage`, {
+    signal: AbortSignal.timeout(10000), // batas waktu 10 detik
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

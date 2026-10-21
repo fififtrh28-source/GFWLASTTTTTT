@@ -36,8 +36,12 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
       .replace(/'/g, "&#039;");
   }
 
+  // Hanya status yang dikenal yang masuk ke nama kelas, supaya isi status tidak bisa menyisipkan atribut HTML.
+  const SAFE_STATUSES = new Set(["new", "reviewed", "sent"]);
+
   function statusClass(status) {
-    return `onx-status onx-status-${String(status).toLowerCase()}`;
+    const key = String(status || "").toLowerCase().trim();
+    return `onx-status onx-status-${SAFE_STATUSES.has(key) ? key : "unknown"}`;
   }
 
   function statusBadge(status) {
@@ -415,10 +419,18 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
     return bytes;
   }
 
+  const LOGO_TIMEOUT_MS = 8000;
+
   function loadLogoAsJpeg(src, maxWidth, maxHeight) {
     return new Promise((resolve) => {
       const image = new Image();
+      // Bila gambar tidak menjawab dalam 8 detik, PDF tetap dibuat tanpa logo itu.
+      const timer = setTimeout(() => {
+        image.src = "";
+        resolve(null);
+      }, LOGO_TIMEOUT_MS);
       image.onload = () => {
+        clearTimeout(timer);
         try {
           const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight, 1);
           const width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -440,15 +452,18 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
           resolve(null);
         }
       };
-      image.onerror = () => resolve(null);
+      image.onerror = () => {
+        clearTimeout(timer);
+        resolve(null);
+      };
       image.src = src;
     });
   }
 
   async function createPdfBlob(records) {
     const [lenLogo, itsLogo] = await Promise.all([
-      loadLogoAsJpeg("assets/logos/pt-len.png", 120, 46),
-      loadLogoAsJpeg("assets/logos/its.png", 150, 52),
+      loadLogoAsJpeg(new URL("../logos/len.png", import.meta.url).href, 120, 46),
+      loadLogoAsJpeg(new URL("../logos/its.png", import.meta.url).href, 150, 52),
     ]);
 
     const logos = [

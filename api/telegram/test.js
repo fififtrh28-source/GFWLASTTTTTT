@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import { applyRateLimit } from "../_rate-limit.js";
 import { sendTelegramMessage, telegramConfig } from "./_client.js";
 
@@ -10,14 +11,13 @@ export default async function handler(req, res) {
   if (!allowed) return;
 
   if (!["GET", "POST"].includes(req.method || "GET")) {
-    return res.status(405).json({ error: "Method not allowed" });
+    return sendProblem(res, 405, "Method not allowed");
   }
 
   const config = telegramConfig();
   if (config.missing.length) {
-    return res.status(500).json({
+    return sendProblem(res, 500, "Telegram env belum lengkap", {
       ok: false,
-      error: "Telegram env belum lengkap",
       missing: config.missing,
       expected: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
     });
@@ -36,9 +36,8 @@ export default async function handler(req, res) {
       telegram_message_id: result?.message_id,
     });
   } catch (err) {
-    return res.status(502).json({
-      ok: false,
-      error: err?.message || "Gagal mengirim Telegram test.",
-    });
+    // Detail galat hanya dicatat di log server, supaya isi galat (alamat, keterangan Telegram) tidak sampai ke browser.
+    console.error("[telegram-test] gagal:", err);
+    return sendProblem(res, 502, "Gagal mengirim Telegram test. Periksa koneksi atau pengaturan Telegram di server.", { ok: false });
   }
 }

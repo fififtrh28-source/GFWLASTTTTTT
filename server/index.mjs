@@ -38,7 +38,7 @@ const MIME_TYPES = {
 
 // Sama dengan loadDotEnv di vite.config.ts: nilai yang sudah ada di environment tidak ditimpa.
 function loadDotEnv() {
-  for (const fileName of [".env", ".env.local", ".env.lokal"]) {
+  for (const fileName of [".env", ".env.local"]) {
     const file = path.join(ROOT, fileName);
     if (!fs.existsSync(file)) continue;
     for (const rawLine of fs.readFileSync(file, "utf8").split(/\r?\n/)) {

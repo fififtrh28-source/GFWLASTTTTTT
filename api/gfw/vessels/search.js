@@ -1,8 +1,13 @@
+import { sendProblem } from "../../_problem.js";
 import { cacheGet, cacheSet } from "../../_redis.js";
 import { applyRateLimit } from "../../_rate-limit.js";
 
 const GFW_BASE = "https://gateway.api.globalfishingwatch.org/v3";
 const GFW_IDENTITY_DATASET = "public-global-vessel-identity:latest";
+// Hasil pencarian dianggap segar 24 jam (sama seperti sebelumnya). Simpanan disimpan 7 hari sebagai cadangan
+// bila GFW sedang bermasalah.
+const FRESH_TTL_MS = 24 * 60 * 60 * 1000;
+const STALE_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function cacheKey(query, limit) {
   return `gfw:vessels:search:v1:${encodeURIComponent(query.toLowerCase())}:${limit}`;
@@ -23,7 +28,8 @@ export default async function handler(req, res) {
 
   const key = cacheKey(query, limit);
   const cached = await cacheGet(key);
-  if (cached?.payload) {
+  const fresh = cached?.payload && Date.now() - Number(cached.fetchedAt || 0) < FRESH_TTL_MS;
+  if (fresh) {
     res.setHeader("x-cache", "HIT");
     res.setHeader("cache-control", "public, max-age=600, stale-while-revalidate=86400");
     res.setHeader("x-data-fetched-at", new Date(cached.fetchedAt).toISOString());
@@ -31,7 +37,7 @@ export default async function handler(req, res) {
   }
 
   const token = process.env.GFW_TOKEN;
-  if (!token) return res.status(500).json({ entries: [], error: "GFW_TOKEN not configured" });
+  if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured", { entries: [] });
 
   try {
     const url = new URL(`${GFW_BASE}/vessels/search`);
@@ -42,6 +48,7 @@ export default async function handler(req, res) {
     url.searchParams.set("includes[1]", "OWNERSHIP");
 
     const gfwRes = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(15000), // batas waktu 15 detik
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
 
@@ -63,7 +70,7 @@ export default async function handler(req, res) {
     }).filter((v) => v.vessel_id);
 
     const payload = { entries };
-    await cacheSet(key, { payload, fetchedAt: Date.now() }, 24 * 60 * 60);
+    await cacheSet(key, { payload, fetchedAt: Date.now() }, STALE_TTL_SECONDS);
     res.setHeader("x-cache", "MISS");
     res.setHeader("cache-control", "public, max-age=600, stale-while-revalidate=86400");
     res.json(payload);
@@ -76,6 +83,6 @@ export default async function handler(req, res) {
         warning: "Serving stale GFW vessel search because live fetch failed",
       });
     }
-    res.status(500).json({ entries: [], error: e?.message || "search failed" });
+    sendProblem(res, 500, e?.message || "search failed", { entries: [] });
   }
 }

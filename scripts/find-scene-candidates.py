@@ -14,7 +14,9 @@ import math
 import re
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from scipy.spatial import cKDTree
 
 
 DEFAULT_INPUTS = [
@@ -243,11 +245,23 @@ def find_transshipment(df: pd.DataFrame, source_file: Path, max_distance_km: flo
             continue
 
         records = list(group.iterrows())
-        for idx, row in records:
+        # Kapal terdekat dicari lewat indeks KD-Tree (scipy.spatial.cKDTree), bukan dengan membandingkan setiap pasangan.
+        # Posisi dipetakan ke bola satuan; jarak tali busurnya naik bersama jarak haversine, jadi kandidat dalam radius
+        # max_distance_km sama dengan pencarian lama. Urutan kandidat dan cara memilih yang terdekat tidak berubah.
+        lat_all = to_num(group["Center_latitude"]).to_numpy(dtype=float)
+        lon_all = to_num(group["Center_longitude"]).to_numpy(dtype=float)
+        valid = np.isfinite(lat_all) & np.isfinite(lon_all)
+        valid_pos = np.flatnonzero(valid)
+        lat_r, lon_r = np.radians(lat_all), np.radians(lon_all)
+        xyz = np.column_stack([np.cos(lat_r) * np.cos(lon_r), np.cos(lat_r) * np.sin(lon_r), np.sin(lat_r)])
+        tree = cKDTree(xyz[valid]) if len(valid_pos) else None
+        chord = 2.0 * math.sin(min(math.pi, max_distance_km / 6371.0088) / 2.0) * (1.0 + 1e-9) + 1e-12
+        for pos, (idx, row) in enumerate(records):
             best = None
             lat1 = pd.to_numeric(pd.Series([row["Center_latitude"]]), errors="coerce")
             lon1 = pd.to_numeric(pd.Series([row["Center_longitude"]]), errors="coerce")
-            for jdx, other in records:
+            nearby = sorted(int(valid_pos[k]) for k in tree.query_ball_point(xyz[pos], chord)) if tree is not None and valid[pos] else []
+            for jdx, other in (records[j] for j in nearby):
                 if idx == jdx or str(row["MMSI"]) == str(other["MMSI"]):
                     continue
                 dist = haversine_km(

@@ -124,7 +124,7 @@ function flush() {
     db.exec("COMMIT");
     lastError = null;
   } catch (err) {
-    try { db.exec("ROLLBACK"); } catch {}
+    try { db.exec("ROLLBACK"); } catch (err) { console.warn("[ais-history] galat diabaikan:", err?.message || err); }
     lastError = err?.message || String(err);
     console.error("[ais-history] gagal menyimpan:", lastError);
   }
@@ -174,6 +174,6 @@ export function close() {
   identity.stop();
   for (const timer of timers) clearInterval(timer);
   timers = [];
-  try { db?.close(); } catch {}
+  try { db?.close(); } catch (err) { console.warn("[ais-history] galat diabaikan:", err?.message || err); }
   db = null;
 }

@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import { cacheGet, cacheSet } from "../_redis.js";
 import { applyRateLimit } from "../_rate-limit.js";
 
@@ -24,10 +25,11 @@ export default async function handler(req, res) {
   }
 
   const token = process.env.GFW_TOKEN;
-  if (!token) return res.status(500).json({ eez: {}, error: "GFW_TOKEN not configured" });
+  if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured", { eez: {} });
 
   try {
     const gfwRes = await fetch(`${GFW_BASE}/datasets/public-eez-areas/context-layers`, {
+      signal: AbortSignal.timeout(15000), // batas waktu 15 detik
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!gfwRes.ok) throw new Error(`GFW eez list ${gfwRes.status}`);
@@ -46,6 +48,6 @@ export default async function handler(req, res) {
     res.json(payload);
   } catch (e) {
     console.error("[gfw regions]", e?.message);
-    res.status(500).json({ eez: {}, error: e?.message || "regions failed" });
+    sendProblem(res, 500, e?.message || "regions failed", { eez: {} });
   }
 }

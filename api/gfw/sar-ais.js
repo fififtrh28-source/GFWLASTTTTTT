@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import { cacheGet, cacheSet } from "../_redis.js";
 import { applyRateLimit } from "../_rate-limit.js";
 
@@ -56,6 +57,7 @@ async function fetchReport(token, { range, matched }) {
   let res;
   for (let attempt = 0; attempt < 4; attempt++) {
     res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(40000), // laporan 4Wings bisa lama; batas 40 detik (fungsi maksimal 60 detik)
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ region: REGION }),
@@ -122,7 +124,7 @@ async function buildPayload(token, range) {
 
 export default async function handler(req, res) {
   const range = resolveRange(req.query || {});
-  if (range.error) return res.status(400).json({ error: range.error });
+  if (range.error) return sendProblem(res, 400, range.error);
 
   const allowed = await applyRateLimit(req, res, { name: "gfw-sar-ais", limit: 30, windowSeconds: 10 * 60 });
   if (!allowed) return;
@@ -136,7 +138,7 @@ export default async function handler(req, res) {
   }
 
   const token = process.env.GFW_TOKEN;
-  if (!token) return res.status(500).json({ error: "GFW_TOKEN not configured" });
+  if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured");
 
   try {
     const payload = await buildPayload(token, range);
@@ -147,6 +149,6 @@ export default async function handler(req, res) {
     res.json({ ...payload, fetchedAt: new Date(fetchedAt).toISOString() });
   } catch (error) {
     res.setHeader("cache-control", CDN_CACHE_STALE);
-    res.status(502).json({ error: error?.message || "GFW SAR gagal" });
+    sendProblem(res, 502, error?.message || "GFW SAR gagal");
   }
 }

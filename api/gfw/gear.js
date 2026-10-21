@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import { cacheGet, cacheSet } from "../_redis.js";
 import { applyRateLimit } from "../_rate-limit.js";
 
@@ -45,7 +46,7 @@ async function fetchGearBatch(ids, token) {
   url.searchParams.set("datasets[0]", GFW_IDENTITY_DATASET);
   ids.forEach((id, i) => url.searchParams.set(`ids[${i}]`, id));
 
-  const gfwRes = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  const gfwRes = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) }); // batas waktu 15 detik
   if (!gfwRes.ok) throw new Error(`GFW vessels ${gfwRes.status}`);
   const json = await gfwRes.json();
 
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
 
   if (missing.length) {
     const token = process.env.GFW_TOKEN;
-    if (!token) return res.status(500).json({ gear, error: "GFW_TOKEN not configured" });
+    if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured", { gear });
 
     try {
       for (let i = 0; i < missing.length; i += GFW_BATCH) {

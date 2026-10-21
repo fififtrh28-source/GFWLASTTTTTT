@@ -28,8 +28,12 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
       .replace(/'/g, "&#039;");
   }
 
+  // Hanya status yang dikenal yang masuk ke nama kelas, supaya isi status tidak bisa menyisipkan atribut HTML.
+  const SAFE_STATUSES = new Set(["new", "reviewed", "sent"]);
+
   function statusClass(status) {
-    return `onx-status onx-status-${String(status).toLowerCase()}`;
+    const key = String(status || "").toLowerCase().trim();
+    return `onx-status onx-status-${SAFE_STATUSES.has(key) ? key : "unknown"}`;
   }
 
   function statusBadge(status) {
@@ -376,11 +380,13 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
     elements.alertPreview.textContent = buildAlertText(record);
     elements.modal.classList.add("is-open");
     elements.modal.setAttribute("aria-hidden", "false");
+    elements.modal.removeAttribute("inert");
   }
 
   function closeAlertPreview() {
     elements.modal.classList.remove("is-open");
     elements.modal.setAttribute("aria-hidden", "true");
+    elements.modal.setAttribute("inert", ""); // isi jendela tertutup tidak bisa dijangkau tombol Tab
   }
 
   function sendAlertSimulation() {

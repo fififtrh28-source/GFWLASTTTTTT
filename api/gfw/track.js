@@ -1,8 +1,13 @@
+import { sendProblem } from "../_problem.js";
 import { cacheGet, cacheSet } from "../_redis.js";
 import { applyRateLimit } from "../_rate-limit.js";
 
 const GFW_BASE = "https://gateway.api.globalfishingwatch.org/v3";
 const GFW_TRACK_DATASET = "public-global-vessel-track:latest";
+// Lintasan dianggap segar 6 jam (sama seperti sebelumnya). Simpanan disimpan 7 hari, supaya data lama masih bisa
+// disajikan sebagai cadangan bila GFW sedang bermasalah.
+const FRESH_TTL_MS = 6 * 60 * 60 * 1000;
+const STALE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const GFW_EVENT_DATASETS = [
   "public-global-fishing-events:latest",
   "public-global-encounters-events:latest",
@@ -35,7 +40,7 @@ export default async function handler(req, res) {
   const endDate = req.query.end_date || "";
 
   if (!vesselId || !startDate || !endDate) {
-    return res.status(400).json({ error: "vessel_id, start_date, end_date required" });
+    return sendProblem(res, 400, "vessel_id, start_date, end_date required");
   }
 
   const allowed = await applyRateLimit(req, res, {
@@ -47,7 +52,8 @@ export default async function handler(req, res) {
 
   const key = cacheKey(vesselId, startDate, endDate);
   const cached = await cacheGet(key);
-  if (cached?.payload) {
+  const fresh = cached?.payload && Date.now() - Number(cached.fetchedAt || 0) < FRESH_TTL_MS;
+  if (fresh) {
     res.setHeader("x-cache", "HIT");
     res.setHeader("cache-control", "public, max-age=300, stale-while-revalidate=3600");
     res.setHeader("x-data-fetched-at", new Date(cached.fetchedAt).toISOString());
@@ -55,7 +61,7 @@ export default async function handler(req, res) {
   }
 
   const token = process.env.GFW_TOKEN;
-  if (!token) return res.status(500).json({ error: "GFW_TOKEN not configured" });
+  if (!token) return sendProblem(res, 500, "GFW_TOKEN not configured");
 
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   let track = [];
@@ -67,7 +73,7 @@ export default async function handler(req, res) {
     url.searchParams.set("start-date", startDate);
     url.searchParams.set("end-date", endDate);
 
-    const gfwRes = await fetch(url.toString(), { headers });
+    const gfwRes = await fetch(url.toString(), { headers, signal: AbortSignal.timeout(15000) }); // batas waktu 15 detik
 
     if (gfwRes.ok) {
       const json = await gfwRes.json();
@@ -105,6 +111,7 @@ export default async function handler(req, res) {
       evUrl.searchParams.set("sort", "+start");
 
       const evRes = await fetch(evUrl.toString(), {
+        signal: AbortSignal.timeout(15000), // batas waktu 15 detik
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -139,7 +146,7 @@ export default async function handler(req, res) {
       bounds: computeBounds(track),
       track,
     };
-    await cacheSet(key, { payload, fetchedAt: Date.now() }, 6 * 60 * 60);
+    await cacheSet(key, { payload, fetchedAt: Date.now() }, STALE_TTL_SECONDS);
     res.setHeader("x-cache", "MISS");
     res.setHeader("cache-control", "public, max-age=300, stale-while-revalidate=3600");
     res.json(payload);
@@ -152,6 +159,6 @@ export default async function handler(req, res) {
         warning: "Serving stale GFW track because live fetch failed",
       });
     }
-    res.status(500).json({ error: e?.message || "track failed" });
+    sendProblem(res, 500, e?.message || "track failed");
   }
 }

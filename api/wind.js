@@ -1,3 +1,4 @@
+import { sendProblem } from "./_problem.js";
 import { cacheGet, cacheSet } from "./_redis.js";
 import { applyRateLimit } from "./_rate-limit.js";
 import { decodeGrib2 } from "./_grib2.js";
@@ -114,6 +115,6 @@ export default async function handler(req, res) {
       return res.json(cached);
     }
     res.setHeader("cache-control", "no-store");
-    res.status(502).json({ hours: [], error: e?.message || "wind failed" });
+    sendProblem(res, 502, e?.message || "wind failed", { hours: [] });
   }
 }

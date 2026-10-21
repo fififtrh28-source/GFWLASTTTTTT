@@ -106,3 +106,6 @@ newcodinggfw_fixbuanget/
 # Catatan lampiran pribadi dan rujukan submodule lama (folder Inference tidak ikut).
 Lampiran_Listing_Program*
 .gitmodules
+
+# Dokumen penjelasan revisi audit (bersifat rahasia): jangan ikut ke GitHub publik maupun website.
+Penjelasan*.html

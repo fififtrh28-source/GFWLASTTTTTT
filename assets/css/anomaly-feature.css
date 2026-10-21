@@ -1,4 +1,5 @@
-* {
+.onx-body,
+.onx-body * {
   box-sizing: border-box;
 }
 

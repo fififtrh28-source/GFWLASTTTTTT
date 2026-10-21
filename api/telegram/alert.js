@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import { applyRateLimit } from "../_rate-limit.js";
 import { sendTelegramMessage, telegramConfig } from "./_client.js";
 
@@ -10,7 +11,7 @@ function formatScore(body = {}) {
   const scoreText = clean(body.scoreText || body.score_text, "");
   if (scoreText) return scoreText;
   const raw = body.score;
-  if (raw == null || raw === "") return "-";
+  if (raw === null || raw === undefined || raw === "") return "-";
   const text = String(raw).trim();
   if (!text) return "-";
   if (text.includes("%") || Number.isNaN(Number(text))) return text;
@@ -56,7 +57,7 @@ function prettyGearLabel(value) {
 }
 
 function numberOrNaN(value) {
-  if (value == null || value === "") return NaN;
+  if (value === null || value === undefined || value === "") return NaN;
   const number = Number(value);
   return Number.isFinite(number) ? number : NaN;
 }
@@ -162,14 +163,13 @@ export default async function handler(req, res) {
   if (!allowed) return;
 
   if ((req.method || "GET") !== "POST") {
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
+    return sendProblem(res, 405, "Method not allowed. Use POST.");
   }
 
   const config = telegramConfig();
   if (config.missing.length) {
-    return res.status(500).json({
+    return sendProblem(res, 500, "Telegram env belum lengkap", {
       ok: false,
-      error: "Telegram env belum lengkap",
       missing: config.missing,
       expected: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
     });
@@ -183,9 +183,8 @@ export default async function handler(req, res) {
       telegram_message_id: result?.message_id,
     });
   } catch (err) {
-    return res.status(502).json({
-      ok: false,
-      error: err?.message || "Gagal mengirim alert Telegram.",
-    });
+    // Detail galat hanya dicatat di log server, supaya isi galat (alamat, keterangan Telegram) tidak sampai ke browser.
+    console.error("[telegram-alert] gagal:", err);
+    return sendProblem(res, 502, "Gagal mengirim alert Telegram. Periksa koneksi atau pengaturan Telegram di server.", { ok: false });
   }
 }

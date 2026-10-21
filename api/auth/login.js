@@ -1,3 +1,4 @@
+import { sendProblem } from "../_problem.js";
 import crypto from "node:crypto";
 import { applyRateLimit } from "../_rate-limit.js";
 
@@ -27,7 +28,7 @@ function sameText(given, expected) {
 export default async function handler(req, res) {
   res.setHeader("cache-control", "no-store");
   if ((req.method || "GET") !== "POST") {
-    return res.status(405).json({ ok: false, error: "Gunakan POST." });
+    return sendProblem(res, 405, "Gunakan POST.", { ok: false });
   }
 
   const allowed = await applyRateLimit(req, res, { name: "login", limit: 10, windowSeconds: 10 * 60 });
@@ -37,14 +38,14 @@ export default async function handler(req, res) {
   const expectedPassword = String(process.env.LOGIN_PASSWORD || "");
   if (!expectedUser || !expectedPassword) {
     console.warn("[login] LOGIN_USERNAME / LOGIN_PASSWORD belum diatur di server.");
-    return res.status(503).json({ ok: false, error: "Login belum diatur di server." });
+    return sendProblem(res, 503, "Login belum diatur di server.", { ok: false });
   }
 
   const { username, password } = readBody(req);
   const userOk = sameText(String(username ?? "").trim(), expectedUser);
   const passwordOk = sameText(password, expectedPassword);
   if (!(userOk && passwordOk)) {
-    return res.status(401).json({ ok: false });
+    return sendProblem(res, 401, "Nama pengguna atau kata sandi salah.", { ok: false });
   }
   return res.json({ ok: true });
 }
