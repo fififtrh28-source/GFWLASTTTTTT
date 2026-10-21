@@ -296,6 +296,8 @@
     .pt-toggle { cursor:pointer; user-select:none; transition:background .12s; }
     .pt-toggle:hover { background:var(--surface-2); }
     .pt-toggle:focus-visible { outline:1px solid var(--blue); outline-offset:-1px; }
+    /* Fokus keyboard pada elemen buatan yang bisa diklik (temuan audit, kategori Accessibility) */
+    #ai-table-body tr:focus-visible, .hist-item:focus-visible, .track-row:focus-visible, .ai-vessel-card:focus-visible { outline:1px solid var(--blue); outline-offset:-1px; }
     .pt-toggle .leg-dot { transition:background .12s, opacity .12s; }
     .stat-row.pt-toggle > .leg-dot { width:11px; height:11px; margin-right:-2px; }
     .pt-off .leg-dot { background:transparent !important; box-shadow:inset 0 0 0 2px currentColor; opacity:.65; }
@@ -2253,7 +2255,7 @@ function renderAiTableBody() {
       : `background:${r.kind === 'h5' ? gearColor(h5Gear.key) : color};border:1.5px solid #111827;border-radius:50%`;
     const name = r.name || (r.mmsi ? `MMSI ${r.mmsi}` : '—');
     const tip = `${r.name ? `${r.name} · MMSI ${r.mmsi || '-'}` : name} · ${fmtDay(r.time)}${r.h5 ? ` · H5: ${h5Gear.label} ${h5Pct(r.h5.gearProbability)}` : ''}`;
-    return `<tr class="${r.key === aiTable.selected ? 'selected' : ''}" onclick="focusAiTableRow(${i})" title="${esc(tip)}">
+    return `<tr class="${r.key === aiTable.selected ? 'selected' : ''}" tabindex="0" onclick="focusAiTableRow(${i})" onkeydown="keyActivate(event)" title="${esc(tip)}">
       <td class="col-name"><div class="ai-table-name"><span class="ai-table-ico" style="${ico}"></span><span>${esc(name)}</span></div></td>
       <td class="col-type">${r.type === 'none' ? `<span style="color:var(--text-3)">${label}</span>` : `<span class="ai-badge" style="background:${color}22;color:${color};border:1px solid ${color}66">${esc(label)}</span>`}</td>
       <td class="col-h5">${r.h5 ? `<span style="color:${gearColor(h5Gear.key)};font-weight:600">${esc(H5_SHORT[r.h5.gear] || h5Gear.label)}</span>` : '<span style="color:var(--text-3)">—</span>'}</td>
@@ -3018,7 +3020,7 @@ function renderSidebarGfw(d) {
 
   const histHtml = same.length
     ? same.map(ev => { const ec=gfwColor(ev.type); return `
-        <div class="hist-item" onclick="focusHistEvent(${ev.lat},${ev.lon})">
+        <div class="hist-item" role="button" tabindex="0" onclick="focusHistEvent(${ev.lat},${ev.lon})" onkeydown="keyActivate(event)">
           <span class="hist-date">${fmtD(ev.start)}</span>
           <span class="hist-badge" style="background:${ec}22;color:${ec};border:1px solid ${ec}33">${esc(ev.type)}</span>
         </div>`; }).join('')
@@ -3109,7 +3111,7 @@ function renderSidebarTrack(track) {
     const isFirst = i === 0;
     const isLast  = i === sorted.length - 1;
     const label   = isFirst ? 'Start' : isLast ? 'End' : null;
-    return `<div class="track-row" onclick="map.setView([${p.lat},${p.lon}],13,{animate:true})">
+    return `<div class="track-row" role="button" tabindex="0" onclick="map.setView([${p.lat},${p.lon}],13,{animate:true})" onkeydown="keyActivate(event)">
       <div class="track-row-left">
         <span class="track-dot" style="background:${isFirst?'#3fb950':isLast?'#f85149':c}"></span>
         <div>
@@ -3560,6 +3562,13 @@ const pointShow = {
 
 // Kelas dan atribut untuk baris jenis yang bisa diklik (juga bisa dipakai lewat keyboard).
 const ptOff = (tab, key) => (pointShow[tab][key] ? '' : ' pt-off');
+// Elemen buatan yang bisa diklik (baris tabel, kartu, item riwayat) juga bisa dipakai dengan keyboard: Enter/Spasi = klik.
+function keyActivate(event) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  event.currentTarget.click();
+}
+
 function ptRowAttrs(tab, key) {
   const on = pointShow[tab][key];
   return `data-pt="${tab}|${key}" role="button" tabindex="0" aria-pressed="${on}" title="Klik untuk ${on ? 'menyembunyikan' : 'menampilkan'} titik jenis ini di peta"`
@@ -4100,7 +4109,7 @@ function renderAiResults(vessels) {
 
     const posText = v.last_lat != null ? `${v.last_lat.toFixed(4)}°, ${v.last_lon.toFixed(4)}°` : 'Posisi tidak tersedia';
 
-    return `<div class="ai-vessel-card" onclick="focusAiVessel(${i})">
+    return `<div class="ai-vessel-card" role="button" tabindex="0" onclick="focusAiVessel(${i})" onkeydown="keyActivate(event)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
         <span class="ai-vessel-name">MMSI: ${esc(v.mmsi)}</span>
         <div style="display:flex;gap:4px;align-items:center">

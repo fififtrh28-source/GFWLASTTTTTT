@@ -299,7 +299,7 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
 
       <div class="onx-detail-actions">
         <button class="onx-button" type="button" id="mark-reviewed" ${record.status !== "New" ? "disabled" : ""}>Mark as Reviewed</button>
-        <button class="onx-button is-primary" type="button" id="open-alert-preview">Send Alert to Telegram</button>
+        <button class="onx-button is-primary" type="button" id="open-alert-preview" aria-controls="telegram-modal" aria-haspopup="dialog">Send Alert to Telegram</button>
       </div>
     `;
 
@@ -374,19 +374,26 @@ import { PAGE_SIZE, renderPagination } from "./onx-pagination.js";
     ].join("\n");
   }
 
+  let lastFocusBeforeModal = null;
+
   function openAlertPreview() {
     const record = getSelectedRecord();
     if (!record) return;
     elements.alertPreview.textContent = buildAlertText(record);
+    lastFocusBeforeModal = document.activeElement;
     elements.modal.classList.add("is-open");
     elements.modal.setAttribute("aria-hidden", "false");
     elements.modal.removeAttribute("inert");
+    elements.closeModal.focus(); // fokus keyboard pindah ke dalam jendela
   }
 
   function closeAlertPreview() {
     elements.modal.classList.remove("is-open");
     elements.modal.setAttribute("aria-hidden", "true");
     elements.modal.setAttribute("inert", ""); // isi jendela tertutup tidak bisa dijangkau tombol Tab
+    // Fokus kembali ke tombol yang membuka jendela (bila masih ada di halaman)
+    if (lastFocusBeforeModal && document.contains(lastFocusBeforeModal)) lastFocusBeforeModal.focus();
+    lastFocusBeforeModal = null;
   }
 
   function sendAlertSimulation() {

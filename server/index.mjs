@@ -127,14 +127,20 @@ function readBody(req) {
     let size = 0;
     req.on("data", (chunk) => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
+      // Lewat batas: sisa kiriman dibuang (tidak disimpan) supaya balasan 413 tetap bisa dikirim;
+      // kiriman yang sangat besar langsung diputus.
+      if (size > MAX_BODY_BYTES * 16) {
         reject(new Error("Request body terlalu besar"));
         req.destroy();
         return;
       }
+      if (size > MAX_BODY_BYTES) return;
       chunks.push(chunk);
     });
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    req.on("end", () => {
+      if (size > MAX_BODY_BYTES) return reject(new Error("Request body terlalu besar"));
+      resolve(Buffer.concat(chunks).toString("utf-8"));
+    });
     req.on("error", reject);
   });
 }

@@ -93,10 +93,15 @@ function vercelApiPlugin() {
             let size = 0;
             req.on("data", (c: Buffer) => {
               size += c.length;
-              if (size > MAX_BODY_BYTES) { resolve(true); req.destroy(); return; }
+              if (size > MAX_BODY_BYTES * 16) { req.destroy(); resolve(true); return; } // kiriman sangat besar: putus
+              if (size > MAX_BODY_BYTES) return; // lewat 1 MB: sisa kiriman dibuang, tidak disimpan
               chunks.push(c);
             });
-            req.on("end", () => { bodyText = Buffer.concat(chunks).toString("utf-8"); resolve(false); });
+            req.on("end", () => {
+              if (size > MAX_BODY_BYTES) return resolve(true);
+              bodyText = Buffer.concat(chunks).toString("utf-8");
+              resolve(false);
+            });
           });
           if (tooLarge) {
             res.statusCode = 413;
