@@ -90,9 +90,11 @@ for (const [mmsi, group] of groups) {
     end_time_utc: group[group.length - 1].timestamp_utc,
   };
 
+  // number() mengubah isian kosong menjadi NaN, sehingga posisi AIS yang kosong dibuang dan tidak menjadi titik (0, 0).
+  // Lintang/bujur 0 yang benar-benar tercatat tetap dipakai.
   const rawCoordinates = group
-    .filter((p) => Number.isFinite(Number(p.ais_lon)) && Number.isFinite(Number(p.ais_lat)))
-    .map((p) => [Number(p.ais_lon), Number(p.ais_lat)]);
+    .map((p) => [number(p.ais_lon), number(p.ais_lat)])
+    .filter(([lon, lat]) => finiteLatLon(lat, lon));
   if (rawCoordinates.length >= 2) {
     rawFeatures.push({
       type: "Feature",
@@ -216,8 +218,8 @@ function renderTrajectoryComparisonSvg(mmsi, group) {
     .map((point, index) => ({
       ...point,
       index,
-      rawLat: Number(point.ais_lat),
-      rawLon: Number(point.ais_lon),
+      rawLat: number(point.ais_lat),
+      rawLon: number(point.ais_lon),
       kalmanLat: Number(point.kalman_lat),
       kalmanLon: Number(point.kalman_lon),
     }))

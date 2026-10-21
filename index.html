@@ -677,6 +677,10 @@
       font-weight: 700;
     }
 
+    .login-status.is-info {
+      color: #2d536b;
+    }
+
     .login-back {
       margin-top: 18px;
       color: #315a72;
@@ -1477,6 +1481,9 @@
         "login.submit": "Login",
         "login.required": "Enter username and password first.",
         "login.invalid": "Username or password is incorrect.",
+        "login.checking": "Checking…",
+        "login.tooMany": "Too many attempts. Wait a few minutes and try again.",
+        "login.unavailable": "Login is not available right now. Try again later.",
         "option.title": "Choose Your Path",
         "option.subtitle": "Select an action to continue inside Ocean Nexus 2026",
         "option.indonesiaTitle": "Indonesian Waters",
@@ -1506,6 +1513,9 @@
         "login.submit": "Masuk",
         "login.required": "Isi nama pengguna dan kata sandi terlebih dahulu.",
         "login.invalid": "Nama pengguna atau kata sandi salah.",
+        "login.checking": "Memeriksa…",
+        "login.tooMany": "Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.",
+        "login.unavailable": "Login sedang tidak tersedia. Coba lagi nanti.",
         "option.title": "Pilih Menu",
         "option.subtitle": "Pilih aksi berikut untuk melanjutkan di Ocean Nexus 2026",
         "option.indonesiaTitle": "Wilayah Indonesia",
@@ -1727,21 +1737,43 @@
       password.type = password.type === "password" ? "text" : "password";
     });
 
-    document.getElementById("login-form").addEventListener("submit", (event) => {
+    // Nama pengguna dan kata sandi diperiksa di server (api/auth/login.js); kode halaman ini tidak menyimpannya.
+    document.getElementById("login-form").addEventListener("submit", async (event) => {
       event.preventDefault();
       const status = document.getElementById("login-status");
+      const submit = event.currentTarget.querySelector(".login-submit");
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
+      const showStatus = (key) => {
+        status.dataset.messageKey = key;
+        status.textContent = translations[language][key];
+        status.classList.toggle("is-info", key === "login.checking");
+      };
 
       if (!username || !password) {
-        status.dataset.messageKey = "login.required";
-        status.textContent = translations[language]["login.required"];
+        showStatus("login.required");
         return;
       }
 
-      if (username !== "OceanNexus" || password !== "12345678") {
-        status.dataset.messageKey = "login.invalid";
-        status.textContent = translations[language]["login.invalid"];
+      submit.disabled = true;
+      showStatus("login.checking");
+      let response = null;
+      try {
+        response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+      } catch (error) {
+        response = null;
+      } finally {
+        submit.disabled = false;
+      }
+
+      if (!response || !response.ok) {
+        const status401 = response && response.status === 401;
+        const status429 = response && response.status === 429;
+        showStatus(status401 ? "login.invalid" : status429 ? "login.tooMany" : "login.unavailable");
         return;
       }
 

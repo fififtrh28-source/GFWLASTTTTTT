@@ -343,7 +343,7 @@ function processNoise(dt, sigmaA) {
 function projectToMeters(lat, lon, refLat, refLon) {
   const earthM = 6371008.8;
   return {
-    x: toRad(lon - refLon) * earthM * Math.cos(toRad(refLat)),
+    x: toRad(lonDelta(refLon, lon)) * earthM * Math.cos(toRad(refLat)),
     y: toRad(lat - refLat) * earthM,
   };
 }
@@ -352,7 +352,7 @@ function unprojectFromMeters(x, y, refLat, refLon) {
   const earthM = 6371008.8;
   return {
     lat: refLat + toDeg(y / earthM),
-    lon: refLon + toDeg(x / (earthM * Math.cos(toRad(refLat)))),
+    lon: wrapLon(refLon + toDeg(x / (earthM * Math.cos(toRad(refLat))))),
   };
 }
 
@@ -455,6 +455,18 @@ function formatNumber(input, digits) {
 function formatAngle(input) {
   if (!Number.isFinite(input)) return "";
   return formatNumber(((input % 360) + 360) % 360, 6);
+}
+
+// Selisih bujur toLon − fromLon dijaga di antara −180° dan 180°, supaya kapal yang melewati bujur 180°
+// tidak dihitung meloncat 360°. Untuk perairan Indonesia (sekitar 95°–141° BT) hasilnya sama dengan toLon − fromLon.
+function lonDelta(fromLon, toLon) {
+  const diff = toLon - fromLon;
+  return diff > 180 ? diff - 360 : diff < -180 ? diff + 360 : diff;
+}
+
+// Mengembalikan bujur ke rentang −180°..180°; bujur yang sudah di dalam rentang tidak diubah.
+function wrapLon(lon) {
+  return lon > 180 ? lon - 360 : lon < -180 ? lon + 360 : lon;
 }
 
 function toRad(deg) {

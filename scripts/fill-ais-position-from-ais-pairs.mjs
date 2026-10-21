@@ -94,7 +94,9 @@ const outputRows = rows.map((row) => {
 
     if (ratio >= 0 && ratio <= 1) {
       const lat = pair.beforeLat + ratio * (pair.afterLat - pair.beforeLat);
-      const lon = pair.beforeLon + ratio * (pair.afterLon - pair.beforeLon);
+      // Bujur sesudah digeser 360° bila kapal melewati bujur 180°, supaya interpolasi tidak memutari bumi.
+      const afterLon = pair.afterLon + lonShift(pair.beforeLon, pair.afterLon);
+      const lon = wrapLon(pair.beforeLon + ratio * (afterLon - pair.beforeLon));
 
       out.AIS_Latitude = formatNumber(lat, 8);
       out.AIS_Longitude = formatNumber(lon, 8);
@@ -315,6 +317,18 @@ function finiteLatLon(lat, lon) {
     && lat <= 90
     && lon >= -180
     && lon <= 180;
+}
+
+// Pergeseran (0, +360, atau −360) agar selisih bujur toLon − fromLon berada di antara −180° dan 180°.
+// Untuk perairan Indonesia (sekitar 95°–141° BT) hasilnya selalu 0, sehingga angka yang ada tidak berubah.
+function lonShift(fromLon, toLon) {
+  const diff = toLon - fromLon;
+  return diff > 180 ? -360 : diff < -180 ? 360 : 0;
+}
+
+// Mengembalikan bujur ke rentang −180°..180°; bujur yang sudah di dalam rentang tidak diubah.
+function wrapLon(lon) {
+  return lon > 180 ? lon - 360 : lon < -180 ? lon + 360 : lon;
 }
 
 function formatNumber(n, digits) {

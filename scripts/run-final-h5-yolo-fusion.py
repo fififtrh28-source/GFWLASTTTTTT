@@ -794,6 +794,20 @@ def instantiate_from_checkpoint(ck: dict, state: dict) -> nn.Module:
     return model
 
 
+try:  # numpy 2.x
+    from numpy._core.multiarray import _reconstruct as _numpy_reconstruct
+except ImportError:  # numpy 1.x
+    from numpy.core.multiarray import _reconstruct as _numpy_reconstruct
+
+# Jenis objek di luar tensor yang boleh ada di checkpoint saat dibuka dengan weights_only=True: hanya array numpy
+# berisi angka (beserta jenis dtype-nya). Array berisi objek Python (ObjectDType) tetap ditolak.
+NUMPY_SAFE_GLOBALS = [np.ndarray, np.dtype, _numpy_reconstruct] + [
+    getattr(np.dtypes, name)
+    for name in dir(getattr(np, "dtypes", object()))
+    if name.endswith("DType") and name not in ("ObjectDType", "VoidDType")
+]
+
+
 class H5ModelBundle:
     def __init__(self, path: Path):
         if not path.exists():
@@ -810,7 +824,11 @@ class H5ModelBundle:
         return json.loads(raw)
 
     def _load_member(self, files: h5py.Group, pipeline: str, model_path: str, scaler_path: str, expected_features: int) -> ModelMember:
-        ck = torch.load(io.BytesIO(self._read_bytes(files, model_path)), map_location="cpu", weights_only=False)
+        # weights_only=True: file model hanya dibaca sebagai data (bobot dan angka), tidak boleh menjalankan kode.
+        # Ke-20 checkpoint di FINAL_4_PIPELINE_MODELS.h5 juga memuat array numpy, jadi tiga jenis pembangun
+        # array numpy diizinkan secara khusus; jenis objek lain tetap ditolak.
+        with torch.serialization.safe_globals(NUMPY_SAFE_GLOBALS):
+            ck = torch.load(io.BytesIO(self._read_bytes(files, model_path)), map_location="cpu", weights_only=True)
         if not isinstance(ck, dict):
             raise TypeError(f"Checkpoint is not a dict: {model_path}")
         state = state_dict_from_checkpoint(ck)
@@ -1189,6 +1207,14 @@ def regularize_vessels(ais: pd.DataFrame, gear_by_mmsi: dict[str, dict]) -> pd.D
             vals = g[col].to_numpy(dtype=float)
             return vals[lo] * (1.0 - frac) + vals[hi] * frac
 
+        def interp_lon() -> np.ndarray:
+            # Bujur titik sesudah digeser 360° bila kapal melewati bujur 180°, supaya interpolasi tidak
+            # memutari bumi. Untuk perairan Indonesia pergeserannya 0, jadi hasilnya sama dengan interp("lon").
+            vals = g["lon"].to_numpy(dtype=float)
+            diff = vals[hi] - vals[lo]
+            hi_vals = vals[hi] + np.where(diff > 180.0, -360.0, np.where(diff < -180.0, 360.0, 0.0))
+            return vals[lo] * (1.0 - frac) + hi_vals * frac
+
         course = g["course"].to_numpy(dtype=float)
         rad = np.deg2rad(course % 360.0)
         s = np.sin(rad)
@@ -1202,7 +1228,7 @@ def regularize_vessels(ais: pd.DataFrame, gear_by_mmsi: dict[str, dict]) -> pd.D
                 "timestamp": grid.astype(np.int64),
                 "mmsi": str(mmsi),
                 "lat": interp("lat"),
-                "lon": ((interp("lon") + 180.0) % 360.0) - 180.0,
+                "lon": ((interp_lon() + 180.0) % 360.0) - 180.0,
                 "speed": interp("speed"),
                 "course": (np.rad2deg(np.arctan2(si, ci)) + 360.0) % 360.0,
                 "shore_km": interp("shore_km"),

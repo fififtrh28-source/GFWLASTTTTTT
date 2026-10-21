@@ -29,9 +29,10 @@ Tiga tab di dashboard peta menjawab tiga pertanyaan berbeda:
 Bagian ini sengaja ditaruh di depan. Beberapa hal di proyek ini belum selesai, dan tampilannya bisa memberi kesan
 sebaliknya.
 
-1. **Login belum mengamankan apa pun.** Username dan password 
-username : OceanNexus
-pw : 12345678
+1. **Login hanya melindungi halaman depan.** Nama pengguna dan kata sandi diperiksa di server (`api/auth/login.js`)
+   dari pengaturan `LOGIN_USERNAME` dan `LOGIN_PASSWORD`, dan tidak lagi ditulis di kode maupun di dokumen ini;
+   data login dibagikan terpisah. Halaman dashboard, Anomaly Alert Center, dan Data & Reports masih bisa dibuka
+   langsung lewat alamatnya, jadi ketiganya ditandai "MODE DEMO".
 2. **Anomaly Alert Center dan Data & Reports memakai temuan yang sama dengan tab AI Inference.** Datanya dibaca
    `assets/js/anomaly-data.js` dari file kandidat yang juga dipakai dashboard peta (365 temuan), jadi isinya
    mengikuti butir 3 di bawah. Status tiap temuan (New, Reviewed, Sent) hanya tersimpan di browser masing-masing
@@ -79,6 +80,7 @@ ke repositori.
 |---|---|---|
 | `GFW_TOKEN` | Ya | Semua data GFW. Daftar di https://globalfishingwatch.org/our-apis/ |
 | `AISSTREAM_API_KEY` | Ya, untuk AIS Live | Posisi kapal langsung. Daftar di https://aisstream.io |
+| `LOGIN_USERNAME`, `LOGIN_PASSWORD` | Ya, untuk login | Data login halaman depan, diperiksa di server |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Tidak | Cache dan pembatas permintaan. Tanpa ini tetap jalan |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Tidak | Dipakai `api/telegram/`, yang belum dipanggil halaman mana pun |
 | `AIS_HISTORY_DB`, `AIS_HISTORY_DAYS` | Tidak | Lokasi dan lama simpan rekaman AIS |

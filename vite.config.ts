@@ -23,13 +23,29 @@ function loadDotEnv() {
   }
 }
 
+const API_DIR = path.join(__dirname, "api");
+
+function isInside(baseDir: string, target: string): boolean {
+  const rel = path.relative(baseDir, target);
+  return Boolean(rel) && !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
+// Alamat /api/... hanya boleh menunjuk handler di dalam folder api/ (sama seperti server/index.mjs).
+// Alamat berisi ../ atau file berawalan "_" / "." ditolak, supaya tidak ada file lain yang ikut dijalankan.
 function resolveHandler(urlPath: string): string | null {
-  const clean = urlPath.split("?")[0].replace(/\/$/, "");
-  const candidates = [
-    path.join(__dirname, clean + ".js"),
-    path.join(__dirname, clean, "index.js"),
-  ];
-  return candidates.find(fs.existsSync) ?? null;
+  let pathname: string;
+  try {
+    pathname = new URL(urlPath, "http://localhost").pathname;
+  } catch {
+    return null;
+  }
+  if (!pathname.startsWith("/api/")) return null;
+  const segments = pathname.split("/").filter(Boolean).slice(1);
+  if (!segments.length || segments.some((segment) => segment.startsWith("_") || segment.startsWith(".") || segment.includes("\\"))) {
+    return null;
+  }
+  const base = path.join(API_DIR, ...segments);
+  return [`${base}.js`, path.join(base, "index.js")].find((file) => isInside(API_DIR, file) && fs.existsSync(file)) ?? null;
 }
 
 type AisRelay = { handle: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>; start: () => void };

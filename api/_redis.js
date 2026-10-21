@@ -97,7 +97,11 @@ export async function cacheSet(key, value, ttlSeconds) {
   setLocal(key, value, ttlSeconds);
   try {
     const serialized = JSON.stringify(value);
-    const { configured } = await pipeline([["SET", key, serialized, "EX", String(ttlSeconds)]]);
+    // Redis menolak "EX 0", jadi EX hanya dikirim bila waktu simpan lebih dari 0 detik.
+    const command = ["SET", key, serialized];
+    const ttl = Math.floor(Number(ttlSeconds));
+    if (Number.isFinite(ttl) && ttl > 0) command.push("EX", String(ttl));
+    const { configured } = await pipeline([command]);
     return configured;
   } catch (err) {
     console.warn(`[cache] Redis SET failed for ${key}:`, err?.message || err);
