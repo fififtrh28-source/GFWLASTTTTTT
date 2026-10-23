@@ -8,27 +8,77 @@ const REST_TOKEN =
   process.env.KV_REST_API_TOKEN ||
   "";
 
+// X-5 (Ringkasan Eksekutif laporan audit, tingkat Rendah: "memory leaks pada local cache"): penyimpanan sementara di
+// memori (dipakai bila Redis tidak diatur atau gagal) dulu bertambah tanpa batas di server yang berjalan lama.
+// Kini dibatasi jumlah isi dan perkiraan ukurannya; bila penuh, isi yang paling lama tidak dipakai dibuang lebih dulu
+// (LRU), dan isi yang sudah kedaluwarsa disapu paling cepat tiap 60 detik.
+const LOCAL_MAX_ENTRIES = 1000;
+const LOCAL_MAX_BYTES = 64 * 1024 * 1024;
+const LOCAL_SWEEP_INTERVAL_MS = 60 * 1000;
+
 const localStore = new Map();
+let localBytes = 0;
+let lastSweep = 0;
 
 function now() {
   return Date.now();
+}
+
+// Perkiraan ukuran di memori: panjang JSON × 2 byte per karakter.
+function estimateBytes(value) {
+  const json = JSON.stringify(value);
+  return typeof json === "string" ? json.length * 2 : 16;
+}
+
+function removeLocal(key) {
+  const entry = localStore.get(key);
+  if (!entry) return;
+  localBytes -= entry.bytes;
+  localStore.delete(key);
+}
+
+function sweepExpired(t) {
+  if (t - lastSweep < LOCAL_SWEEP_INTERVAL_MS) return;
+  lastSweep = t;
+  for (const [key, entry] of localStore) {
+    if (entry.expiresAt && entry.expiresAt <= t) removeLocal(key);
+  }
 }
 
 function getLocal(key) {
   const entry = localStore.get(key);
   if (!entry) return null;
   if (entry.expiresAt && entry.expiresAt <= now()) {
-    localStore.delete(key);
+    removeLocal(key);
     return null;
   }
+  // Baru dipakai: pindah ke urutan paling akhir, supaya tidak ikut dibuang lebih dulu.
+  localStore.delete(key);
+  localStore.set(key, entry);
   return entry.value;
 }
 
-function setLocal(key, value, ttlSeconds) {
+function setLocal(key, value, ttlSeconds, bytes = estimateBytes(value)) {
+  const t = now();
+  sweepExpired(t);
+  removeLocal(key);
+  if (bytes > LOCAL_MAX_BYTES) return; // satu isi lebih besar dari seluruh batas: tidak disimpan di memori
   localStore.set(key, {
     value,
-    expiresAt: ttlSeconds > 0 ? now() + ttlSeconds * 1000 : 0,
+    bytes,
+    expiresAt: ttlSeconds > 0 ? t + ttlSeconds * 1000 : 0,
   });
+  localBytes += bytes;
+  while (localStore.size > LOCAL_MAX_ENTRIES || localBytes > LOCAL_MAX_BYTES) {
+    const oldest = localStore.keys().next().value;
+    if (oldest === undefined) break;
+    removeLocal(oldest);
+  }
+}
+
+// Jumlah isi dan perkiraan ukuran penyimpanan sementara di memori (untuk pemantauan dan tes).
+export function localCacheStats() {
+  return { entries: localStore.size, bytes: localBytes, maxEntries: LOCAL_MAX_ENTRIES, maxBytes: LOCAL_MAX_BYTES };
 }
 
 function normalizeUrl(url) {
@@ -94,9 +144,9 @@ export async function cacheGet(key) {
 }
 
 export async function cacheSet(key, value, ttlSeconds) {
-  setLocal(key, value, ttlSeconds);
   try {
     const serialized = JSON.stringify(value);
+    setLocal(key, value, ttlSeconds, serialized.length * 2); // X-5: ukuran dari JSON yang sama, tidak dihitung dua kali
     // K-6 (laporan audit, B.6): sama persis dengan "Rekomendasi Perbaikan" di PDF.
     // Lewatkan klausul EX jika TTL <= 0 (Redis menolak "EX 0").
     const cmd = ["SET", key, serialized];
